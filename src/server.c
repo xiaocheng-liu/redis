@@ -5902,6 +5902,7 @@ int iAmMaster(void) {
             (server.cluster_enabled && nodeIsMaster(server.cluster->myself)));
 }
 
+// redis-server启动主方法
 int main(int argc, char **argv) {
     struct timeval tv;
     int j;
