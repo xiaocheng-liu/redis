@@ -28,6 +28,11 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
+ * 
+ * 
+ * Redis没有使用C语言的字符串结构，而是自己设计了一个简单的动态字符串结构sds。
+ * 它的特点是：可动态扩展内存、二进制安全和与传统的C语言字符串类型兼容。
+ * 下面就从源码的角度来分析一下Redis中sds的实现。（sds的源码实现主要在sds.c和sds.h两个文件中）
  */
 
 #ifndef __SDS_H
@@ -45,7 +50,11 @@ typedef char *sds;
 /* 针对不同的字符串设置了不同的结构体，主要差别在于len和alloc的数据类型，不同长度使用
  * 不同的数据类型，以达到节省内存的目的。  
  *  
- * 注意:sdshdr5从未被使用过，我们只是直接访问flag。但是，这里记录下sdshdr5的结构。 */
+ * 注意:sdshdr5从未被使用过，我们只是直接访问flag。但是，这里记录下sdshdr5的结构。 
+ * 
+ * 在这里解释一下attribute ((packed))的用意：加上此字段是为了让编译器以紧凑模式来分配内存。
+ * 如果没有这个字段，编译器会按照struct中的字段进行内存对齐，这样的话就不能保证header和sds的数据部分紧紧的相邻了，也不能按照固定的偏移来获取flags字段。
+ * */
 struct __attribute__((__packed__)) sdshdr5
 {
     unsigned char flags; /* 3 lsb of type, and 5 msb of string length */
@@ -79,19 +88,22 @@ struct __attribute__((__packed__)) sdshdr64
     unsigned char flags; /* 3 lsb of type, 5 unused bits */
     char buf[];
 };
-
+// 五种header类型，flags取值为0~4
 #define SDS_TYPE_5 0
 #define SDS_TYPE_8 1
 #define SDS_TYPE_16 2
 #define SDS_TYPE_32 3
 #define SDS_TYPE_64 4
-#define SDS_TYPE_MASK 7
+
+#define SDS_TYPE_MASK 7     // 类型掩码
 #define SDS_TYPE_BITS 3
-#define SDS_HDR_VAR(T, s) struct sdshdr##T *sh = (void *)((s) - (sizeof(struct sdshdr##T)));
+
+// 这里需要注意宏定义中的##是将两个符号连接成一个，如sdshdr和8（T为8）合成sdshdr8
+#define SDS_HDR_VAR(T, s) struct sdshdr##T *sh = (void *)((s) - (sizeof(struct sdshdr##T)));  // 获取header头指针
 
 // 这个宏定义直接推算出sdshdr头部的内存地址
 #define SDS_HDR(T, s) ((struct sdshdr##T *)((s) - (sizeof(struct sdshdr##T))))
-#define SDS_TYPE_5_LEN(f) ((f) >> SDS_TYPE_BITS)
+#define SDS_TYPE_5_LEN(f) ((f) >> SDS_TYPE_BITS)    // 获取sdshdr5的长度
 
 // 获取sds的长度
 static inline size_t sdslen(const sds s)

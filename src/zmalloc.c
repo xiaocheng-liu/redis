@@ -75,6 +75,7 @@ void zlibc_free(void *ptr) {
 #define update_zmalloc_stat_alloc(__n) atomicIncr(used_memory,(__n))
 #define update_zmalloc_stat_free(__n) atomicDecr(used_memory,(__n))
 
+// 已使用内存的大小
 static redisAtomic size_t used_memory = 0;
 
 static void zmalloc_default_oom(size_t size) {
@@ -307,9 +308,9 @@ void zfree_usable(void *ptr, size_t *usable) {
 
 char *zstrdup(const char *s) {
     size_t l = strlen(s)+1;
-    char *p = zmalloc(l);
+    char *p = zmalloc(l); // 开辟一段新空间
 
-    memcpy(p,s,l);
+    memcpy(p,s,l);      // 调用_string.h中的字符串复制函数
     return p;
 }
 
@@ -320,7 +321,7 @@ size_t zmalloc_used_memory(void) {
 }
 
 void zmalloc_set_oom_handler(void (*oom_handler)(size_t)) {
-    zmalloc_oom_handler = oom_handler;
+    zmalloc_oom_handler = oom_handler;  // 绑定自定义的异常处理函数
 }
 
 /* Get the RSS information in an OS-specific way.

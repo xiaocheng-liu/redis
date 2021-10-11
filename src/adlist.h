@@ -32,28 +32,30 @@
 #define __ADLIST_H__
 
 /* Node, List, and Iterator are the only data structures used currently. */
-
 typedef struct listNode {
     struct listNode *prev;
     struct listNode *next;
     void *value;
 } listNode;
 
+// Redis为adlist定义了一个迭代器结构，其能正序和逆序的访问list结构
 typedef struct listIter {
-    listNode *next;
-    int direction;
+    listNode *next;             // 指向下一个节点
+    int direction;              // 方向参数，正序和逆序
 } listIter;
 
 typedef struct list {
-    listNode *head;
-    listNode *tail;
+    listNode *head;           // 指向链表头节点
+    listNode *tail;           // 指向链表尾节点
     void *(*dup)(void *ptr);  // 用来复制节点的函数，主要用于深拷贝 
     void (*free)(void *ptr);  // 释放节点的函数
     int (*match)(void *ptr, void *key); // 校验给定的key是否和节点中的node匹配，用于查找
     unsigned long len; //长度
 } list; // list就是一个双向链表 
 
-/* Functions implemented as macros */
+/* Functions implemented as macros 
+    Redis对其结构体提供了一系列的宏定义函数，方便操作其结构体参数
+*/
 #define listLength(l) ((l)->len)
 #define listFirst(l) ((l)->head)
 #define listLast(l) ((l)->tail)
@@ -61,28 +63,28 @@ typedef struct list {
 #define listNextNode(n) ((n)->next)
 #define listNodeValue(n) ((n)->value)
 
-#define listSetDupMethod(l,m) ((l)->dup = (m))
-#define listSetFreeMethod(l,m) ((l)->free = (m))
-#define listSetMatchMethod(l,m) ((l)->match = (m))
+#define listSetDupMethod(l,m) ((l)->dup = (m))      // 设定节点值复制函数
+#define listSetFreeMethod(l,m) ((l)->free = (m))    // 设定节点值释放函数
+#define listSetMatchMethod(l,m) ((l)->match = (m))  // 设定节点值匹配函数
 
-#define listGetDupMethod(l) ((l)->dup)
-#define listGetFreeMethod(l) ((l)->free)
-#define listGetMatchMethod(l) ((l)->match)
+#define listGetDupMethod(l) ((l)->dup)              // 获取节点值复制函数
+#define listGetFreeMethod(l) ((l)->free)            // 获取节点值释放函数
+#define listGetMatchMethod(l) ((l)->match)          // 获取节点值匹配函数
 
 /* Prototypes */
-list *listCreate(void);
-void listRelease(list *list);
-void listEmpty(list *list);
-list *listAddNodeHead(list *list, void *value);
-list *listAddNodeTail(list *list, void *value);
+list *listCreate(void);                             // 创建
+void listRelease(list *list);                       // 释放
+void listEmpty(list *list);                         // 判断是否为空
+list *listAddNodeHead(list *list, void *value);     // 向list的头部插入一个节点
+list *listAddNodeTail(list *list, void *value);     // 向list的尾部插入一个节点
 list *listInsertNode(list *list, listNode *old_node, void *value, int after);
-void listDelNode(list *list, listNode *node);
-listIter *listGetIterator(list *list, int direction);
+void listDelNode(list *list, listNode *node);       // 删除节点
+listIter *listGetIterator(list *list, int direction); // 获取迭代器
 listNode *listNext(listIter *iter);
 void listReleaseIterator(listIter *iter);
-list *listDup(list *orig);
-listNode *listSearchKey(list *list, void *key);
-listNode *listIndex(list *list, long index);
+list *listDup(list *orig);                          // 链表复制函数
+listNode *listSearchKey(list *list, void *key);     // 查找某个key的节点
+listNode *listIndex(list *list, long index);        // 获取index的节点
 void listRewind(list *list, listIter *li);
 void listRewindTail(list *list, listIter *li);
 void listRotateTailToHead(list *list);

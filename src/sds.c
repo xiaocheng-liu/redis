@@ -123,6 +123,7 @@ sds _sdsnewlen(const void *init, size_t initlen, int trymalloc) {
     char type = sdsReqType(initlen);
     /* 空字符串大概率之后会append，但sdshdr5不适合用来append，所以直接替换成sdshdr8 */
     if (type == SDS_TYPE_5 && initlen == 0) type = SDS_TYPE_8;
+    // 得到sds的header的大小
     int hdrlen = sdsHdrSize(type);
     unsigned char *fp; /* flags pointer. */
     size_t usable;
@@ -177,9 +178,9 @@ sds _sdsnewlen(const void *init, size_t initlen, int trymalloc) {
         }
     }
     if (initlen && init)
-        memcpy(s, init, initlen);
-    s[initlen] = '\0';
-    return s;
+        memcpy(s, init, initlen);   // 拷贝数据部分
+    s[initlen] = '\0';  // 与C字符串兼容
+    return s;           // 返回创建的sds字符串指针
 }
 
 sds sdsnewlen(const void *init, size_t initlen) {
@@ -209,6 +210,7 @@ sds sdsdup(const sds s) {
 /* 释放sds的占用的空间 */
 void sdsfree(sds s) {
     if (s == NULL) return;
+    // 得到内存的真正其实位置，然后释放内存
     s_free((char *) s - sdsHdrSize(s[-1]));
 }
 
@@ -241,7 +243,7 @@ void sdsclear(sds s) {
  * 注意：这里实际不会改变sds的长度，只是增加了更多可用的空间(buf)*/
 sds sdsMakeRoomFor(sds s, size_t addlen) {
     void *sh, *newsh;
-    size_t avail = sdsavail(s);
+    size_t avail = sdsavail(s);             // 获取sds的剩余空间
     size_t len, newlen;
     char type, oldtype = s[-1] & SDS_TYPE_MASK; // SDS_TYPE_MASK = 7 
     int hdrlen;

@@ -77,13 +77,13 @@
 #define HAVE_DEFRAG
 #endif
 
-void *zmalloc(size_t size);
-void *zcalloc(size_t size);
-void *zrealloc(void *ptr, size_t size);
-void *ztrymalloc(size_t size);
+void *zmalloc(size_t size);                 // 调用zmalloc函数，申请size大小的内存空间
+void *zcalloc(size_t size);                 // 调用zcalloc函数，申请size大小的内存空间
+void *zrealloc(void *ptr, size_t size);     // 原内存重新调整为size空间的大小
+void *ztrymalloc(size_t size);              // 尝试申请size大小的空间
 void *ztrycalloc(size_t size);
 void *ztryrealloc(void *ptr, size_t size);
-void zfree(void *ptr);
+void zfree(void *ptr);                      // 释放空间
 void *zmalloc_usable(size_t size, size_t *usable);
 void *zcalloc_usable(size_t size, size_t *usable);
 void *zrealloc_usable(void *ptr, size_t size, size_t *usable);
@@ -91,17 +91,17 @@ void *ztrymalloc_usable(size_t size, size_t *usable);
 void *ztrycalloc_usable(size_t size, size_t *usable);
 void *ztryrealloc_usable(void *ptr, size_t size, size_t *usable);
 void zfree_usable(void *ptr, size_t *usable);
-char *zstrdup(const char *s);
-size_t zmalloc_used_memory(void);
-void zmalloc_set_oom_handler(void (*oom_handler)(size_t));
-size_t zmalloc_get_rss(void);
+char *zstrdup(const char *s);               // 字符串复制函数
+size_t zmalloc_used_memory(void);           // 获取当前以及占用内存大小
+void zmalloc_set_oom_handler(void (*oom_handler)(size_t)); // 可自定义设置内存溢出的处理方法
+size_t zmalloc_get_rss(void);               // 获取RSS信息(Resident Set Size)
 int zmalloc_get_allocator_info(size_t *allocated, size_t *active, size_t *resident);
 void set_jemalloc_bg_thread(int enable);
 int jemalloc_purge();
-size_t zmalloc_get_private_dirty(long pid);
-size_t zmalloc_get_smap_bytes_by_field(char *field, long pid);
-size_t zmalloc_get_memory_size(void);
-void zlibc_free(void *ptr);
+size_t zmalloc_get_private_dirty(long pid); // 获得实际内存大小
+size_t zmalloc_get_smap_bytes_by_field(char *field, long pid); // 获取/proc/self/smaps字段的字节数
+size_t zmalloc_get_memory_size(void);       // 获取物理内存大小
+void zlibc_free(void *ptr);                 // 原始系统free释放方法
 
 #ifdef HAVE_DEFRAG
 void zfree_no_tcache(void *ptr);
