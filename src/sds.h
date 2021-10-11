@@ -119,30 +119,30 @@ static inline size_t sdsavail(const sds s)
     unsigned char flags = s[-1];
     switch (flags & SDS_TYPE_MASK)
     {
-        case SDS_TYPE_5:
-        {
-            return 0;
-        }
-        case SDS_TYPE_8:
-        {
-            SDS_HDR_VAR(8, s);
-            return sh->alloc - sh->len;
-        }
-        case SDS_TYPE_16:
-        {
-            SDS_HDR_VAR(16, s);
-            return sh->alloc - sh->len;
-        }
-        case SDS_TYPE_32:
-        {
-            SDS_HDR_VAR(32, s);
-            return sh->alloc - sh->len;
-        }
-        case SDS_TYPE_64:
-        {
-            SDS_HDR_VAR(64, s);
-            return sh->alloc - sh->len;
-        }
+    case SDS_TYPE_5:
+    {
+        return 0;
+    }
+    case SDS_TYPE_8:
+    {
+        SDS_HDR_VAR(8, s);
+        return sh->alloc - sh->len;
+    }
+    case SDS_TYPE_16:
+    {
+        SDS_HDR_VAR(16, s);
+        return sh->alloc - sh->len;
+    }
+    case SDS_TYPE_32:
+    {
+        SDS_HDR_VAR(32, s);
+        return sh->alloc - sh->len;
+    }
+    case SDS_TYPE_64:
+    {
+        SDS_HDR_VAR(64, s);
+        return sh->alloc - sh->len;
+    }
     }
     return 0;
 }
@@ -276,9 +276,9 @@ void sdsclear(sds s);                             // 清空sds中的内容，但
 int sdscmp(const sds s1, const sds s2);           // sds字符串比较大小
 sds *sdssplitlen(const char *s, ssize_t len, const char *sep, int seplen, int *count);
 void sdsfreesplitres(sds *tokens, int count);
-void sdstolower(sds s);               // 字符串转小写
-void sdstoupper(sds s);               // 字符串转大写
-sds sdsfromlonglong(long long value); // 把一个long long型的数转成sds
+void sdstolower(sds s);                             // 字符串转小写
+void sdstoupper(sds s);                             // 字符串转大写
+sds sdsfromlonglong(long long value);               // 把一个long long型的数转成sds
 sds sdscatrepr(sds s, const char *p, size_t len);
 sds *sdssplitargs(const char *line, int *argc);
 sds sdsmapchars(sds s, const char *from, const char *to, size_t setlen);

@@ -303,7 +303,8 @@ extern int configOOMScoreAdjValuesDefaults[CONFIG_OOM_COUNT];
 
 /* Slave replication state. Used in server.repl_state for slaves to remember
  * what to do next. */
-typedef enum {
+typedef enum
+{
     REPL_STATE_NONE = 0,   /* No active replication */
     REPL_STATE_CONNECT,    /* Must connect to master */
     REPL_STATE_CONNECTING, /* Connecting to master */
@@ -322,7 +323,8 @@ typedef enum {
 } repl_state;
 
 /* The state of an in progress coordinated failover */
-typedef enum {
+typedef enum
+{
     NO_FAILOVER = 0,        /* No failover in progress */
     FAILOVER_WAIT_FOR_SYNC, /* Waiting for target replica to catch up */
     FAILOVER_IN_PROGRESS    /* Waiting for target replica to accept
@@ -450,7 +452,8 @@ typedef enum {
 
 /* Client pause types, larger types are more restrictive
  * pause types than smaller pause types. */
-typedef enum {
+typedef enum
+{
     CLIENT_PAUSE_OFF = 0, /* Pause no commands */
     CLIENT_PAUSE_WRITE,   /* Pause write commands */
     CLIENT_PAUSE_ALL      /* Pause all commands */
@@ -571,7 +574,8 @@ typedef void (*RedisModuleUserChangedFunc)(uint64_t client_id, void *privdata);
 
 /* The module type, which is referenced in each value of a given type, defines
  * the methods and links to the module exporting the type. */
-typedef struct RedisModuleType {
+typedef struct RedisModuleType
+{
     uint64_t id; /* Higher 54 bits of type ID + 10 lower bits of encoding ver. */
     struct RedisModule *module;
     moduleTypeLoadFunc rdb_load;
@@ -605,7 +609,8 @@ typedef struct RedisModuleType {
  *      zfree(mt); // We need to release this in-the-middle struct as well.
  *  }
  */
-typedef struct moduleValue {
+typedef struct moduleValue
+{
     moduleType *type;
     void *value;
 } moduleValue;
@@ -613,7 +618,8 @@ typedef struct moduleValue {
 /* This is a wrapper for the 'rio' streams used inside rdb.c in Redis, so that
  * the user does not have to take the total count of the written bytes nor
  * to care about error conditions. */
-typedef struct RedisModuleIO {
+typedef struct RedisModuleIO
+{
     size_t bytes;               /* Bytes read / written so far. */
     rio *rio;                   /* Rio stream. */
     moduleType *type;           /* Module type doing the operation. */
@@ -643,7 +649,8 @@ typedef struct RedisModuleIO {
  * a data structure, so that a digest can be created in a way that correctly
  * reflects the values. See the DEBUG DIGEST command implementation for more
  * background. */
-typedef struct RedisModuleDigest {
+typedef struct RedisModuleDigest
+{
     unsigned char o[20]; /* Ordered elements. */
     unsigned char x[20]; /* Xored elements. */
 } RedisModuleDigest;
@@ -678,10 +685,12 @@ typedef struct RedisModuleDigest {
 #define OBJ_SHARED_REFCOUNT INT_MAX       /* Global object never destroyed. */
 #define OBJ_STATIC_REFCOUNT (INT_MAX - 1) /* Object allocated in the stack. */
 #define OBJ_FIRST_SPECIAL_REFCOUNT OBJ_STATIC_REFCOUNT
-typedef struct redisObject {
-    unsigned type: 4; // 数据类型  string  list  set
-    unsigned encoding: 4;
-    unsigned lru: LRU_BITS; /* LRU time (relative to global lru_clock) or
+
+typedef struct redisObject
+{
+    unsigned type : 4; // 数据类型  string  list  set
+    unsigned encoding : 4;
+    unsigned lru : LRU_BITS; /* LRU time (relative to global lru_clock) or
                             * LFU data (least significant 8 bits frequency
                             * and most significant 16 bits access time). 
                             * redis用24个位来保存LRU和LFU的信息，当使用LRU时保存上次
@@ -712,7 +721,8 @@ struct evictionPoolEntry; /* Defined in evict.c */
 
 /* This structure is used in order to represent the output buffer of a client,
  * which is actually a linked list of blocks like that, that is: client->reply. */
-typedef struct clientReplyBlock {
+typedef struct clientReplyBlock
+{
     size_t size, used;
     char buf[];
 } clientReplyBlock;
@@ -720,9 +730,10 @@ typedef struct clientReplyBlock {
 /* Redis database representation. There are multiple databases identified
  * by integers from 0 (the default database) up to the max configured
  * database. The database number is the 'id' field in the structure. */
-typedef struct redisDb {
+typedef struct redisDb
+{
     dict *dict;                   /* The keyspace for this DB */
-    dict *expires;                /* 保存key对应的过去时间 */
+    dict *expires;                /* 保存key对应的过期时间 */
     dict *blocking_keys;          /* key对应的等待数据的client列表 (BLPOP)*/
     dict *ready_keys;             /* Blocked keys that received a PUSH */
     dict *watched_keys;           /* WATCHED keys for MULTI/EXEC CAS 存储监听key的clients */
@@ -738,13 +749,15 @@ typedef struct redisDb {
 typedef struct dbBackup dbBackup;
 
 /* Client MULTI/EXEC state */
-typedef struct multiCmd {
+typedef struct multiCmd
+{
     robj **argv;
     int argc;
     struct redisCommand *cmd;
 } multiCmd;
 
-typedef struct multiState {
+typedef struct multiState
+{
     multiCmd *commands;         /* Array of MULTI commands */
     int count;                  /* Total number of MULTI commands */
     int cmd_flags;              /* The accumulated command flags OR-ed together.
@@ -759,7 +772,8 @@ typedef struct multiState {
 
 /* This structure holds the blocking operation state for a client.
  * The fields used depend on client->btype. */
-typedef struct blockingState {
+typedef struct blockingState
+{
     /* Generic fields. */
     mstime_t timeout; /* Blocking operation timeout. If UNIX current time
                              * is > timeout then the operation timed out. */
@@ -769,7 +783,8 @@ typedef struct blockingState {
                              * operation such as BLPOP or XREAD. Or NULL. */
     robj *target; /* The key that should receive the element,
                              * for BLMOVE. */
-    struct listPos {
+    struct listPos
+    {
         int wherefrom; /* Where to pop from */
         int whereto;   /* Where to push to */
     } listpos;         /* The positions in the src/dst lists
@@ -804,7 +819,8 @@ typedef struct blockingState {
  * also called ready_keys in every structure representing a Redis database,
  * where we make sure to remember if a given key was already added in the
  * server.ready_keys list. */
-typedef struct readyList {
+typedef struct readyList
+{
     redisDb *db;
     robj *key;
 } readyList;
@@ -834,7 +850,8 @@ typedef struct readyList {
                                                   * deep sanitization of RESTORE \
                                                   * payload. */
 
-typedef struct {
+typedef struct
+{
     sds name;       /* The username as an SDS string. */
     uint64_t flags; /* See USER_FLAG_* */
 
@@ -870,7 +887,8 @@ typedef struct {
                                       need more reserved IDs use UINT64_MAX-1, \
                                       -2, ... and so forth. */
 
-typedef struct client {
+typedef struct client
+{
     uint64_t id; /* Client incremental unique ID. */
     connection *conn;
     int resp;                           /* RESP protocol version. Can be 2 or 3. */
@@ -962,75 +980,86 @@ typedef struct client {
     char buf[PROTO_REPLY_CHUNK_BYTES];
 } client;
 
-struct saveparam {
+struct saveparam
+{
     time_t seconds;
     int changes;
 };
 
-struct moduleLoadQueueEntry {
+struct moduleLoadQueueEntry
+{
     sds path;
     int argc;
     robj **argv;
 };
 
-struct sentinelLoadQueueEntry {
+struct sentinelLoadQueueEntry
+{
     int argc;
     sds *argv;
     int linenum;
     sds line;
 };
 
-struct sentinelConfig {
+struct sentinelConfig
+{
     list *pre_monitor_cfg;
     list *monitor_cfg;
     list *post_monitor_cfg;
 };
 
-struct sharedObjectsStruct {
+struct sharedObjectsStruct
+{
     robj *crlf, *ok, *err, *emptybulk, *czero, *cone, *pong, *space,
-            *colon, *queued, *null[4], *nullarray[4], *emptymap[4], *emptyset[4],
-            *emptyarray, *wrongtypeerr, *nokeyerr, *syntaxerr, *sameobjecterr,
-            *outofrangeerr, *noscripterr, *loadingerr, *slowscripterr, *bgsaveerr,
-            *masterdownerr, *roslaveerr, *execaborterr, *noautherr, *noreplicaserr,
-            *busykeyerr, *oomerr, *plus, *messagebulk, *pmessagebulk, *subscribebulk,
-            *unsubscribebulk, *psubscribebulk, *punsubscribebulk, *del, *unlink,
-            *rpop, *lpop, *lpush, *rpoplpush, *lmove, *blmove, *zpopmin, *zpopmax,
-            *emptyscan, *multi, *exec, *left, *right, *hset, *srem, *xgroup, *xclaim,
-            *script, *replconf, *eval, *persist, *set, *pexpireat, *pexpire,
-            *time, *pxat, *px, *retrycount, *force, *justid,
-            *lastid, *ping, *setid, *keepttl, *load, *createconsumer,
-            *getack, *special_asterick, *special_equals, *default_username,
-            *select[PROTO_SHARED_SELECT_CMDS],
-            *integers[OBJ_SHARED_INTEGERS],
-            *mbulkhdr[OBJ_SHARED_BULKHDR_LEN], /* "*<value>\r\n" */
-    *bulkhdr[OBJ_SHARED_BULKHDR_LEN];  /* "$<value>\r\n" */
+        *colon, *queued, *null[4], *nullarray[4], *emptymap[4], *emptyset[4],
+        *emptyarray, *wrongtypeerr, *nokeyerr, *syntaxerr, *sameobjecterr,
+        *outofrangeerr, *noscripterr, *loadingerr, *slowscripterr, *bgsaveerr,
+        *masterdownerr, *roslaveerr, *execaborterr, *noautherr, *noreplicaserr,
+        *busykeyerr, *oomerr, *plus, *messagebulk, *pmessagebulk, *subscribebulk,
+        *unsubscribebulk, *psubscribebulk, *punsubscribebulk, *del, *unlink,
+        *rpop, *lpop, *lpush, *rpoplpush, *lmove, *blmove, *zpopmin, *zpopmax,
+        *emptyscan, *multi, *exec, *left, *right, *hset, *srem, *xgroup, *xclaim,
+        *script, *replconf, *eval, *persist, *set, *pexpireat, *pexpire,
+        *time, *pxat, *px, *retrycount, *force, *justid,
+        *lastid, *ping, *setid, *keepttl, *load, *createconsumer,
+        *getack, *special_asterick, *special_equals, *default_username,
+        *select[PROTO_SHARED_SELECT_CMDS],
+        *integers[OBJ_SHARED_INTEGERS],
+        *mbulkhdr[OBJ_SHARED_BULKHDR_LEN], /* "*<value>\r\n" */
+        *bulkhdr[OBJ_SHARED_BULKHDR_LEN];  /* "$<value>\r\n" */
     sds minstring, maxstring;
 };
 
 /* ZSETs use a specialized version of Skiplists 
  * skiplist节点定义 */
-typedef struct zskiplistNode {
+typedef struct zskiplistNode
+{
     sds ele;
     double score;
     struct zskiplistNode *backward; // 前向指针
-    struct zskiplistLevel {
+    struct zskiplistLevel
+    {
         struct zskiplistNode *forward; // 每一层的后向指针
         unsigned long span;            // 下一个节点的跨度
     } level[];
 } zskiplistNode;
 
-typedef struct zskiplist {
+// skiplist定义
+typedef struct zskiplist
+{
     struct zskiplistNode *header, *tail;
     unsigned long length;
     int level;
 } zskiplist;
 
-typedef struct zset {
+typedef struct zset
+{
     dict *dict;
     zskiplist *zsl;
 } zset;
 
-typedef struct clientBufferLimitsConfig {
+typedef struct clientBufferLimitsConfig
+{
     unsigned long long hard_limit_bytes;
     unsigned long long soft_limit_bytes;
     time_t soft_limit_seconds;
@@ -1044,7 +1073,8 @@ extern clientBufferLimitsConfig clientBufferLimitsDefaults[CLIENT_TYPE_OBUF_COUN
  *
  * Currently only used to additionally propagate more commands to AOF/Replication
  * after the propagation of the executed command. */
-typedef struct redisOp {
+typedef struct redisOp
+{
     robj **argv;
     int argc, dbid, target;
     struct redisCommand *cmd;
@@ -1057,14 +1087,16 @@ typedef struct redisOp {
  * redisOpArrayAppend();
  * redisOpArrayFree();
  */
-typedef struct redisOpArray {
+typedef struct redisOpArray
+{
     redisOp *ops;
     int numops;
 } redisOpArray;
 
 /* This structure is returned by the getMemoryOverheadData() function in
  * order to return memory overhead information. */
-struct redisMemOverhead {
+struct redisMemOverhead
+{
     size_t peak_allocated;
     size_t total_allocated;
     size_t startup_allocated;
@@ -1088,11 +1120,12 @@ struct redisMemOverhead {
     float rss_extra;
     size_t rss_extra_bytes;
     size_t num_dbs;
-    struct {
+    struct
+    {
         size_t dbid;
         size_t overhead_ht_main;
         size_t overhead_ht_expires;
-    } *db;
+    } * db;
 };
 
 /* This structure can be optionally passed to RDB save/load functions in
@@ -1103,7 +1136,8 @@ struct redisMemOverhead {
  * replication in order to make sure that chained slaves (slaves of slaves)
  * select the correct DB and are able to accept the stream coming from the
  * top-level master. */
-typedef struct rdbSaveInfo {
+typedef struct rdbSaveInfo
+{
     /* Used saving and loading. */
     int repl_stream_db; /* DB to select in server.master client. */
 
@@ -1118,7 +1152,8 @@ typedef struct rdbSaveInfo {
         -1, 0, "0000000000000000000000000000000000000000", -1 \
     }
 
-struct malloc_stats {
+struct malloc_stats
+{
     size_t zmalloc_used;
     size_t process_rss;
     size_t allocator_allocated;
@@ -1130,7 +1165,8 @@ struct malloc_stats {
  * TLS Context Configuration
  *----------------------------------------------------------------------------*/
 
-typedef struct redisTLSContextConfig {
+typedef struct redisTLSContextConfig
+{
     char *cert_file;        /* Server side and optionally client side cert file name */
     char *key_file;         /* Private key filename for cert_file */
     char *client_cert_file; /* Certificate to use as a client; if none, use cert_file */
@@ -1165,7 +1201,8 @@ struct clusterState;
 #define CHILD_TYPE_LDB 3
 #define CHILD_TYPE_MODULE 4
 
-struct redisServer {
+struct redisServer
+{
     /* General */
     pid_t pid;                /* Main process pid. */
     pthread_t main_thread_id; /* Main thread id */
@@ -1257,10 +1294,10 @@ struct redisServer {
     off_t loading_process_events_interval_bytes;
     /* Fast pointers to often looked up command */
     struct redisCommand *delCommand, *multiCommand, *lpushCommand,
-            *lpopCommand, *rpopCommand, *zpopminCommand,
-            *zpopmaxCommand, *sremCommand, *execCommand,
-            *expireCommand, *pexpireCommand, *xclaimCommand,
-            *xgroupCommand, *rpoplpushCommand, *lmoveCommand;
+        *lpopCommand, *rpopCommand, *zpopminCommand,
+        *zpopmaxCommand, *sremCommand, *execCommand,
+        *expireCommand, *pexpireCommand, *xclaimCommand,
+        *xgroupCommand, *rpoplpushCommand, *lmoveCommand;
     /* Fields used only for stats */
     time_t stat_starttime;                                /* Server start time */
     long long stat_numcommands;                           /* Number of processed commands */
@@ -1306,7 +1343,8 @@ struct redisServer {
     redisAtomic long long stat_total_writes_processed;    /* Total number of write events processed */
     /* The following two are used to track instantaneous metrics, like
      * number of operations per second, network traffic. */
-    struct {
+    struct
+    {
         long long last_sample_time;  /* Timestamp of last sample in ms */
         long long last_sample_count; /* Count in last sample */
         long long samples[STATS_METRIC_SAMPLES];
@@ -1622,7 +1660,8 @@ struct redisServer {
     int failover_state;         /* Failover state */
 };
 
-typedef struct pubsubPattern {
+typedef struct pubsubPattern
+{
     client *client;
     robj *pattern;
 } pubsubPattern;
@@ -1632,7 +1671,8 @@ typedef struct pubsubPattern {
 /* A result structure for the various getkeys function calls. It lists the
  * keys as indices to the provided argv.
  */
-typedef struct {
+typedef struct
+{
     int keysbuf[MAX_KEYS_BUFFER]; /* Pre-allocated buffer, to save heap allocations */
     int *keys;                    /* Key indices array, points to keysbuf or heap */
     int numkeys;                  /* Number of key indices return */
@@ -1650,7 +1690,8 @@ typedef int redisGetKeysProc(struct redisCommand *cmd, robj **argv, int argc, ge
 /*
 redis将所有的命令都封装为一个redisCommand结构体，并用函数指针redisCommandProc指向该命令的具体逻辑
 */
-struct redisCommand {
+struct redisCommand
+{
     char *name;
     redisCommandProc *proc;
     int arity;
@@ -1671,30 +1712,36 @@ struct redisCommand {
                    bit set in the bitmap of allowed commands. */
 };
 
-struct redisError {
+struct redisError
+{
     long long count;
 };
 
-struct redisFunctionSym {
+struct redisFunctionSym
+{
     char *name;
     unsigned long pointer;
 };
 
-typedef struct _redisSortObject {
+typedef struct _redisSortObject
+{
     robj *obj;
-    union {
+    union
+    {
         double score;
         robj *cmpobj;
     } u;
 } redisSortObject;
 
-typedef struct _redisSortOperation {
+typedef struct _redisSortOperation
+{
     int type;
     robj *pattern;
 } redisSortOperation;
 
 /* Structure to hold list iteration abstraction. */
-typedef struct {
+typedef struct
+{
     robj *subject;
     unsigned char encoding;
     unsigned char direction; /* Iteration direction */
@@ -1702,13 +1749,15 @@ typedef struct {
 } listTypeIterator;
 
 /* Structure for an entry while iterating over a list. */
-typedef struct {
+typedef struct
+{
     listTypeIterator *li;
     quicklistEntry entry; /* Entry in quicklist */
 } listTypeEntry;
 
 /* Structure to hold set iteration abstraction. */
-typedef struct {
+typedef struct
+{
     robj *subject;
     int encoding;
     int ii; /* intset iterator */
@@ -1719,7 +1768,8 @@ typedef struct {
  * hashes involves both fields and values. Because it is possible that
  * not both are required, store pointers in the iterator to avoid
  * unnecessary memory allocation for fields/values. */
-typedef struct {
+typedef struct
+{
     robj *subject;
     int encoding;
 
@@ -2040,10 +2090,10 @@ client *lookupClientByID(uint64_t id);
 #ifdef __GNUC__
 
 void addReplyErrorFormat(client *c, const char *fmt, ...)
-__attribute__((format(printf, 2, 3)));
+    __attribute__((format(printf, 2, 3)));
 
 void addReplyStatusFormat(client *c, const char *fmt, ...)
-__attribute__((format(printf, 2, 3)));
+    __attribute__((format(printf, 2, 3)));
 
 #else
 void addReplyErrorFormat(client *c, const char *fmt, ...);
@@ -2459,13 +2509,15 @@ void addACLLogEntry(client *c, int reason, int keypos, sds username);
 #define ZADD_CH (1 << 16) /* Return num of elements added or updated. */
 
 /* Struct to hold an inclusive/exclusive range spec by score comparison. */
-typedef struct {
+typedef struct
+{
     double min, max;
     int minex, maxex; /* are min or max exclusive? */
 } zrangespec;
 
 /* Struct to hold an inclusive/exclusive range spec by lexicographic comparison. */
-typedef struct {
+typedef struct
+{
     sds min, max;     /* May be set to shared.(minstring|maxstring) */
     int minex, maxex; /* are min or max exclusive? */
 } zlexrangespec;
@@ -2586,7 +2638,7 @@ int prepareForShutdown(int flags);
 #ifdef __GNUC__
 
 void serverLog(int level, const char *fmt, ...)
-__attribute__((format(printf, 2, 3)));
+    __attribute__((format(printf, 2, 3)));
 
 #else
 void serverLog(int level, const char *fmt, ...);
@@ -2959,9 +3011,8 @@ void handleClientsBlockedOnKeys(void);
 
 void signalKeyAsReady(redisDb *db, robj *key, int type);
 
-void
-blockForKeys(client *c, int btype, robj **keys, int numkeys, mstime_t timeout, robj *target, struct listPos *listpos,
-             streamID *ids);
+void blockForKeys(client *c, int btype, robj **keys, int numkeys, mstime_t timeout, robj *target, struct listPos *listpos,
+                  streamID *ids);
 
 void updateStatsOnUnblock(client *c, long blocked_us, long reply_us);
 
@@ -3475,7 +3526,7 @@ void _serverAssert(const char *estr, const char *file, int line);
 #ifdef __GNUC__
 
 void _serverPanic(const char *file, int line, const char *msg, ...)
-__attribute__((format(printf, 3, 4)));
+    __attribute__((format(printf, 3, 4)));
 
 #else
 void _serverPanic(const char *file, int line, const char *msg, ...);
