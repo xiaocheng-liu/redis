@@ -305,7 +305,7 @@ void *sdsAllocPtr(sds s);                 // 返回sds实际的起始位置指�
  * allocators, but may want to allocate or free things that SDS will
  * respectively free or allocate. */
 void *sds_malloc(size_t size);             // 为sds分配空间
-void *sds_realloc(void *ptr, size_t size); //
+void *sds_realloc(void *ptr, size_t size); // 重新分配空间
 void sds_free(void *ptr);                  // 释放sds空间
 
 #ifdef REDIS_TEST
