@@ -64,6 +64,7 @@
  * 也是采用了开链的方式 
  */ 
 static int dict_can_resize = 1;
+// 负载因子
 static unsigned int dict_force_resize_ratio = 5;
 
 /* -------------------------- private prototypes ---------------------------- */
@@ -356,7 +357,7 @@ int dictReplace(dict *d, void *key, void *val)
         return 1;
     }
 
-    /*  走到这里了，说明是更新，注意这里需要释放旧的valu。
+    /*  走到这里了，说明是更新，注意这里需要释放旧的val。
      * 注意：
      * 这里有可能新旧都是同一个val，所以只能先设新值(引用+1)，然后再删旧值(引用-1)，不能反。
      * 因为如果先-1的话，可能对应的val引用为0了就被释放掉了。 */

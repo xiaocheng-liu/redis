@@ -31,6 +31,11 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
+ * 
+ * 
+ * 字典是Redis中的一个非常重要的底层数据结构，其应用相当广泛。
+ * Redis的数据库就是使用字典作为底层实现的，对数据库的增、删、查、改都是建立在对字典的操作上。
+ * 此外，字典还是Redis中哈希键的底层实现，当一个哈希键包含的键值对比较多，或者键值对中的元素都是比较长的字符串时，Redis就会使用字典作为哈希键的底层实现。
  */
 
 #ifndef __DICT_H
@@ -61,6 +66,7 @@ typedef struct dictEntry {
     struct dictEntry *next; // hash冲突时开链，单链表的next指针 
 } dictEntry;
 
+// 字典类型函数
 typedef struct dictType {
     uint64_t (*hashFunction)(const void *key);  // 对key生成hash值 
     void *(*keyDup)(void *privdata, const void *key); // 对key进行拷贝 
@@ -75,10 +81,11 @@ typedef struct dictType {
 typedef struct dictht {
     dictEntry **table;  // hashtable中的连续空间 
     unsigned long size; // table的大小 
-    unsigned long sizemask;  // hashcode的掩码  
+    unsigned long sizemask;  // hashtable的掩码, 用于计算缩影
     unsigned long used; // 已存储的数据个数
 } dictht;
 
+// 字典
 typedef struct dict {
     dictType *type;  // dictType结构的指针，封装了很多数据操作的函数指针，使得dict能处理任意数据类型（类似面向对象语言的interface，可以重载其方法）
     void *privdata;  // 一个私有数据指针(privdata),由调用者在创建dict的时候传进来。
