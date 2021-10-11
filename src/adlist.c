@@ -39,6 +39,7 @@
  * listSetFreeMethod.
  *
  * On error, NULL is returned. Otherwise the pointer to the new list. */
+// 创建新的list
 list *listCreate(void)
 {
     struct list *list;
@@ -153,6 +154,7 @@ list *listInsertNode(list *list, listNode *old_node, void *value, int after) {
  * It's up to the caller to free the private value of the node.
  *
  * This function can't fail. */
+// 删除节点
 void listDelNode(list *list, listNode *node)
 {
     if (node->prev)
