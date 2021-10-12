@@ -1034,9 +1034,10 @@ struct sharedObjectsStruct
  * skiplist节点定义 */
 typedef struct zskiplistNode
 {
-    sds ele;
-    double score;
-    struct zskiplistNode *backward; // 前向指针
+    sds ele;                            // 成员对象
+    double score;                       // 分值
+    struct zskiplistNode *backward;     // 前向指针
+    // 层
     struct zskiplistLevel
     {
         struct zskiplistNode *forward; // 每一层的后向指针
@@ -1047,9 +1048,9 @@ typedef struct zskiplistNode
 // skiplist定义
 typedef struct zskiplist
 {
-    struct zskiplistNode *header, *tail;
-    unsigned long length;
-    int level;
+    struct zskiplistNode *header, *tail;    // 跳表的头节点和尾节点
+    unsigned long length;                   // 节点数量
+    int level;                              // 层数
 } zskiplist;
 
 typedef struct zset
@@ -1692,9 +1693,9 @@ redis将所有的命令都封装为一个redisCommand结构体，并用函数指
 */
 struct redisCommand
 {
-    char *name;
+    char *name; // 命令名字
     redisCommandProc *proc;
-    int arity;
+    int arity;  // 参数个数
     char *sflags;   /* Flags as string representation, one char per flag. */
     uint64_t flags; /* The actual flags, obtained from the 'sflags' field. */
     /* Use a function to determine keys arguments in a command line.
