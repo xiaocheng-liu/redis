@@ -1689,13 +1689,13 @@ typedef void redisCommandProc(client *c);
 typedef int redisGetKeysProc(struct redisCommand *cmd, robj **argv, int argc, getKeysResult *result);
 
 /*
-redis将所有的命令都封装为一个redisCommand结构体，并用函数指针redisCommandProc指向该命令的具体逻辑
+ * redis将所有的命令都封装为一个redisCommand结构体，并用函数指针redisCommandProc指向该命令的具体逻辑
 */
 struct redisCommand
 {
-    char *name; // 命令名字
-    redisCommandProc *proc;
-    int arity;  // 参数个数
+    char *name;             // 命令名字
+    redisCommandProc *proc; // 指向该命令的具体逻辑
+    int arity;              // 参数个数
     char *sflags;   /* Flags as string representation, one char per flag. */
     uint64_t flags; /* The actual flags, obtained from the 'sflags' field. */
     /* Use a function to determine keys arguments in a command line.

@@ -181,7 +181,9 @@ zskiplistNode *zslInsert(zskiplist *zsl, double score, sds ele) {
 }
 
 /* Internal function used by zslDelete, zslDeleteRangeByScore and
- * zslDeleteRangeByRank. */
+ * zslDeleteRangeByRank. 
+ * 删除节点，此函数被zslDeleteRangeByScore和zslDeleteRangeByRank使用
+ */
 void zslDeleteNode(zskiplist *zsl, zskiplistNode *x, zskiplistNode **update) {
     int i;
     for (i = 0; i < zsl->level; i++) {
@@ -202,10 +204,13 @@ void zslDeleteNode(zskiplist *zsl, zskiplistNode *x, zskiplistNode **update) {
     zsl->length--;
 }
 
-/*从skiplist中删除ele，如果删除成功返回1，否则返回0. 
+/*
+ * 从skiplist中删除ele，如果删除成功返回1，否则返回0. 
  *
  * 如果节点是null，需要调用zslFreeNode()释放掉该节点，否则只是把指向sds的指针置空，这样
- * 后续其他的节点还可以继续使用这个sds*/
+ * 后续其他的节点还可以继续使用这个sds
+ * 
+ */
 int zslDelete(zskiplist *zsl, double score, sds ele, zskiplistNode **node) {
     zskiplistNode *update[ZSKIPLIST_MAXLEVEL], *x;
     int i;
@@ -289,15 +294,19 @@ zskiplistNode *zslUpdateScore(zskiplist *zsl, double curscore, sds ele, double n
     return newnode;
 }
 
+// 判断value是否比最小值大
 int zslValueGteMin(double value, zrangespec *spec) {
     return spec->minex ? (value > spec->min) : (value >= spec->min);
 }
 
+// 判断value是否比最大值小
 int zslValueLteMax(double value, zrangespec *spec) {
     return spec->maxex ? (value < spec->max) : (value <= spec->max);
 }
 
-/* Returns if there is a part of the zset is in range. */
+/* Returns if there is a part of the zset is in range. 
+*  用score判断zskiplist中是否有一部分在range中
+*/
 int zslIsInRange(zskiplist *zsl, zrangespec *range) {
     zskiplistNode *x;
 
@@ -315,7 +324,9 @@ int zslIsInRange(zskiplist *zsl, zrangespec *range) {
 }
 
 /* Find the first node that is contained in the specified range.
- * Returns NULL when no element is contained in the range. */
+ * Returns NULL when no element is contained in the range. 
+ * 找到一个zskiplist中第一个出现在range中的节点
+ */
 zskiplistNode *zslFirstInRange(zskiplist *zsl, zrangespec *range) {
     zskiplistNode *x;
     int i;
@@ -341,7 +352,9 @@ zskiplistNode *zslFirstInRange(zskiplist *zsl, zrangespec *range) {
 }
 
 /* Find the last node that is contained in the specified range.
- * Returns NULL when no element is contained in the range. */
+ * Returns NULL when no element is contained in the range. 
+ * 找到一个zskiplist中最后一个出现在range中的节点
+ */
 zskiplistNode *zslLastInRange(zskiplist *zsl, zrangespec *range) {
     zskiplistNode *x;
     int i;
@@ -400,11 +413,11 @@ unsigned long zslDeleteRangeByScore(zskiplist *zsl, zrangespec *range, dict *dic
     return removed;
 }
 
+// 删除zskiplist在sds范围中的节点
 unsigned long zslDeleteRangeByLex(zskiplist *zsl, zlexrangespec *range, dict *dict) {
     zskiplistNode *update[ZSKIPLIST_MAXLEVEL], *x;
     unsigned long removed = 0;
     int i;
-
 
     x = zsl->header;
     for (i = zsl->level-1; i >= 0; i--) {
@@ -430,7 +443,9 @@ unsigned long zslDeleteRangeByLex(zskiplist *zsl, zlexrangespec *range, dict *di
 }
 
 /* Delete all the elements with rank between start and end from the skiplist.
- * Start and end are inclusive. Note that start and end need to be 1-based */
+ * Start and end are inclusive. Note that start and end need to be 1-based 
+ * 删除一段索引范围的节点，索引是level[0]中出现的位置
+ */
 unsigned long zslDeleteRangeByRank(zskiplist *zsl, unsigned int start, unsigned int end, dict *dict) {
     zskiplistNode *update[ZSKIPLIST_MAXLEVEL], *x;
     unsigned long traversed = 0, removed = 0;
@@ -462,7 +477,9 @@ unsigned long zslDeleteRangeByRank(zskiplist *zsl, unsigned int start, unsigned 
 /* Find the rank for an element by both score and key.
  * Returns 0 when the element cannot be found, rank otherwise.
  * Note that the rank is 1-based due to the span of zsl->header to the
- * first element. */
+ * first element. 
+ * 查找一个节点对应的索引
+ * */
 unsigned long zslGetRank(zskiplist *zsl, double score, sds ele) {
     zskiplistNode *x;
     unsigned long rank = 0;
@@ -486,7 +503,10 @@ unsigned long zslGetRank(zskiplist *zsl, double score, sds ele) {
     return 0;
 }
 
-/* Finds an element by its rank. The rank argument needs to be 1-based. */
+/* Finds an element by its rank. The rank argument needs to be 1-based. 
+*
+*  通过节点查找一个对应的索引
+*/
 zskiplistNode* zslGetElementByRank(zskiplist *zsl, unsigned long rank) {
     zskiplistNode *x;
     unsigned long traversed = 0;
@@ -506,7 +526,10 @@ zskiplistNode* zslGetElementByRank(zskiplist *zsl, unsigned long rank) {
     return NULL;
 }
 
-/* Populate the rangespec according to the objects min and max. */
+/* Populate the rangespec according to the objects min and max. 
+ *
+ * 将给定的min和max对象解析到range中
+ */
 static int zslParseRange(robj *min, robj *max, zrangespec *spec) {
     char *eptr;
     spec->minex = spec->maxex = 0;
