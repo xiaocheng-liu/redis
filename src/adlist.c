@@ -121,6 +121,7 @@ list *listAddNodeTail(list *list, void *value)
     return list;
 }
 
+// 将一个包含给定值的新节点添加到给定节点的之前或者之后。
 list *listInsertNode(list *list, listNode *old_node, void *value, int after) {
     listNode *node;
 
@@ -189,16 +190,19 @@ listIter *listGetIterator(list *list, int direction)
 }
 
 /* Release the iterator memory */
+// 释放迭代器
 void listReleaseIterator(listIter *iter) {
     zfree(iter);
 }
 
 /* Create an iterator in the list private iterator structure */
+// 将迭代器的指针指向表头
 void listRewind(list *list, listIter *li) {
     li->next = list->head;
     li->direction = AL_START_HEAD;
 }
 
+// 将迭代器的指针指向表尾
 void listRewindTail(list *list, listIter *li) {
     li->next = list->tail;
     li->direction = AL_START_TAIL;
@@ -218,6 +222,7 @@ void listRewindTail(list *list, listIter *li) {
  * }
  *
  * */
+// 迭代器获取下一个节点
 listNode *listNext(listIter *iter)
 {
     listNode *current = iter->next;
@@ -308,7 +313,7 @@ listNode *listIndex(list *list, long index) {
     return n;
 }
 
-/* 把list的tail节点放到头部 */
+/* 把list的尾节点放到头部 */
 void listRotateTailToHead(list *list) {
     if (listLength(list) <= 1) return;
 
