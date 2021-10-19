@@ -94,13 +94,13 @@ typedef struct dict {
     unsigned long iterators; /* 正在运行的迭代器数量 */
 } dict;
 
-/*  如果safe为1，说明他是一个安全的迭代器，可以调用dictAdd、dictFind或者其他dict函数。
+/*  字典的迭代器。如果safe为1，说明他是一个安全的迭代器，可以调用dictAdd、dictFind或者其他dict函数。
  * 否则，说明当前迭代器是非安全的，只能调用dictNext()方法 */
 typedef struct dictIterator { 
-    dict *d;
-    long index;
-    int table, safe;
-    dictEntry *entry, *nextEntry;
+    dict *d;        // 正在迭代的字典
+    long index;     // 正在迭代哈希表的索引
+    int table, safe;// 正在迭代哈希表的的号码（0或者1）；是否安全
+    dictEntry *entry, *nextEntry; // 当前哈希表节点；当前哈希表节点的后继节点
     /* 不安全迭代器的指纹，用于误用检测 */
     long long fingerprint;
 } dictIterator;
@@ -109,6 +109,7 @@ typedef void (dictScanFunction)(void *privdata, const dictEntry *de);
 typedef void (dictScanBucketFunction)(void *privdata, dictEntry **bucketref);
 
 /* This is the initial size of every hash table */
+// 每个hashtable的初始化大小
 #define DICT_HT_INITIAL_SIZE     4
 
 /* ------------------------------- Macros ------------------------------------*/
@@ -165,30 +166,32 @@ typedef void (dictScanBucketFunction)(void *privdata, dictEntry **bucketref);
 #define randomULong() random()
 #endif
 /* dict所有的API */
-dict *dictCreate(dictType *type, void *privDataPtr);  // 创建dict 
-int dictExpand(dict *d, unsigned long size);  // 扩缩容
-int dictTryExpand(dict *d, unsigned long size);
-int dictAdd(dict *d, void *key, void *val);  // 添加k-v
-dictEntry *dictAddRaw(dict *d, void *key, dictEntry **existing); // 添加的key对应的dictEntry 
-dictEntry *dictAddOrFind(dict *d, void *key); // 添加或者查找 
-int dictReplace(dict *d, void *key, void *val); // 替换key对应的value，如果没有就添加新的k-v
-int dictDelete(dict *d, const void *key);  // 删除某个key对应的数据 
-dictEntry *dictUnlink(dict *ht, const void *key); // 卸载某个key对应的entry 
-void dictFreeUnlinkedEntry(dict *d, dictEntry *he); // 卸载并清除key对应的entry
-void dictRelease(dict *d);  // 释放整个dict 
-dictEntry * dictFind(dict *d, const void *key);  // 数据查找
-void *dictFetchValue(dict *d, const void *key);  // 获取key对应的value
-int dictResize(dict *d);  // 重设dict的大小，主要是缩容用的
+dict *dictCreate(dictType *type, void *privDataPtr);    // 创建dict 
+int dictExpand(dict *d, unsigned long size);            // 扩缩容
+int dictTryExpand(dict *d, unsigned long size);         
+int dictAdd(dict *d, void *key, void *val);             // 添加k-v
+dictEntry *dictAddRaw(dict *d, void *key, dictEntry **existing);    // 添加的key对应的dictEntry 
+dictEntry *dictAddOrFind(dict *d, void *key);                       // 添加或者查找 
+int dictReplace(dict *d, void *key, void *val);                     // 替换key对应的value，如果没有就添加新的k-v
+int dictDelete(dict *d, const void *key);                           // 删除某个key对应的数据 
+dictEntry *dictUnlink(dict *ht, const void *key);                   // 卸载某个key对应的entry 
+void dictFreeUnlinkedEntry(dict *d, dictEntry *he);                 // 卸载并清除key对应的entry
+void dictRelease(dict *d);                                          // 释放整个dict 
+dictEntry * dictFind(dict *d, const void *key);                     // 数据查找
+void *dictFetchValue(dict *d, const void *key);                     // 获取key对应的value
+int dictResize(dict *d);                                            // 重设dict的大小，主要是缩容用的
+
 /************    迭代器相关     *********** */
-dictIterator *dictGetIterator(dict *d);  
-dictIterator *dictGetSafeIterator(dict *d);
-dictEntry *dictNext(dictIterator *iter);
-void dictReleaseIterator(dictIterator *iter);
+dictIterator *dictGetIterator(dict *d);         // 创建一个不安全的迭代器
+dictIterator *dictGetSafeIterator(dict *d);     // 创建一个安全的迭代器
+dictEntry *dictNext(dictIterator *iter);        // 返回迭代器指向的当前节点，如果迭代完毕返回NULL
+void dictReleaseIterator(dictIterator *iter);   // 释放迭代器
+
 /************    迭代器相关     *********** */
-dictEntry *dictGetRandomKey(dict *d);  // 随机返回一个entry 
-dictEntry *dictGetFairRandomKey(dict *d);   // 随机返回一个entry，但返回每个entry的概率会更均匀 
+dictEntry *dictGetRandomKey(dict *d);           // 随机返回一个entry 
+dictEntry *dictGetFairRandomKey(dict *d);       // 随机返回一个entry，但返回每个entry的概率会更均匀 
 unsigned int dictGetSomeKeys(dict *d, dictEntry **des, unsigned int count); // 获取dict中的部分数据 
-void dictGetStats(char *buf, size_t bufsize, dict *d);  
+void dictGetStats(char *buf, size_t bufsize, dict *d);      
 uint64_t dictGenHashFunction(const void *key, int len);
 uint64_t dictGenCaseHashFunction(const unsigned char *buf, int len);
 void dictEmpty(dict *d, void(callback)(void*));

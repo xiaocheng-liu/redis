@@ -1053,10 +1053,11 @@ typedef struct zskiplist
     int level;                              // 层数
 } zskiplist;
 
+// 有序集
 typedef struct zset
 {
-    dict *dict;
-    zskiplist *zsl;
+    dict *dict;         // 字典
+    zskiplist *zsl;     // 跳跃表
 } zset;
 
 typedef struct clientBufferLimitsConfig
