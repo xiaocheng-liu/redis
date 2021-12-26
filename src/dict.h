@@ -56,7 +56,9 @@
  * hash表中的实体，保存KV信息  
  */ 
 typedef struct dictEntry {
-    void *key;
+    void *key;  // 键
+
+    // 值
     union {   // dictEntry在不同用途时存储不同的数据 
         void *val;
         uint64_t u64;
@@ -85,12 +87,13 @@ typedef struct dictht {
     unsigned long used; // 已存储的数据个数
 } dictht;
 
-// 字典
+// 字典, 每个字典有两个hash表，用于实现渐进式rehash
 typedef struct dict {
-    dictType *type;  // dictType结构的指针，封装了很多数据操作的函数指针，使得dict能处理任意数据类型（类似面向对象语言的interface，可以重载其方法）
-    void *privdata;  // 一个私有数据指针(privdata),由调用者在创建dict的时候传进来。
-    dictht ht[2];  // 两个hashtable，ht[0]为主，ht[1]在渐进式hash的过程中才会用到。  
-    long rehashidx; /* 增量hash过程过程中记录rehash执行到第几个bucket了，当rehashidx == -1表示没有在做rehash */
+    dictType *type;         // dictType结构的指针，封装了很多数据操作的函数指针，
+                            // 使得dict能处理任意数据类型（类似面向对象语言的interface，可以重载其方法）
+    void *privdata;         // 一个私有数据指针(privdata),由调用者在创建dict的时候传进来。
+    dictht ht[2];           // 两个hashtable，ht[0]为主，ht[1]在渐进式hash的过程中才会用到。
+    long rehashidx;         /* 增量hash过程过程中记录rehash执行到第几个bucket了，当rehashidx == -1表示没有在做rehash */
     unsigned long iterators; /* 正在运行的迭代器数量 */
 } dict;
 

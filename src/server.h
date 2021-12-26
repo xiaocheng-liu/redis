@@ -501,6 +501,7 @@ typedef enum
 /* A redis object, that is a type able to hold a string / list / set */
 
 /* The actual Redis Object */
+// 对象类型
 #define OBJ_STRING 0 /* String object. */
 #define OBJ_LIST 1   /* List object. */
 #define OBJ_SET 2    /* Set object. */
@@ -666,6 +667,7 @@ typedef struct RedisModuleDigest
 /* Objects encoding. Some kind of objects like Strings and Hashes can be
  * internally represented in multiple ways. The 'encoding' field of the object
  * is set to one of this fields for this object. */
+// 对象编码
 #define OBJ_ENCODING_RAW 0        /* Raw representation */
 #define OBJ_ENCODING_INT 1        /* Encoded as integer */
 #define OBJ_ENCODING_HT 2         /* Encoded as hash table */
@@ -1046,6 +1048,7 @@ typedef struct zskiplistNode
 } zskiplistNode;
 
 // skiplist定义
+// 跳跃表的定义
 typedef struct zskiplist
 {
     struct zskiplistNode *header, *tail;    // 跳表的头节点和尾节点
@@ -1203,6 +1206,7 @@ struct clusterState;
 #define CHILD_TYPE_LDB 3
 #define CHILD_TYPE_MODULE 4
 
+//服务器对象
 struct redisServer
 {
     /* General */
