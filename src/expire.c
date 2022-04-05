@@ -54,7 +54,6 @@
 /* activeExpireCycle()将存储在hash表中的过期key清理掉，如果发现某个key是过期的，清理掉后返回1，否则返回0。 
  * 过期key被清理掉后 server.stat_expiredkeys++  
  */
-
 int activeExpireCycleTryExpire(redisDb *db, dictEntry *de, long long now) {
     long long t = dictGetSignedIntegerVal(de);
     mstime_t expire_latency;

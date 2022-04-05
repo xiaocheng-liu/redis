@@ -734,12 +734,13 @@ typedef struct clientReplyBlock
  * database. The database number is the 'id' field in the structure. */
 typedef struct redisDb
 {
-    dict *dict;                   /* The keyspace for this DB */
+    dict *dict;                   /* The keyspace for this DB // 保存着数据库中的所有键值对数据
+                                     // 这个属性也被称为键空间（key space）*/
     dict *expires;                /* 保存key对应的过期时间 */
     dict *blocking_keys;          /* key对应的等待数据的client列表 (BLPOP)*/
     dict *ready_keys;             /* Blocked keys that received a PUSH */
     dict *watched_keys;           /* WATCHED keys for MULTI/EXEC CAS 存储监听key的clients */
-    int id;                       /* Database ID */
+    int id;                       /* Database ID 保存着数据库以整数表示的号码*/
     long long avg_ttl;            /* Average TTL, just for stats */
     unsigned long expires_cursor; /* 过期删除过程中的下标 */
     list *defrag_later;           /* List of key names to attempt to defrag one by one, gradually. */
