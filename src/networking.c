@@ -2108,6 +2108,11 @@ void processInputBuffer(client *c) {
     }
 }
 
+/**
+ * @brief 从客户端读取查询
+ * 
+ * @param conn 
+ */
 void readQueryFromClient(connection *conn) {
     client *c = connGetPrivateData(conn);
     int nread, readlen;

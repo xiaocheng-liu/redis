@@ -192,6 +192,10 @@ struct redisServer server; /* Server global state */
  *    TYPE, EXPIRE*, PEXPIRE*, TTL, PTTL, ...
  */
 
+/**
+ * @brief redis的命令表
+ * 
+ */
 struct redisCommand redisCommandTable[] = {
     {"module", moduleCommand, -2,
      "admin no-script",
@@ -3860,8 +3864,10 @@ void propagate(struct redisCommand *cmd, int dbid, robj **argv, int argc,
     serverAssert(!(areClientsPaused() && !server.client_pause_in_transaction));
 
     if (server.aof_state != AOF_OFF && flags & PROPAGATE_AOF)
+        //feedAppendOnlyFile() 函数会同步命令到AOF文件
         feedAppendOnlyFile(cmd, dbid, argv, argc);
     if (flags & PROPAGATE_REPL)
+        //replicationFeedSlaves() 同步命令到 Slave 节点
         replicationFeedSlaves(server.slaves, dbid, argv, argc);
 }
 
@@ -3994,6 +4000,8 @@ void call(client *c, int flags)
     prev_err_count = server.stat_total_error_replies;
     updateCachedTime(0);
     elapsedStart(&call_timer);
+
+    // 会调用客户端命令对应的 redisCommand 的处理方法
     c->cmd->proc(c);
     const long duration = elapsedUs(call_timer);
     c->duration = duration;
@@ -4047,6 +4055,7 @@ void call(client *c, int flags)
         /* If the client is blocked we will handle slowlog when it is unblocked . */
         if (!(c->flags & CLIENT_BLOCKED))
         {
+            //记录慢查询日志
             slowlogPushEntryIfNeeded(c, argv, argc, duration);
         }
     }
@@ -4093,6 +4102,8 @@ void call(client *c, int flags)
          * propagation is needed. Note that modules commands handle replication
          * in an explicit way, so we never replicate them automatically. */
         if (propagate_flags != PROPAGATE_NONE && !(c->cmd->flags & CMD_MODULE))
+
+            //调用 propagate()函数同步数据到 AOF 文件和 slave节点。
             propagate(c->cmd, c->db->id, c->argv, c->argc, propagate_flags);
     }
 
@@ -4529,11 +4540,13 @@ int processCommand(client *c)
         c->cmd->proc != multiCommand && c->cmd->proc != watchCommand &&
         c->cmd->proc != resetCommand)
     {
+        // 入队列
         queueMultiCommand(c);
         addReply(c, shared.queued);
     }
     else
     {
+        // 调用call执行命令
         call(c, CMD_CALL_FULL);
         c->woff = server.master_repl_offset;
         if (listLength(server.ready_keys))
@@ -4730,6 +4743,7 @@ int writeCommandsDeniedByDiskError(void)
 void pingCommand(client *c)
 {
     /* The command takes zero or one arguments. */
+    // 如果参数大于2，直接返回报错信息
     if (c->argc > 2)
     {
         addReplyErrorFormat(c, "wrong number of arguments for '%s' command",

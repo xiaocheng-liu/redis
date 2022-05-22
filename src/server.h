@@ -690,8 +690,8 @@ typedef struct RedisModuleDigest
 
 typedef struct redisObject
 {
-    unsigned type : 4; // 数据类型  string  list  set
-    unsigned encoding : 4;
+    unsigned type : 4;          // 数据类型  string  list  set
+    unsigned encoding : 4;      // 这个属性指明了对象底层的存储结构，比如 ZSet 类型对象可能的存储结构有 ZIPLIST 和 SKIPLIST
     unsigned lru : LRU_BITS; /* LRU time (relative to global lru_clock) or
                             * LFU data (least significant 8 bits frequency
                             * and most significant 16 bits access time). 
@@ -892,7 +892,7 @@ typedef struct
 
 typedef struct client
 {
-    uint64_t id; /* Client incremental unique ID. */
+    uint64_t id;                        /* Client incremental unique ID. 客户端唯一ID*/
     connection *conn;
     int resp;                           /* RESP protocol version. Can be 2 or 3. */
     redisDb *db;                        /* Pointer to currently SELECTed DB. */
@@ -900,9 +900,9 @@ typedef struct client
     sds querybuf;                       /* Buffer we use to accumulate client queries. */
     size_t qb_pos;                      /* The position we have read in querybuf. */
     sds pending_querybuf;               /* If this client is flagged as master, this buffer
-                               represents the yet not applied portion of the
-                               replication stream that we are receiving from
-                               the master. */
+                                            represents the yet not applied portion of the
+                                            replication stream that we are receiving from
+                                            the master. */
     size_t querybuf_peak;               /* Recent (100ms or more) peak of querybuf size. */
     int argc;                           /* Num of arguments of current command. */
     robj **argv;                        /* Arguments of current command. */
@@ -911,8 +911,8 @@ typedef struct client
     size_t argv_len_sum;                /* Sum of lengths of objects in argv list. */
     struct redisCommand *cmd, *lastcmd; /* Last command executed. */
     user *user;                         /* User associated with this connection. If the
-                               user is set to NULL the connection can do
-                               anything (admin). */
+                                            user is set to NULL the connection can do
+                                            anything (admin). */
     int reqtype;                        /* Request protocol type: PROTO_REQ_* */
     int multibulklen;                   /* Number of multi bulk arguments left to read. */
     long bulklen;                       /* Length of bulk argument in multi bulk request. */
@@ -1224,12 +1224,12 @@ struct redisServer
                                    the actual 'hz' field value if dynamic-hz
                                    is enabled. */
     mode_t umask;             /* The umask value of the process on startup */
-    int hz;                   /* serverCron() calls frequency in hertz */
+    int hz;                   /* serverCron() calls frequency in hertz */   //redis 定时任务触发的频率
     int in_fork_child;        /* indication that this is a fork child */
-    redisDb *db;
-    dict *commands;      /* Command table */
-    dict *orig_commands; /* Command table before command renaming. */
-    aeEventLoop *el;
+    redisDb *db;                // redisDb 数组，默认 16 个 redisDb
+    dict *commands;                     /* Command table */ //redis 支持的命令的字典
+    dict *orig_commands;                /* Command table before command renaming. */
+    aeEventLoop *el;                    //redis 事件循环实例
     rax *errors;                         /* Errors table */
     redisAtomic unsigned int lruclock;   /* Clock for LRU eviction */
     volatile sig_atomic_t shutdown_asap; /* SHUTDOWN needed ASAP */
@@ -1238,7 +1238,7 @@ struct redisServer
     char *pidfile;                       /* PID file path */
     int arch_bits;                       /* 32 or 64 depending on sizeof(long) */
     int cronloops;                       /* Number of times the cron function run */
-    char runid[CONFIG_RUN_ID_SIZE + 1];  /* ID always different at every exec. */
+    char runid[CONFIG_RUN_ID_SIZE + 1];  /* ID always different at every exec. */ //当前 redis 实例的 runid
     int sentinel_mode;                   /* True if this instance is a Sentinel. */
     size_t initial_memory_usage;         /* Bytes used after initialization. */
     int always_show_logo;                /* Show logo even for non-stdout logging. */

@@ -83,11 +83,14 @@ typedef struct dictType {
 typedef struct dictht {
     dictEntry **table;  // hashtable中的连续空间 
     unsigned long size; // table的大小 
-    unsigned long sizemask;  // hashtable的掩码, 用于计算缩影
-    unsigned long used; // 已存储的数据个数
+    unsigned long sizemask;  // hashtable的掩码,总是等于 size - 1，用于计算索引值
+    unsigned long used; // 哈希表实际存储的 dictEntry 数量
 } dictht;
 
-// 字典, 每个字典有两个hash表，用于实现渐进式rehash
+/**
+ * @brief 字典, 每个字典有两个hash表，用于实现渐进式rehash
+ * 
+ */
 typedef struct dict {
     dictType *type;         // dictType结构的指针，封装了很多数据操作的函数指针，
                             // 使得dict能处理任意数据类型（类似面向对象语言的interface，可以重载其方法）
