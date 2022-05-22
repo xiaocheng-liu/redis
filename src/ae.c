@@ -358,15 +358,22 @@ static int processTimeEvents(aeEventLoop *eventLoop) {
  * The function returns the number of events processed. */
 int aeProcessEvents(aeEventLoop *eventLoop, int flags)
 {
+    /*
+     1.定义临时变量processed(已经处理好的事件数)并初始化；
+     2.定义临时变量numevents(事件数)
+    */
     int processed = 0, numevents;
 
     /* 如果flag位既不是时间事件，又不是文件事件，返回0 */
     if (!(flags & AE_TIME_EVENTS) && !(flags & AE_FILE_EVENTS)) return 0;
 
+    /* 请注意，既然我们要处理时间事件，即使没有要处理的文件事件，我们仍要调用select()，以便在下
+       一次事件准备启动之前进行休眠 */
     /* Note that we want to call select() even if there are no
      * file events to process as long as we want to process time
      * events, in order to sleep until the next time event is ready
      * to fire. */
+    /* 如果【有监控文件事件】或者【有要处理定时器事件并且没有设置不阻塞标志】则进入逻辑*/
     if (eventLoop->maxfd != -1 ||
         ((flags & AE_TIME_EVENTS) && !(flags & AE_DONT_WAIT))) {
         int j;
@@ -381,6 +388,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
             tv.tv_usec = (msUntilTimer % 1000) * 1000;
             tvp = &tv;
         } else {
+            /* 如果设置了不阻塞标志，则将阻塞时间为0，表示不阻塞 */
             /* If we have to check for events but need to return
              * ASAP because of AE_DONT_WAIT we need to set the timeout
              * to zero */
@@ -388,29 +396,42 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
                 tv.tv_sec = tv.tv_usec = 0;
                 tvp = &tv;
             } else {
+                /* 阻塞直到第一个时间事件的到来 */
                 /* Otherwise we can block */
                 tvp = NULL; /* wait forever */
             }
         }
 
+        /* 如果事件循环的标志位不阻塞等待，那么将tv的成员变量值置为0并且将tvp指向tv的地址*/
         if (eventLoop->flags & AE_DONT_WAIT) {
             tv.tv_sec = tv.tv_usec = 0;
             tvp = &tv;
         }
 
+        /* 执行阻塞前的处理函数 */
         if (eventLoop->beforesleep != NULL && flags & AE_CALL_BEFORE_SLEEP)
             eventLoop->beforesleep(eventLoop);
 
+        /* 调用aeApiPoll,这个函数仅仅会返回超时或者当有事件触发的时候回返回就绪文件事件个数
+           linux下的epoll_wait的返回值:若成功，返回就绪的文件描述符个数;
+                              若出错, 返回-1，
+                              若超时, 返回0
+           这里只会返回0或者就绪的文件描述符个数.
+         */
+        /* 阻塞等待文件事件,这个方法在超时或者有事件触发时才会返回 */
         /* Call the multiplexing API, will return only on timeout or when
          * some event fires. 
          * 通过aeApiPoll获取当前就绪的事件数量*/
         numevents = aeApiPoll(eventLoop, tvp);
 
+        /* 执行阻塞后的处理函数 */
         /* After sleep callback. */
         if (eventLoop->aftersleep != NULL && flags & AE_CALL_AFTER_SLEEP)
             eventLoop->aftersleep(eventLoop);
 
+        /* 循环处理触发的文件事件 */
         for (j = 0; j < numevents; j++) {
+            /* 获取触发的文件事件 */
             aeFileEvent *fe = &eventLoop->events[eventLoop->fired[j].fd];
             int mask = eventLoop->fired[j].mask;
             int fd = eventLoop->fired[j].fd;
@@ -427,6 +448,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
              * This is useful when, for instance, we want to do things
              * in the beforeSleep() hook, like fsyncing a file to disk,
              * before replying to a client. */
+            /* 查看事件是否设置AE_BARRIER标志,如果设置了AE_BARRIER标志,优先处理写事件 */
             int invert = fe->mask & AE_BARRIER;
 
             /* Note the "fe->mask & mask & ..." code: maybe an already
@@ -435,13 +457,21 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
              *
              * Fire the readable event if the call sequence is not
              * inverted. */
+            /* 如果没有设置AE_BARRIER标志，优先处理读事件 */
             if (!invert && fe->mask & mask & AE_READABLE) {
                 fe->rfileProc(eventLoop,fd,fe->clientData,mask);
                 fired++;
                 fe = &eventLoop->events[fd]; /* Refresh in case of resize. */
             }
 
-            /* 处理可写入事件  */
+            /*  
+                 如果是写事件，且在【没有翻转读写顺序】或【fe->wfileProc与fe->rfileProc】
+                 的情况下，执行写事件处理函数
+                 疑问：为什么要做【fe->wfileProc与fe->rfileProc】的判断？
+                       可能是默写版本中的错误，下面有refresh in case of resize，应该
+                       是为了解决一些存在的瞬时状态的bug而产生的更严谨的写法.
+            */
+            /* Fire the writable event. */
             if (fe->mask & mask & AE_WRITABLE) {
                 if (!fired || fe->wfileProc != fe->rfileProc) {
                     fe->wfileProc(eventLoop,fd,fe->clientData,mask);
@@ -451,21 +481,28 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
 
             /* If we have to invert the call, fire the readable event now
              * after the writable one. */
+            /* 如果我们一定要颠倒读事件与写事件的处理顺序 */
             if (invert) {
+                /* 重新获取一下文件事件防止被更新 */
                 fe = &eventLoop->events[fd]; /* Refresh in case of resize. */
+                /* 
+                  如果是读事件且没有被置成触发状态且【fe->wfileProc != fe->rfileProc】
+                  执行读文件事件处理函数.
+                */
                 if ((fe->mask & mask & AE_READABLE) &&
                     (!fired || fe->wfileProc != fe->rfileProc))
                 {
                     fe->rfileProc(eventLoop,fd,fe->clientData,mask);
-                    fired++;
+                    fired++;  // 触发统计值加一
                 }
             }
-
+            /* 处理值加一 */
             processed++;
         }
     }
-    /* 最后处理时间事件 */
+    /* 如果是时间事件 */
     if (flags & AE_TIME_EVENTS)
+        /* 调用时间事件处理函数 */
         processed += processTimeEvents(eventLoop);
 
     return processed; /* return the number of processed file/time events */

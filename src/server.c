@@ -3387,6 +3387,7 @@ void initServer(void)
     const char *clk_msg = monotonicInit();
     serverLog(LL_NOTICE, "monotonic clock: %s", clk_msg);
     //【6】创建事件循环器。
+    /* 初始化server.el ,注意在这里的aeCreateEventLoop内部调用了epoll_create */
     server.el = aeCreateEventLoop(server.maxclients + CONFIG_FDSET_INCR);
     if (server.el == NULL)
     {
@@ -3397,6 +3398,8 @@ void initServer(void)
     }
     server.db = zmalloc(sizeof(redisDb) * server.dbnum);
 
+
+    /* 创建侦听 fd */
     /* Open the TCP listening socket for the user commands. */
     //【7】如果配置了server.port，则开启TCP Socket服务，接收用户请求。
     // 如果配置了server.tls_ port，则开启TLS Socket服务，Redis 6.0开始支持TLS连接。
@@ -3536,6 +3539,7 @@ void initServer(void)
 
     /* Register a readable event for the pipe used to awake the event loop
      * when a blocked client in a module needs attention. */
+    /* 为管道注册一个用于唤醒事件循环的可读事件，需要注意模块中被阻塞的客户端 */
     if (aeCreateFileEvent(server.el, server.module_blocked_pipe[0], AE_READABLE,
                           moduleBlockedClientPipeReadable, NULL) == AE_ERR)
     {
@@ -3544,6 +3548,8 @@ void initServer(void)
             "blocked clients subsystem.");
     }
 
+    /*  注册before和after睡眠函数(注意要在加载持久化的数据之前进行，因为它会被 
+        processEventsWhileBlocked函数用到 */
     /* Register before and after sleep handlers (note this needs to be done
      * before loading persistence since it is used by processEventsWhileBlocked. */
     //【12】注册事件循环器的钩子函数，事件循环器在每次阻塞前后都会调用钩子函数。
