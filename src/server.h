@@ -1207,7 +1207,10 @@ struct clusterState;
 #define CHILD_TYPE_LDB 3
 #define CHILD_TYPE_MODULE 4
 
-//服务器对象
+/**
+ * redisServer结构体存储服务端配置项、运行时数据
+ * 
+ */
 struct redisServer
 {
     /* General */

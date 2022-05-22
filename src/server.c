@@ -3318,15 +3318,22 @@ void makeThreadKillable(void)
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 }
 
+/**
+ * Redis初始化过程
+ * 
+ */
 void initServer(void)
 {
     int j;
 
+    //【1】设置UNIX信号处理函数，使Redis服务器收到SIGINT信号后退出程序。
     signal(SIGHUP, SIG_IGN);
     signal(SIGPIPE, SIG_IGN);
     setupSignalHandlers();
+    //【2】设置线程随时响应CANCEL信号，终止线程，以便停止程序。
     makeThreadKillable();
 
+    //【3】如果开启了Unix系统日志，则调用openlog函数与Unix系统日志建立输出连接，以便输出系统日志。
     if (server.syslog_enabled)
     {
         openlog(server.syslog_ident, LOG_PID | LOG_NDELAY | LOG_NOWAIT,
@@ -3334,6 +3341,7 @@ void initServer(void)
     }
 
     /* Initialization after setting defaults from the config system. */
+    //【4】初始化server中负责存储运行时数据的相关属性。
     server.aof_state = server.aof_enabled ? AOF_ON : AOF_OFF;
     server.hz = server.config_hz;
     server.pid = getpid();
@@ -3368,10 +3376,13 @@ void initServer(void)
         exit(1);
     }
 
+    //【5】createSharedObjects函数创建共享数据集，这些数据可在各场景中共享使用，如小数字0～9999、常用字符串+OK\r\n（命令处理成功响应字符串）、+PONG\r\n（ping命令响应字符串）。
+    // adjustOpenFilesLimit函数尝试修改环境变量，提高系统允许打开的文件描述符上限，避免由于大量客户端连接（Socket文件描述符）导致错误。
     createSharedObjects();
     adjustOpenFilesLimit();
     const char *clk_msg = monotonicInit();
     serverLog(LL_NOTICE, "monotonic clock: %s", clk_msg);
+    //【6】创建事件循环器。
     server.el = aeCreateEventLoop(server.maxclients + CONFIG_FDSET_INCR);
     if (server.el == NULL)
     {
@@ -3383,6 +3394,9 @@ void initServer(void)
     server.db = zmalloc(sizeof(redisDb) * server.dbnum);
 
     /* Open the TCP listening socket for the user commands. */
+    //【7】如果配置了server.port，则开启TCP Socket服务，接收用户请求。
+    // 如果配置了server.tls_ port，则开启TLS Socket服务，Redis 6.0开始支持TLS连接。
+    // 如果配置了server.unixsocket，则开启UNIX Socket服务。如果上面3个选项都没有配置，则报错退出。
     if (server.port != 0 &&
         listenToPort(server.port, server.ipfd, &server.ipfd_count) == C_ERR)
         exit(1);
@@ -3413,6 +3427,7 @@ void initServer(void)
     }
 
     /* Create the Redis databases, and initialize other internal state. */
+    //【8】初始化数据库server.db，用于存储数据。
     for (j = 0; j < server.dbnum; j++)
     {
         server.db[j].dict = dictCreate(&dbDictType, NULL);
@@ -3426,6 +3441,7 @@ void initServer(void)
         server.db[j].defrag_later = listCreate();
         listSetFreeMethod(server.db[j].defrag_later, (void (*)(void *))sdsfree);
     }
+    //【9】evictionPoolAlloc函数初始化LRU/LFU样本池，用于实现LRU/LFU近似算法。继续初始化server中存储运行时数据的相关属性：
     evictionPoolAlloc(); /* Initialize the LRU keys pool. */
     server.pubsub_channels = dictCreate(&keylistDictType, NULL);
     server.pubsub_patterns = listCreate();
@@ -3479,6 +3495,7 @@ void initServer(void)
     /* Create the timer callback, this is our way to process many background
      * operations incrementally, like clients timeout, eviction of unaccessed
      * expired keys and so forth. */
+    //【10】创建一个时间事件，执行函数为serverCron，负责处理Redis中的定时任务，如清理过期数据、生成RDB文件等。
     if (aeCreateTimeEvent(server.el, 1, serverCron, NULL, NULL) == AE_ERR)
     {
         serverPanic("Can't create event loop timers.");
@@ -3488,6 +3505,9 @@ void initServer(void)
     /* Create an event handler for accepting new connections in TCP and Unix
      * domain sockets. */
     /* TCP新连接是可以读事件，这里指定了处理TCP连接的handler为acceptTcpHandler函数*/
+    //【11】分别为TCP Socket、TSL Socks、UNIX Socket注册监听AE_READABLE类型的文件事件，
+    // 事件处理函数分别为acceptTcpHandler、acceptTLSHandler、acceptUnixHandler，这些函数负责接收Socket中的新连接，
+    // 本书后续会详细分析acceptTcpHandler函数。
     for (j = 0; j < server.ipfd_count; j++)
     {
         if (aeCreateFileEvent(server.el, server.ipfd[j], AE_READABLE,
@@ -3522,10 +3542,12 @@ void initServer(void)
 
     /* Register before and after sleep handlers (note this needs to be done
      * before loading persistence since it is used by processEventsWhileBlocked. */
+    //【12】注册事件循环器的钩子函数，事件循环器在每次阻塞前后都会调用钩子函数。
     aeSetBeforeSleepProc(server.el, beforeSleep);
     aeSetAfterSleepProc(server.el, afterSleep);
 
     /* Open the AOF file if needed. */
+    //【13】如果开启了AOF，则预先打开AOF文件。
     if (server.aof_state == AOF_ON)
     {
         server.aof_fd = open(server.aof_filename,
@@ -3542,6 +3564,7 @@ void initServer(void)
      * no explicit limit in the user provided configuration we set a limit
      * at 3 GB using maxmemory with 'noeviction' policy'. This avoids
      * useless crashes of the Redis instance for out of memory. */
+    //【14】如果Redis运行在32位操作系统上，由于32位操作系统内存空间限制为4GB，所以将Redis使用内存限制为3GB，避免Redis服务器因内存不足而崩溃。
     if (server.arch_bits == 32 && server.maxmemory == 0)
     {
         serverLog(LL_WARNING, "Warning: 32 bit instance detected but no memory limit set. Setting 3 GB maxmemory limit with 'noeviction' policy now.");
@@ -3549,11 +3572,17 @@ void initServer(void)
         server.maxmemory_policy = MAXMEMORY_NO_EVICTION;
     }
 
+    //【15】如果以Cluster模式启动，则调用clusterInit函数初始化Cluster机制。
     if (server.cluster_enabled)
         clusterInit();
+    
+    //replicationScriptCacheInit函数初始化server.repl_scriptcache_dict属性。
     replicationScriptCacheInit();
+    //scriptingInit函数初始化LUA机制。
     scriptingInit(1);
+    //slowlogInit函数初始化慢日志机制。
     slowlogInit();
+    //latencyMonitorInit函数初始化延迟监控机制。
     latencyMonitorInit();
 }
 
@@ -6467,7 +6496,13 @@ int iAmMaster(void)
             (server.cluster_enabled && nodeIsMaster(server.cluster->myself)));
 }
 
-// redis-server启动主方法
+/**
+ * @brief server.c/main是Redis启动方法，负责加载配置，初始化数据库，启动网络服务，创建并启动事件循环器。
+ * 
+ * @param argc 
+ * @param argv 
+ * @return int 
+ */
 int main(int argc, char **argv)
 {
     struct timeval tv;
@@ -6544,8 +6579,12 @@ int main(int argc, char **argv)
     uint8_t hashseed[16];
     getRandomBytes(hashseed, sizeof(hashseed));
     dictSetHashFunctionSeed(hashseed);
+    //【1】检查该Redis服务器是否以sentinel模式启动。
     server.sentinel_mode = checkForSentinelMode(argc, argv);
-    initServerConfig(); // 加载用户自定义的配置
+
+    //【2】initServerConfig函数将redisServer中记录配置项的属性初始化为默认值。
+    // ACLInit函数初始化ACL机制，moduleInitModulesSystem函数初始化Module机制。
+    initServerConfig();
     ACLInit();          /* The ACL subsystem must be initialized ASAP because the
                   basic networking code and client creation depends on it. */
     moduleInitModulesSystem();
@@ -6553,6 +6592,7 @@ int main(int argc, char **argv)
 
     /* Store the executable path and arguments in a safe place in order
      * to be able to restart the server later. */
+    //【3】记录Redis程序可执行路径及启动参数，以便后续重启服务器。
     server.executable = getAbsolutePath(argv[0]);
     server.exec_argv = zmalloc(sizeof(char *) * (argc + 1));
     server.exec_argv[argc] = NULL;
@@ -6564,6 +6604,7 @@ int main(int argc, char **argv)
      * data structures with master nodes to monitor. 
      * redis哨兵模式初始化  
      */
+    // 【4】如果以Sentinel模式启动，则初始化Sentinel机制。
     if (server.sentinel_mode)
     {
         initSentinelConfig();
@@ -6573,6 +6614,8 @@ int main(int argc, char **argv)
     /* Check if we need to start in redis-check-rdb/aof mode. We just execute
      * the program main. However the program is part of the Redis executable
      * so that we can easily execute an RDB check on loading errors. */
+    // 【5】如果启动程序是redis-check-rdb或redis-check-aof，则执行redis_check_rdb_main或redis_check_aof_main函数，
+    // 它们尝试检验并修复RDB、AOF文件后便退出程序。
     if (strstr(argv[0], "redis-check-rdb") != NULL)
         redis_check_rdb_main(argc, argv, NULL);
     else if (strstr(argv[0], "redis-check-aof") != NULL)
@@ -6584,6 +6627,8 @@ int main(int argc, char **argv)
         sds options = sdsempty();
 
         /* Handle special options --help and --version */
+        // 【6】对-v、--version、--help、-h、--test-memory等命令进行优先处理。
+        // strcmp函数比较两个字符串str1、str2，若str1=str2，则返回零；若str1str2，则返回正数。
         if (strcmp(argv[1], "-v") == 0 ||
             strcmp(argv[1], "--version") == 0)
             version();
@@ -6608,6 +6653,7 @@ int main(int argc, char **argv)
          * Precedence wise, File, stdin, explicit options -- last config is the one that matters.
          *
          * First argument is the config file name? */
+        // 【7】如果启动命令的第二个参数不是以“--”开始的，则是配置文件参数，将配置文件路径转化为绝对路径，存入server.configfile中
         if (argv[1][0] != '-')
         {
             /* Replace the config file in server.exec_argv with its absolute path. */
@@ -6617,6 +6663,7 @@ int main(int argc, char **argv)
             j = 2; // Skip this arg when parsing options
         }
 
+        //【8】读取启动命令中的启动配置项，并将它们拼接到一个字符串中。
         while (j < argc)
         {
             /* Either first or last argument - Should we read config from stdin? */
@@ -6645,23 +6692,29 @@ int main(int argc, char **argv)
             j++;
         }
 
+        //【9】以Sentinel模式启动，必须指定配置文件，否则直接报错退出。
         if (server.sentinel_mode && !server.configfile)
         {
             serverLog(LL_WARNING,
                       "Sentinel needs config file on disk to save state.  Exiting...");
             exit(1);
         }
+        // 【10】config.c/resetServerSaveParams函数重置server.saveparams属性（该属性存放RDB SAVE配置）。
+        // config.c/loadServerConfig函数从配置文件中加载所有配置项，并使用启动命令配置项覆盖配置文件中的配置项。
         loadServerConfig(server.configfile, config_from_stdin, options);
         if (server.sentinel_mode)
             loadSentinelConfigFromQueue();
         sdsfree(options);
     }
 
+    //【11】server.supervised属性指定是否以upstart服务或systemd服务启动Redis。
+    // 如果配置了server.daemonize且没有配置server.supervised，则以守护进程的方式启动Redis。
     server.supervised = redisIsSupervised(server.supervised_mode);
     int background = server.daemonize && !server.supervised;
     if (background)
         daemonize();
 
+    //【12】打印启动日志。
     serverLog(LL_WARNING, "oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo");
     serverLog(LL_WARNING,
               "Redis version=%s, bits=%d, commit=%s, modified=%d, pid=%d, just started",
@@ -6681,6 +6734,7 @@ int main(int argc, char **argv)
     }
 
     readOOMScoreAdj();
+    //【13】initServer函数初始化Redis运行时数据，createPidFile函数创建pid文件。
     initServer();
     if (background || server.pidfile)
         createPidFile();
@@ -6715,12 +6769,16 @@ int main(int argc, char **argv)
 #endif /* __arm64__ */
 #endif /* __linux__ */
         moduleInitModulesSystemLast();
+        //【14】如果非Sentinel模式启动，则完成以下操作：
+        // (1）moduleLoadFromQueue函数加载配置文件指定的Module模块；
         moduleLoadFromQueue();
+        //（2）ACLLoadUsersAtStartup函数加载ACL用户控制列表；
         ACLLoadUsersAtStartup();
+        //（3）InitServerLast函数负责创建后台线程、I/O线程，该步骤需在Module模块加载后再执行；
         InitServerLast();
-        // 开启aof或者rdb持久化时，会尝试从文件中恢复之前的redis数据
+        // (4)开启aof或者rdb持久化时，会尝试从文件中恢复之前的redis数据
         loadDataFromDisk();
-        // 集群模式下配置文件的检测
+        // (5)如果以Cluster模式启动，那么还需要验证加载的数据是否正确。集群模式下配置文件的检测
         if (server.cluster_enabled)
         {
             if (verifyClusterConfigWithData() == C_ERR)
@@ -6751,6 +6809,7 @@ int main(int argc, char **argv)
     else
     {
         ACLLoadUsersAtStartup();
+        //【15】如果以Sentinel模式启动，则调用sentinelIsRunning函数启动Sentinel机制。
         InitServerLast();    // 初始化一些后台线程
         sentinelIsRunning(); // sentinel模式的配置初始化操作
         if (server.supervised_mode == SUPERVISED_SYSTEMD)
@@ -6766,10 +6825,12 @@ int main(int argc, char **argv)
         serverLog(LL_WARNING, "WARNING: You specified a maxmemory value that is less than 1MB (current value is %llu bytes). Are you sure this is what you really want?", server.maxmemory);
     }
 
+    //【16】尽可能将Redis主线程绑定到server.server_cpulist配置的CPU列表上，Redis 4开始使用多线程，该操作可以减少不必要的线程切换，提高性能。
     redisSetCpuAffinity(server.server_cpulist);
     setOOMScoreAdj(-1);
-    // 启动eventloop开始接受请求
+    //【17】启动事件循环器。事件循环器是Redis中的重要组件。在Redis运行期间，由事件循环器提供服务。启动eventloop开始接受请求
     aeMain(server.el);
+    //【18】执行到这里，说明Redis服务已停止，aeDeleteEventLoop函数清除事件循环器中的事件，最后退出程序。
     aeDeleteEventLoop(server.el);
     return 0;
 }
