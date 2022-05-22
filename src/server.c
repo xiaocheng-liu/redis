@@ -4258,7 +4258,16 @@ static int cmdHasMovableKeys(struct redisCommand *cmd)
  * If C_OK is returned the client is still alive and valid and
  * other operations can be performed by the caller. Otherwise
  * if C_ERR is returned the client was destroyed (i.e. after QUIT). 
- * 处理client发过来的请求 */
+ */
+/* 如果调用此函数，我们已经读取了一个整体
+ * 命令，参数位于客户端 argv/argc 字段中。
+ * processCommand（） 执行命令或准备
+ * 用于从客户端批量读取的服务器。
+ *
+ * 如果返回C_OK，则客户端仍处于活动状态且有效，并且
+ * 其他操作可由调用方执行。否则
+ * 如果返回C_ERR，则客户端被销毁（即在 QUIT 之后）
+ * */
 int processCommand(client *c)
 {
     moduleCallCommandFilters(c);
@@ -4280,7 +4289,6 @@ int processCommand(client *c)
     /* Now lookup the command and check ASAP about trivial error conditions
      * such as wrong arity, bad command name and so forth. 
      * 这里是对client的请求解析出对应的redis命令，并校验参数的合法性 */
-
     c->cmd = c->lastcmd = lookupCommand(c->argv[0]->ptr);
     if (!c->cmd)
     {
@@ -4353,6 +4361,10 @@ int processCommand(client *c)
      * However we don't perform the redirection if:
      * 1) The sender of this command is our master.
      * 2) The command has no key arguments. */
+    /* 如果启用了群集，请在此处执行群集重定向。
+     * 但是，在以下情况下，我们不会执行重定向：
+     * 1）此命令的发送者是我们的主人。
+     * 2） 该命令没有关键参数。*/
     if (server.cluster_enabled &&
         !(c->flags & CLIENT_MASTER) &&
         !(c->flags & CLIENT_LUA &&
@@ -4980,6 +4992,9 @@ void bytesToHuman(char *s, unsigned long long n)
 /* Create the string returned by the INFO command. This is decoupled
  * by the INFO command itself as we need to report the same information
  * on memory corruption problems. */
+/* 创建由 INFO 命令返回的字符串。这是解耦的
+ * 通过 INFO 命令本身，因为我们需要报告相同的信息
+ * 在内存损坏问题上。*/
 sds genRedisInfoString(const char *section)
 {
     sds info = sdsempty();
@@ -5242,6 +5257,7 @@ sds genRedisInfoString(const char *section)
     }
 
     /* Persistence */
+    /* 持久性 */
     if (allsections || defsections || !strcasecmp(section, "persistence"))
     {
         if (sections++)
@@ -5356,6 +5372,7 @@ sds genRedisInfoString(const char *section)
     }
 
     /* Stats */
+    /* 统计数据 */
     if (allsections || defsections || !strcasecmp(section, "stats"))
     {
         long long stat_total_reads_processed, stat_total_writes_processed;
@@ -5448,6 +5465,7 @@ sds genRedisInfoString(const char *section)
     }
 
     /* Replication */
+    /* 复制 */
     if (allsections || defsections || !strcasecmp(section, "replication"))
     {
         if (sections++)
@@ -5634,6 +5652,7 @@ sds genRedisInfoString(const char *section)
     }
 
     /* Command statistics */
+    /*命令统计信息*/
     if (allsections || !strcasecmp(section, "commandstats"))
     {
         if (sections++)
@@ -5659,6 +5678,7 @@ sds genRedisInfoString(const char *section)
         dictReleaseIterator(di);
     }
     /* Error statistics */
+    /*错误统计信息*/
     if (allsections || defsections || !strcasecmp(section, "errorstats"))
     {
         if (sections++)
@@ -5679,6 +5699,7 @@ sds genRedisInfoString(const char *section)
     }
 
     /* Cluster */
+    /* 集群 */
     if (allsections || defsections || !strcasecmp(section, "cluster"))
     {
         if (sections++)
@@ -5690,6 +5711,7 @@ sds genRedisInfoString(const char *section)
     }
 
     /* Key space */
+    /* 键空间 */
     if (allsections || defsections || !strcasecmp(section, "keyspace"))
     {
         if (sections++)

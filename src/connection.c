@@ -73,9 +73,11 @@ ConnectionType CT_Socket;
  * 3. The container_of() approach is anyway risky because connections may
  * be embedded in different structs, not just client.
  */
-
+//初始化连接
 connection *connCreateSocket() {
+    //分配空间
     connection *conn = zcalloc(sizeof(connection));
+    //CT_Socket 是一个结构体
     conn->type = &CT_Socket;
     conn->fd = -1;
 
@@ -92,6 +94,7 @@ connection *connCreateSocket() {
  * is not in an error state (which is not possible for a socket connection,
  * but could but possible with other protocols).
  * 用一个connection结构体描述这个tcp连接*/
+//初始化一个连接，
 connection *connCreateAcceptedSocket(int fd) {
     connection *conn = connCreateSocket();
     conn->fd = fd;
@@ -199,10 +202,12 @@ static int connSocketRead(connection *conn, void *buf, size_t buf_len) {
 static int connSocketAccept(connection *conn, ConnectionCallbackFunc accept_handler) {
     int ret = C_OK;
 
+    //判断状态
     if (conn->state != CONN_STATE_ACCEPTING) return C_ERR;
     conn->state = CONN_STATE_CONNECTED;
 
     connIncrRefs(conn);
+    //这里又会调用到clientAcceptHandler
     if (!callHandler(conn, accept_handler)) ret = C_ERR;
     connDecrRefs(conn);
 
@@ -236,13 +241,17 @@ static int connSocketSetWriteHandler(connection *conn, ConnectionCallbackFunc fu
 /* Register a read handler, to be called when the connection is readable.
  * If NULL, the existing handler is removed.
  */
+//设置新的reader handler
 static int connSocketSetReadHandler(connection *conn, ConnectionCallbackFunc func) {
     if (func == conn->read_handler) return C_OK;
 
+    //将readhandler 覆盖成readQueryFromClient
     conn->read_handler = func;
     if (!conn->read_handler)
         aeDeleteFileEvent(server.el,conn->fd,AE_READABLE);
     else
+        //将新的fd放入到epoll里面
+        //新的fd有可读事件的时候回调函数是connSocketEventHandler
         if (aeCreateFileEvent(server.el,conn->fd,
                     AE_READABLE,conn->type->ae_handler,conn) == AE_ERR) return C_ERR;
     return C_OK;
@@ -293,6 +302,7 @@ static void connSocketEventHandler(struct aeEventLoop *el, int fd, void *clientD
 
     /* Handle normal I/O flows */
     if (!invert && call_read) {
+        //这里就会调用到readQueryFromClient
         if (!callHandler(conn, conn->read_handler)) return;
     }
     /* Fire the writable event. */
@@ -347,6 +357,7 @@ static int connSocketGetType(connection *conn) {
 }
 
 /* 对链接不同操作时的回调函数 */
+//可以看到新的socket 里面分配了各种handler
 ConnectionType CT_Socket = {
     .ae_handler = connSocketEventHandler,
     .close = connSocketClose,
