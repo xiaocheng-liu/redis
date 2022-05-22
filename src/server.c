@@ -4297,6 +4297,7 @@ int processCommand(client *c)
 
     /* Check if the user is authenticated. This check is skipped in case
      * the default user is flagged as "nopass" and is active.  */
+    // 是否已经认证
     int auth_required = (!(DefaultUser->flags & USER_FLAG_NOPASS) ||
                          (DefaultUser->flags & USER_FLAG_DISABLED)) &&
                         !c->authenticated;
@@ -4522,6 +4523,7 @@ int processCommand(client *c)
         return C_OK;
     }
 
+    // 执行命令
     if (c->flags & CLIENT_MULTI &&
         c->cmd->proc != execCommand && c->cmd->proc != discardCommand &&
         c->cmd->proc != multiCommand && c->cmd->proc != watchCommand &&
