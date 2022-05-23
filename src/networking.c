@@ -246,12 +246,16 @@ void clientInstallWriteHandler(client *c) {
 int prepareClientToWrite(client *c) {
     /* If it's the Lua client we always return ok without installing any
      * handler since there is no socket at all. */
+    /* 如果是 Lua 客户端，我们总是返回 OK 而不安装任何
+     *处理程序，因为根本没有套接字。*/
     if (c->flags & (CLIENT_LUA|CLIENT_MODULE)) return C_OK;
 
     /* If CLIENT_CLOSE_ASAP flag is set, we need not write anything. */
+    /* 如果设置了CLIENT_CLOSE_ASAP标志，则无需编写任何内容。*/
     if (c->flags & CLIENT_CLOSE_ASAP) return C_ERR;
 
     /* CLIENT REPLY OFF / SKIP handling: don't send replies. */
+    /* 客户端回复关闭/跳过处理：不发送回复。*/
     if (c->flags & (CLIENT_REPLY_OFF|CLIENT_REPLY_SKIP)) return C_ERR;
 
     /* Masters don't receive replies, unless CLIENT_MASTER_FORCE_REPLY flag
@@ -259,6 +263,7 @@ int prepareClientToWrite(client *c) {
     if ((c->flags & CLIENT_MASTER) &&
         !(c->flags & CLIENT_MASTER_FORCE_REPLY)) return C_ERR;
 
+    /* 用于 AOF 加载的假客户端。*/
     if (!c->conn) return C_ERR; /* Fake client for AOF loading. */
 
     /* Schedule the client to write the output buffers to the socket, unless
@@ -345,6 +350,7 @@ void _addReplyProtoToList(client *c, const char *s, size_t len) {
 /* Add the object 'obj' string representation to the client output buffer. 
  * 回复客户端结果，这里是将数据放到回复buffer里 */
 void addReply(client *c, robj *obj) {
+    // 判断是否推迟执行客户端写操作
     if (prepareClientToWrite(c) != C_OK) return;
 
     if (sdsEncodedObject(obj)) {
@@ -3430,16 +3436,25 @@ void processEventsWhileBlocked(void) {
 #define IO_THREADS_OP_READ 0
 #define IO_THREADS_OP_WRITE 1
 
+// 保存每个 IO 线程的描述符。
 pthread_t io_threads[IO_THREADS_MAX_NUM];
+// 保存线程互斥锁；
 pthread_mutex_t io_threads_mutex[IO_THREADS_MAX_NUM];
+// 保存等待每个 IO 线程处理的客户端个数；
 redisAtomic unsigned long io_threads_pending[IO_THREADS_MAX_NUM]; // 保存线程需要处理的任务数量
 
+// IO操作是读还是写
+/**
+ * io_threads_op 的值为宏定义 IO_THREADS_OP_WRITE：这表明该 IO 线程要做的是写操作，线程会调用 writeToClient 函数将数据写回客户端。
+ * io_threads_op 的值为宏定义 IO_THREADS_OP_READ：这表明该 IO 线程要做的是读操作，线程会调用 readQueryFromClient 函数从客户端读取数据。
+ */
 int io_threads_op;      /* IO_THREADS_OP_WRITE or IO_THREADS_OP_READ. */
 
 /* This is the list of clients each thread will serve when threaded I/O is
  * used. We spawn io_threads_num-1 threads, since one is the main thread
  * itself. 
- * 每个线程需要处理的client列表 */
+ */
+// 保存了每个 IO 线程要处理的客户端，将数组每个元素初始化为一个 List 类型的列表；
 list *io_threads_list[IO_THREADS_MAX_NUM];
 
 /* IO线程主方法，主要是将处理完的请求结果数据写回给client或者是和client做数据交换，
@@ -3454,9 +3469,13 @@ static inline void setIOPendingCount(int i, unsigned long count) {
     atomicSetWithSync(io_threads_pending[i], count);
 }
 
+
+/* IO 线程的运行函数 IOThreadMain */
 void *IOThreadMain(void *myid) {
     /* The ID is the thread number (from 0 to server.iothreads_num-1), and is
      * used by the thread to just manipulate a single sub-array of clients. */
+    /* ID 是线程号（从 0 到 server.iothreads_num-1），并且是
+     * 由线程用于仅操作客户端的单个子数组。*/
     long id = (unsigned long)myid;
     char thdname[16];
 
@@ -3466,11 +3485,13 @@ void *IOThreadMain(void *myid) {
     makeThreadKillable();
 
     while(1) {
+        /* Wait for start */
         /* io_threads_pending[id]不为0，说明有待处理的任务了 */
         for (int j = 0; j < 1000000; j++) {
             if (getIOPendingCount(id) != 0) break;
         }
 
+        /* Give the main thread a chance to stop this thread. */
         /* 给主线程可以停掉当前线程的机会. */
         if (getIOPendingCount(id) == 0) {
             pthread_mutex_lock(&io_threads_mutex[id]);
@@ -3484,51 +3505,71 @@ void *IOThreadMain(void *myid) {
          * before we drop the pending count to 0. */
         listIter li;
         listNode *ln;
+        // 获取IO线程要处理的客户端列表
         listRewind(io_threads_list[id],&li);
         while((ln = listNext(&li))) {
+            // 从客户端列表中获取一个客户端
             client *c = listNodeValue(ln);
             if (io_threads_op == IO_THREADS_OP_WRITE) {
+                // 如果线程操作是写操作，则调用writeToClient将数据写回客户端
                 writeToClient(c,0);
             } else if (io_threads_op == IO_THREADS_OP_READ) {
+                // 如果线程操作是读操作，则调用readQueryFromClient从客户端读取数据
                 readQueryFromClient(c->conn);
             } else {
                 serverPanic("io_threads_op value is unknown");
             }
         }
+        // 处理完所有客户端后，清空该线程的客户端列表
         listEmpty(io_threads_list[id]);
+        // 将该线程的待处理任务数量设置为0
         setIOPendingCount(id, 0);
     }
 }
 
+/* Initialize the data structures needed for threaded I/O. */
 /* 初始化IO线程的数据结构 */
 void initThreadedIO(void) {
+
+    /* 我们从不活跃的线程开始。*/
     server.io_threads_active = 0; /* We start with threads not active. */
 
     /* Don't spawn any thread if the user selected a single thread:
      * we'll handle I/O directly from the main thread. */
+     /*如果用户选择了单个线程，则不要生成任何线程，我们将直接从主线程处理 I/O。*/
     if (server.io_threads_num == 1) return;
 
+    // 如果IO线程数大于IO_THREADS_MAX_NUM最大的线程数， 直接退出
     if (server.io_threads_num > IO_THREADS_MAX_NUM) {
         serverLog(LL_WARNING,"Fatal: too many I/O threads configured. "
                              "The maximum number is %d.", IO_THREADS_MAX_NUM);
         exit(1);
     }
 
+    /* Spawn and initialize the I/O threads. */
     /* 创建并初始化IO线程 */
     for (int i = 0; i < server.io_threads_num; i++) { // redis6引入的多线程机制，但目前线程数默认是1 
         /* Things we do for all the threads including the main thread. */
+        /* 我们为所有线程（包括主线程）执行的操作。*/
         io_threads_list[i] = listCreate();
+        /* 线程 0 是主线程。*/
         if (i == 0) continue; /* Thread 0 is the main thread. */
 
+        /* 我们只为附加线程执行的操作。*/
         /* Things we do only for the additional threads. */
         pthread_t tid;
+        // 初始化io_threads_mutex数组
         pthread_mutex_init(&io_threads_mutex[i],NULL);
+        // 初始化io_threads_pending数组
         setIOPendingCount(i, 0);
+        // 线程将会停止
         pthread_mutex_lock(&io_threads_mutex[i]); /* Thread will be stopped. */
+        // 调用pthread_create函数创建IO线程，线程运行函数为IOThreadMain
         if (pthread_create(&tid,NULL,IOThreadMain,(void*)(long)i) != 0) {
             serverLog(LL_WARNING,"Fatal: Can't initialize IO thread.");
             exit(1);
         }
+        // 初始化io_threads数组，设置值为线程标识
         io_threads[i] = tid;
     }
 }
@@ -3677,10 +3718,10 @@ int handleClientsWithPendingWritesUsingThreads(void) {
  * As a side effect of calling this function the client is put in the
  * pending read clients and flagged as such. */
 int postponeClientRead(client *c) {
-    if (server.io_threads_active &&
-        server.io_threads_do_reads &&
-        !ProcessingEventsWhileBlocked &&
-        !(c->flags & (CLIENT_MASTER|CLIENT_SLAVE|CLIENT_PENDING_READ)))
+    if (server.io_threads_active &&         // 条件一：全局变量 server 的 io_threads_active 值为 1
+        server.io_threads_do_reads &&       // 条件二：全局变量 server 的 io_threads_do_read 值为 1
+        !ProcessingEventsWhileBlocked &&    // 条件三：ProcessingEventsWhileBlocked 变量值为 0
+        !(c->flags & (CLIENT_MASTER|CLIENT_SLAVE|CLIENT_PENDING_READ)))     //条件四：客户端现有标识不能有 CLIENT_MASTER、CLIENT_SLAVE 和 CLIENT_PENDING_READ
     {
         c->flags |= CLIENT_PENDING_READ;
         listAddNodeHead(server.clients_pending_read,c);
@@ -3697,13 +3738,19 @@ int postponeClientRead(client *c) {
  * the reads in the buffers, and also parse the first command available
  * rendering it in the client structures. */
 int handleClientsWithPendingReadsUsingThreads(void) {
+    // 第一步：该函数会先根据全局变量 server 的 io_threads_active 成员变量，判定 IO 线程是否激活，
+    // 并且根据 server 的 io_threads_do_reads 成员变量，判定用户是否设置了 Redis 可以用 IO 线程处理待读客户端。
+    // 只有在 IO 线程激活，并且 IO 线程可以用于处理待读客户端时，handleClientsWithPendingReadsUsingThreads 函数才会继续执行，
+    // 否则该函数就直接结束返回了。
     if (!server.io_threads_active || !server.io_threads_do_reads) return 0;
+    // 读取等待处理的客户端的长度
     int processed = listLength(server.clients_pending_read);
     if (processed == 0) return 0;
 
     /* Distribute the clients across N different lists. */
     listIter li;
     listNode *ln;
+    // 以轮询方式将客户端分配给 IO 线程的执行逻辑
     listRewind(server.clients_pending_read,&li);
     int item_id = 0;
     while((ln = listNext(&li))) {
@@ -3715,6 +3762,7 @@ int handleClientsWithPendingReadsUsingThreads(void) {
 
     /* Give the start condition to the waiting threads, by setting the
      * start condition atomic var. */
+    // 通过设置启动条件 atomic var 为等待线程提供启动条件。
     io_threads_op = IO_THREADS_OP_READ;
     for (int j = 1; j < server.io_threads_num; j++) {
         int count = listLength(io_threads_list[j]);
@@ -3722,14 +3770,17 @@ int handleClientsWithPendingReadsUsingThreads(void) {
     }
 
     /* Also use the main thread to process a slice of clients. */
+    // 使用主线程来处理一部分客户端。
     listRewind(io_threads_list[0],&li);
     while((ln = listNext(&li))) {
         client *c = listNodeValue(ln);
         readQueryFromClient(c->conn);
     }
+    // 处理完后，清空0号列表,也就是清空主线程里的客户端
     listEmpty(io_threads_list[0]);
 
     /* Wait for all the other threads to end their work. */
+    // 等待所有 IO 线程完成待读客户端的处理
     while(1) {
         unsigned long pending = 0;
         for (int j = 1; j < server.io_threads_num; j++)
@@ -3738,12 +3789,14 @@ int handleClientsWithPendingReadsUsingThreads(void) {
     }
 
     /* Run the list of clients again to process the new buffers. */
+    // 再次运行客户端列表以处理新缓冲区
     while(listLength(server.clients_pending_read)) {
         ln = listFirst(server.clients_pending_read);
         client *c = listNodeValue(ln);
         c->flags &= ~CLIENT_PENDING_READ;
         listDelNode(server.clients_pending_read,ln);
 
+        // 如果客户端不再有效，我们避免稍后处理客户端。所以我们只是去下一个。
         if (processPendingCommandsAndResetClient(c) == C_ERR) {
             /* If the client is no longer valid, we avoid
              * processing the client later. So we just go
@@ -3751,11 +3804,13 @@ int handleClientsWithPendingReadsUsingThreads(void) {
             continue;
         }
 
+        // 解析并执行命令
         processInputBuffer(c);
 
         /* We may have pending replies if a thread readQueryFromClient() produced
          * replies and did not install a write handler (it can't).
          */
+        // 如果线程 readQueryFromClient() 产生了回复并且没有去进行写处理（它不能），我们可能会有待处理的回复。
         if (!(c->flags & CLIENT_PENDING_WRITE) && clientHasPendingReplies(c))
             clientInstallWriteHandler(c);
     }

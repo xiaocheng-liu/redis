@@ -1282,8 +1282,8 @@ struct redisServer
     int cfd_count;                            /* Used slots in cfd[] */
     list *clients;                            /* 所有活跃的client */
     list *clients_to_close;                   /* Clients to close asynchronously */
-    list *clients_pending_write;              /* 服务所有需要回复的client列表 */
-    list *clients_pending_read;               /* Client has pending read socket buffers. */
+    list *clients_pending_write;              /* 服务所有需要回复的client列表 */                    //待写回数据的客户端
+    list *clients_pending_read;               /* Client has pending read socket buffers. */     //待读取数据的客户端
     list *slaves, *monitors;                  /* List of slaves and MONITORs */
     client *current_client;                   /* Current client executing the command. */
     rax *clients_timeout_table;               /* Radix tree for blocked clients timeouts. */

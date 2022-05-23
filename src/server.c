@@ -3601,9 +3601,12 @@ void initServer(void)
  * Specifically, creation of threads due to a race bug in ld.so, in which
  * Thread Local Storage initialization collides with dlopen call.
  * see: https://sourceware.org/bugzilla/show_bug.cgi?id=19329 */
+ /* 服务器初始化中的某些步骤需要最后完成（在模块之后）已加载）。
+ *  具体来说，由于 ld.so 中的比赛错误而创建线程，其中
+ * 线程本地存储初始化与 dlopen 调用冲突。
+ * 请参阅： https://sourceware.org/bugzilla/show_bug.cgi?id=19329 */
 void InitServerLast()
 {
-
     // 启动后台线程，目前是3个后台线程 bio_close_file  bio_aof_fsync bio_lazy_free
     bioInit();
     initThreadedIO();
