@@ -501,12 +501,13 @@ typedef enum
 /* A redis object, that is a type able to hold a string / list / set */
 
 /* The actual Redis Object */
+// type是表示当然robj里所存储的数据类型
 // 对象类型 5种基础数据类型
-#define OBJ_STRING 0 /* String object. */
-#define OBJ_LIST 1   /* List object. */
-#define OBJ_SET 2    /* Set object. */
-#define OBJ_ZSET 3   /* Sorted set object. */
-#define OBJ_HASH 4   /* Hash object. */
+#define OBJ_STRING 0 /* String object. */       // 字符串(string)
+#define OBJ_LIST 1   /* List object. */         // 列表(list)
+#define OBJ_SET 2    /* Set object. */          // 集合(set)
+#define OBJ_ZSET 3   /* Sorted set object. */   // 有序集合(zset)
+#define OBJ_HASH 4   /* Hash object. */         // 哈希表(hash)
 
 /* The "module" object type is a special one that signals that the object
  * is one directly managed by a Redis module. In this case the value points
@@ -519,8 +520,8 @@ typedef enum
  * by a 64 bit module type ID, which has a 54 bits module-specific signature
  * in order to dispatch the loading to the right module, plus a 10 bits
  * encoding version. */
-#define OBJ_MODULE 5 /* Module object. */
-#define OBJ_STREAM 6 /* Stream object. */
+#define OBJ_MODULE 5 /* Module object. */       //模块(module)
+#define OBJ_STREAM 6 /* Stream object. */       //流(stream)
 
 /* Extract encver / signature from a module type ID. */
 #define REDISMODULE_TYPE_ENCVER_BITS 10
@@ -667,18 +668,22 @@ typedef struct RedisModuleDigest
 /* Objects encoding. Some kind of objects like Strings and Hashes can be
  * internally represented in multiple ways. The 'encoding' field of the object
  * is set to one of this fields for this object. */
+/*
+ * 编码方式，如果说每个类型只有一种方式，那么其实type和encoding两个字段只需要保留一个即可，
+ * 但redis为了在各种情况下尽可能节约内存，对每种类型的数据在不同情况下有不同的编码格式，所以这里需要用额外的字段标识出来。
+*/
 // 对象编码  对象编码(数据结构类型)。某些类型的对象（如字符串和哈希）可以通过多种方式在内部表示。ENCODING表明表示方式。
-#define OBJ_ENCODING_RAW 0        /* Raw representation */
-#define OBJ_ENCODING_INT 1        /* Encoded as integer */
-#define OBJ_ENCODING_HT 2         /* Encoded as hash table */
-#define OBJ_ENCODING_ZIPMAP 3     /* Encoded as zipmap */
+#define OBJ_ENCODING_RAW 0        /* Raw representation */      // 最原始的标识方式，只有string才会用到
+#define OBJ_ENCODING_INT 1        /* Encoded as integer */      // 整数
+#define OBJ_ENCODING_HT 2         /* Encoded as hash table */   // dict
+#define OBJ_ENCODING_ZIPMAP 3     /* Encoded as zipmap */       
 #define OBJ_ENCODING_LINKEDLIST 4 /* No longer used: old list encoding. */
-#define OBJ_ENCODING_ZIPLIST 5    /* Encoded as ziplist */
-#define OBJ_ENCODING_INTSET 6     /* Encoded as intset */
-#define OBJ_ENCODING_SKIPLIST 7   /* Encoded as skiplist */
-#define OBJ_ENCODING_EMBSTR 8     /* Embedded sds string encoding */
-#define OBJ_ENCODING_QUICKLIST 9  /* Encoded as linked list of ziplists */
-#define OBJ_ENCODING_STREAM 10    /* Encoded as a radix tree of listpacks */
+#define OBJ_ENCODING_ZIPLIST 5    /* Encoded as ziplist */      // ziplist
+#define OBJ_ENCODING_INTSET 6     /* Encoded as intset */       // intset
+#define OBJ_ENCODING_SKIPLIST 7   /* Encoded as skiplist */     // skiplist跳表
+#define OBJ_ENCODING_EMBSTR 8     /* Embedded sds string encoding */    //嵌入式的sds
+#define OBJ_ENCODING_QUICKLIST 9  /* Encoded as linked list of ziplists */  //快表 quicklist
+#define OBJ_ENCODING_STREAM 10    /* Encoded as a radix tree of listpacks */    //流 stream
 
 #define LRU_BITS 24
 #define LRU_CLOCK_MAX ((1 << LRU_BITS) - 1) /* Max value of obj->lru */

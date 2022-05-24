@@ -466,21 +466,21 @@ robj *tryObjectEncoding(robj *o) {
             incrRefCount(shared.integers[value]);
             return shared.integers[value];
         } else {
-            /* 否则原来如果是RAW类型，直接转为OBJ_ENCODING_INT类型，然后用long来直接存储字符串 */    
             if (o->encoding == OBJ_ENCODING_RAW) {
+                /* 否则原来如果是RAW类型，直接转为OBJ_ENCODING_INT类型，然后用long来直接存储字符串 */    
                 sdsfree(o->ptr);
                 o->encoding = OBJ_ENCODING_INT;
                 o->ptr = (void*) value;
                 return o;
-            /*如果是OBJ_ENCODING_EMBSTR，也会转化为OBJ_ENCODING_INT，并用long存储字符串*/
             } else if (o->encoding == OBJ_ENCODING_EMBSTR) {
+                /*如果是OBJ_ENCODING_EMBSTR，也会转化为OBJ_ENCODING_INT，并用long存储字符串*/
                 decrRefCount(o);
                 return createStringObjectFromLongLongForValue(value);
             }
         }
     }
     // 对于那些无法转为long的字符串，做如下处理
-
+    
     /* If the string is small and is still RAW encoded,
      * try the EMBSTR encoding which is more efficient.
      * In this representation the object and the SDS string are allocated
