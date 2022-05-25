@@ -37,8 +37,9 @@
 #endif
 
 /* ===================== Creation and parsing of objects ==================== */
-
+/* 公共创建对象的方法，默认给对象raw编码 */
 robj *createObject(int type, void *ptr) {
+    // 开辟redisObject的大小的空间
     robj *o = zmalloc(sizeof(*o));
     o->type = type;
     o->encoding = OBJ_ENCODING_RAW;
@@ -74,6 +75,7 @@ robj *makeObjectShared(robj *o) {
 
 /* Create a string object with encoding OBJ_ENCODING_RAW, that is a plain
  * string object where o->ptr points to a proper sds string. */
+// 创建raw编码的具体代码
 robj *createRawStringObject(const char *ptr, size_t len) {
     return createObject(OBJ_STRING, sdsnewlen(ptr,len));
 }
@@ -81,6 +83,7 @@ robj *createRawStringObject(const char *ptr, size_t len) {
 /* Create a string object with encoding OBJ_ENCODING_EMBSTR, that is
  * an object where the sds string is actually an unmodifiable string
  * allocated in the same chunk as the object itself. */
+// 创建embstr编码的具体代码
 robj *createEmbeddedStringObject(const char *ptr, size_t len) {
     robj *o = zmalloc(sizeof(robj)+sizeof(struct sdshdr8)+len+1);
     struct sdshdr8 *sh = (void*)(o+1);
@@ -117,9 +120,9 @@ robj *createEmbeddedStringObject(const char *ptr, size_t len) {
  * we allocate as EMBSTR will still fit into the 64 byte arena of jemalloc. */
 #define OBJ_ENCODING_EMBSTR_SIZE_LIMIT 44
 robj *createStringObject(const char *ptr, size_t len) {
-    if (len <= OBJ_ENCODING_EMBSTR_SIZE_LIMIT)
+    if (len <= OBJ_ENCODING_EMBSTR_SIZE_LIMIT)  // 如果长度小于44，则使用embstr编码
         return createEmbeddedStringObject(ptr,len);
-    else
+    else                                        // 否则使用raw编码 
         return createRawStringObject(ptr,len);
 }
 
@@ -346,6 +349,7 @@ void freeStreamObject(robj *o) {
     freeStream(o->ptr);
 }
 
+/* 增加引用计数 */
 void incrRefCount(robj *o) {
     if (o->refcount < OBJ_FIRST_SPECIAL_REFCOUNT) {
         o->refcount++;
