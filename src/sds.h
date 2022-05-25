@@ -236,6 +236,12 @@ static inline size_t sdsalloc(const sds s)
     return 0;
 }
 
+/**
+ * @brief sdssetalloc
+ * 
+ * @param s 源字符串
+ * @param newlen 新的长度
+ */
 static inline void sdssetalloc(sds s, size_t newlen)
 {
     unsigned char flags = s[-1];
@@ -259,8 +265,8 @@ static inline void sdssetalloc(sds s, size_t newlen)
     }
 }
 
-sds sdsnewlen(const void *init, size_t initlen); // 新建一个容量为initlen的sds
-sds sdstrynewlen(const void *init, size_t initlen);
+sds sdsnewlen(const void *init, size_t initlen);        // 新建一个容量为initlen的sds
+sds sdstrynewlen(const void *init, size_t initlen);     // 尝试新建一个容量为initlen的sds
 sds sdsnew(const char *init);                    // 新建sds，字符串为null，默认长度0
 sds sdsempty(void);                              // 新建空字符“”
 sds sdsdup(const sds s);                         // 根据s的实际长度创建新的sds，目的是降低内存的占用
@@ -287,11 +293,11 @@ void sdsupdatelen(sds s);                         // 更新sds字符串的长度
 void sdsclear(sds s);                             // 清空sds中的内容，但不释放空间
 int sdscmp(const sds s1, const sds s2);           // sds字符串比较大小
 sds *sdssplitlen(const char *s, ssize_t len, const char *sep, int seplen, int *count);
-void sdsfreesplitres(sds *tokens, int count);
+void sdsfreesplitres(sds *tokens, int count);       //释放sds，长度为count
 void sdstolower(sds s);                             // 字符串转小写
 void sdstoupper(sds s);                             // 字符串转大写
 sds sdsfromlonglong(long long value);               // 把一个long long型的数转成sds
-sds sdscatrepr(sds s, const char *p, size_t len);
+sds sdscatrepr(sds s, const char *p, size_t len);   
 sds *sdssplitargs(const char *line, int *argc);
 sds sdsmapchars(sds s, const char *from, const char *to, size_t setlen);
 sds sdsjoin(char **argv, int argc, char *sep);                       // 把字符串数组按指定的分隔符拼接起来
