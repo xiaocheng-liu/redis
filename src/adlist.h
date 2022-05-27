@@ -58,12 +58,12 @@ typedef struct list {
 /* Functions implemented as macros 
     Redis对其结构体提供了一系列的宏定义函数，方便操作其结构体参数
 */
-#define listLength(l) ((l)->len)            // 获取list的长度
-#define listFirst(l) ((l)->head)            // 获取list的头节点
-#define listLast(l) ((l)->tail)             // 获取list的尾节点
-#define listPrevNode(n) ((n)->prev)         // 获取前一个节点
-#define listNextNode(n) ((n)->next)         // 获取后一个节点
-#define listNodeValue(n) ((n)->value)       // 获取节点的值
+#define listLength(l) ((l)->len)                    // 获取list的长度
+#define listFirst(l) ((l)->head)                    // 获取list的头节点
+#define listLast(l) ((l)->tail)                     // 获取list的尾节点
+#define listPrevNode(n) ((n)->prev)                 // 获取前一个节点
+#define listNextNode(n) ((n)->next)                 // 获取后一个节点
+#define listNodeValue(n) ((n)->value)               // 获取节点的值
 
 #define listSetDupMethod(l,m) ((l)->dup = (m))      // 设定节点值复制函数
 #define listSetFreeMethod(l,m) ((l)->free = (m))    // 设定节点值释放函数
@@ -94,7 +94,8 @@ void listRotateHeadToTail(list *list);              // 把list的头节点放到
 void listJoin(list *l, list *o);
 
 /* Directions for iterators */
-#define AL_START_HEAD 0
-#define AL_START_TAIL 1
+// 迭代器方向
+#define AL_START_HEAD 0                             // 向前
+#define AL_START_TAIL 1                             // 向后
 
 #endif /* __ADLIST_H__ */

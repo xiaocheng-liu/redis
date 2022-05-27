@@ -116,6 +116,7 @@ static void _dictReset(dictht *ht)
 dict *dictCreate(dictType *type,
         void *privDataPtr)
 {
+    // 分配内存
     dict *d = zmalloc(sizeof(*d));
 
     _dictInit(d,type,privDataPtr);
@@ -126,11 +127,16 @@ dict *dictCreate(dictType *type,
 int _dictInit(dict *d, dictType *type,
         void *privDataPtr)
 {
+    // 初始化两个哈希表的各项属性值
     _dictReset(&d->ht[0]);
     _dictReset(&d->ht[1]);
+    // 设置类型特定函数
     d->type = type;
+    // 设置私有数据
     d->privdata = privDataPtr;
+    // 设置哈希表 rehash 状态
     d->rehashidx = -1;
+    // 设置字典的安全迭代器数量
     d->iterators = 0;
     return DICT_OK;
 }
@@ -157,6 +163,8 @@ int _dictExpand(dict *d, unsigned long size, int* malloc_failed)
 
     /* the size is invalid if it is smaller than the number of
      * elements already inside the hash table */
+    // 不能在字典正在 rehash 时进行
+    // size 的值也不能小于 0 号哈希表的当前已使用节点
     if (dictIsRehashing(d) || d->ht[0].used > size)
         return DICT_ERR;
 
