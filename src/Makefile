@@ -21,6 +21,7 @@ NODEPS:=clean distclean
 
 # Default settings
 STD=-pedantic -DREDIS_STATIC=''
+# Makefile的findstring函数的使用格式为$(findstring FIND, IN)，表示在IN中查找FIND，如果查找到了就返回FIND，找不到就返回空
 ifneq (,$(findstring clang,$(CC)))
 ifneq (,$(findstring FreeBSD,$(uname_S)))
   STD+=-Wno-c11-extensions
@@ -286,6 +287,8 @@ all: $(REDIS_SERVER_NAME) $(REDIS_SENTINEL_NAME) $(REDIS_CLI_NAME) $(REDIS_BENCH
 Makefile.dep:
 	-$(REDIS_CC) -MM *.c > Makefile.dep 2> /dev/null || true
 
+# Makefile的words函数表示统计单词数目，例如$(words, foo bar)的返回值为"2"
+# Makefile的MAKECMDGOALS变量表示传入的参数（全部）
 ifeq (0, $(words $(findstring $(MAKECMDGOALS), $(NODEPS))))
 -include Makefile.dep
 endif
