@@ -46,7 +46,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+// 宏定义常量。表示字典处理成功。
 #define DICT_OK 0
+// 宏定义常量。表示字典处理失败。
 #define DICT_ERR 1
 
 /* Unused arguments generate annoying warnings... */
@@ -76,7 +78,7 @@ typedef struct dictType {
     int (*keyCompare)(void *privdata, const void *key1, const void *key2); // 两个key的对比函数
     void (*keyDestructor)(void *privdata, void *key);   // key的销毁
     void (*valDestructor)(void *privdata, void *obj);   // val的销毁
-    int (*expandAllowed)(size_t moreMem, double usedRatio); 
+    int (*expandAllowed)(size_t moreMem, double usedRatio);  //判断指定字典是否允许哈希表扩展。
 } dictType;
 
 /*  保存每个hashtable的数据信息，当前大小 hash掩码 使用量 */
@@ -116,6 +118,7 @@ typedef void (dictScanBucketFunction)(void *privdata, dictEntry **bucketref);
 
 /* This is the initial size of every hash table */
 // 每个hashtable的初始化大小
+// 宏定义常量。哈希表初始化大小。
 #define DICT_HT_INITIAL_SIZE     4
 
 /* ------------------------------- Macros ------------------------------------*/
@@ -178,7 +181,7 @@ typedef void (dictScanBucketFunction)(void *privdata, dictEntry **bucketref);
 #define dictSlots(d) ((d)->ht[0].size+(d)->ht[1].size)
 // 返回字典的已有节点数量
 #define dictSize(d) ((d)->ht[0].used+(d)->ht[1].used)
-// 查看字典是否正在 rehash
+// 查看字典是否正在 rehash，rehashidx ！= -1 表示没有在rehash
 #define dictIsRehashing(d) ((d)->rehashidx != -1)
 
 /* If our unsigned long type can store a 64 bit number, use a 64 bit PRNG. */
