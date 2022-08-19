@@ -3609,8 +3609,11 @@ void InitServerLast()
 {
     // 启动后台线程，目前是3个后台线程 bio_close_file  bio_aof_fsync bio_lazy_free
     bioInit();
+    // 调用initThreadedIO函数初始化IO线程
     initThreadedIO();
+    // 设置后台jemalloc线程，进行内存管理
     set_jemalloc_bg_thread(server.jemalloc_bg_thread);
+    // 设置服务器内存使用量
     server.initial_memory_usage = zmalloc_used_memory();
 }
 

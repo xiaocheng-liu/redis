@@ -31,7 +31,7 @@
 
 /* ================================ MULTI/EXEC ============================== */
 
-/* Client state initialization for MULTI/EXEC */
+/* Client state initialization for MULTI/EXEC 初始化事务状态*/
 void initClientMultiState(client *c) {
     c->mstate.commands = NULL;
     c->mstate.count = 0;
@@ -39,22 +39,22 @@ void initClientMultiState(client *c) {
     c->mstate.cmd_inv_flags = 0;
 }
 
-/* Release all the resources associated with MULTI/EXEC state */
+/* Release all the resources associated with MULTI/EXEC state 释放客户端事务状态*/
 void freeClientMultiState(client *c) {
     int j;
 
-    for (j = 0; j < c->mstate.count; j++) {
+    for (j = 0; j < c->mstate.count; j++) { // 遍历所有命令
         int i;
         multiCmd *mc = c->mstate.commands+j;
 
-        for (i = 0; i < mc->argc; i++)
-            decrRefCount(mc->argv[i]);
+        for (i = 0; i < mc->argc; i++)  // 遍历所有参数
+            decrRefCount(mc->argv[i]);  
         zfree(mc->argv);
     }
     zfree(c->mstate.commands);
 }
 
-/* Add a new command into the MULTI commands queue */
+/* Add a new command into the MULTI commands queue 将一个新命令插入事务队列*/
 void queueMultiCommand(client *c) {
     multiCmd *mc;
     int j;
@@ -80,11 +80,12 @@ void queueMultiCommand(client *c) {
     c->mstate.cmd_inv_flags |= ~c->cmd->flags;
 }
 
+// 丢弃事务
 void discardTransaction(client *c) {
-    freeClientMultiState(c);
-    initClientMultiState(c);
-    c->flags &= ~(CLIENT_MULTI|CLIENT_DIRTY_CAS|CLIENT_DIRTY_EXEC);
-    unwatchAllKeys(c);
+    freeClientMultiState(c);    // 释放事务状态
+    initClientMultiState(c);    // 初始化事务状态
+    c->flags &= ~(CLIENT_MULTI|CLIENT_DIRTY_CAS|CLIENT_DIRTY_EXEC); // 将flags置为与事务无关
+    unwatchAllKeys(c);  // 取消客户端所有watch的键
 }
 
 /* Flag the transaction as DIRTY_EXEC so that EXEC will fail.
@@ -94,22 +95,24 @@ void flagTransaction(client *c) {
         c->flags |= CLIENT_DIRTY_EXEC;
 }
 
+// 执行multi命令
 void multiCommand(client *c) {
     if (c->flags & CLIENT_MULTI) {
-        addReplyError(c,"MULTI calls can not be nested");
+        addReplyError(c,"MULTI calls can not be nested");   // 如果已经使用事务了，不能嵌套使用
         return;
     }
     c->flags |= CLIENT_MULTI;
 
-    addReply(c,shared.ok);
+    addReply(c,shared.ok);  // 返回成功状态
 }
 
+// 撤销命令
 void discardCommand(client *c) {
     if (!(c->flags & CLIENT_MULTI)) {
-        addReplyError(c,"DISCARD without MULTI");
+        addReplyError(c,"DISCARD without MULTI");   // 没有处在事务状态
         return;
     }
-    discardTransaction(c);
+    discardTransaction(c);  // 撤销事务
     addReply(c,shared.ok);
 }
 
@@ -130,7 +133,7 @@ void beforePropagateMultiOrExec(int multi) {
 void execCommandPropagateMulti(int dbid) {
     beforePropagateMultiOrExec(1);
     propagate(server.multiCommand,dbid,&shared.multi,1,
-              PROPAGATE_AOF|PROPAGATE_REPL);
+              PROPAGATE_AOF|PROPAGATE_REPL);    // 传播命令
 }
 
 void execCommandPropagateExec(int dbid) {

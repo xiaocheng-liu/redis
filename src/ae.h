@@ -114,13 +114,13 @@ typedef struct aeFileEvent {
     void *clientData;                   /* 客户端传入的数据 */
 } aeFileEvent;
 
-/* Time event structure */      //(定时器事件)结构体的定义
+/* Time event structure */      //(时间事件)结构体的定义
 typedef struct aeTimeEvent {
-    /* 时间事件的id */
+    /* 时间事件的唯一id */
     long long id; /* time event identifier. */         
     /* timeEvent下次执行的时间 */
     monotime when;
-    /* 事件事件处理函数 */         
+    /* 时间事件处理函数 */         
     aeTimeProc *timeProc;
     /* 时间事件终结函数 */
     aeEventFinalizerProc *finalizerProc;
