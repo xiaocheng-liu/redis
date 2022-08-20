@@ -27,25 +27,31 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-
+// 一般C文件都是在声明一个文件标识, 用于避免文件重复引用
 #ifndef __ZMALLOC_H
 #define __ZMALLOC_H
 
 /* Double expansion needed for stringification of macro values. */
 #define __xstr(s) __str(s)
+//将s变成字符串
 #define __str(s) #s
 
+// 分别判断使用tcmalloc库/jemalloc库/苹果库哪个作为底层的malloc函数调用
 #if defined(USE_TCMALLOC)
+// 拼接 ZMALLOC_LIB 字符串
 #define ZMALLOC_LIB ("tcmalloc-" __xstr(TC_VERSION_MAJOR) "." __xstr(TC_VERSION_MINOR))
 #include <google/tcmalloc.h>
+// 限定使用的版本号
 #if (TC_VERSION_MAJOR == 1 && TC_VERSION_MINOR >= 6) || (TC_VERSION_MAJOR > 1)
 #define HAVE_MALLOC_SIZE 1
+// 定义获取指针对应的内存大小
 #define zmalloc_size(p) tc_malloc_size(p)
 #else
 #error "Newer version of tcmalloc required"
 #endif
 
 #elif defined(USE_JEMALLOC)
+//拼接ZMALLOC_LIB字符串
 #define ZMALLOC_LIB ("jemalloc-" __xstr(JEMALLOC_VERSION_MAJOR) "." __xstr(JEMALLOC_VERSION_MINOR) "." __xstr(JEMALLOC_VERSION_BUGFIX))
 #include <jemalloc/jemalloc.h>
 #if (JEMALLOC_VERSION_MAJOR == 2 && JEMALLOC_VERSION_MINOR >= 1) || (JEMALLOC_VERSION_MAJOR > 2)
@@ -55,13 +61,16 @@
 #error "Newer version of jemalloc required"
 #endif
 
+// mac的库
 #elif defined(__APPLE__)
 #include <malloc/malloc.h>
 #define HAVE_MALLOC_SIZE 1
 #define zmalloc_size(p) malloc_size(p)
 #endif
 
+// 判断是否声明了分配内存的库
 #ifndef ZMALLOC_LIB
+// 定义ZMALLOC_LIB为"libc"
 #define ZMALLOC_LIB "libc"
 #ifdef __GLIBC__
 #include <malloc.h>
@@ -74,16 +83,17 @@
  * and the version used is our special version modified for Redis having
  * the ability to return per-allocation fragmentation hints. */
 #if defined(USE_JEMALLOC) && defined(JEMALLOC_FRAG_HINT)
+// 定义是否支持内存碎片整理
 #define HAVE_DEFRAG
 #endif
 
-void *zmalloc(size_t size);                 // 调用zmalloc函数，申请size大小的内存空间
-void *zcalloc(size_t size);                 // 调用zcalloc函数，申请size大小的内存空间
+void *zmalloc(size_t size);                 // 调用zmalloc函数，申请size大小的内存空间，进行初始化, 有可能有脏数据
+void *zcalloc(size_t size);                 // 调用zcalloc函数，申请size大小的内存空间，并初始化为0
 void *zrealloc(void *ptr, size_t size);     // 原内存重新调整为size空间的大小
-void *ztrymalloc(size_t size);              // 尝试申请size大小的空间
-void *ztrycalloc(size_t size);
+void *ztrymalloc(size_t size);              // 尝试用malloc申请size大小的内存
+void *ztrycalloc(size_t size);              // 床上用calloc申请size大小的内存
 void *ztryrealloc(void *ptr, size_t size);
-void zfree(void *ptr);                      // 释放空间
+void zfree(void *ptr);                      // 释放内存
 void *zmalloc_usable(size_t size, size_t *usable);
 void *zcalloc_usable(size_t size, size_t *usable);
 void *zrealloc_usable(void *ptr, size_t size, size_t *usable);
@@ -94,7 +104,7 @@ void zfree_usable(void *ptr, size_t *usable);
 char *zstrdup(const char *s);               // 字符串复制函数
 size_t zmalloc_used_memory(void);           // 获取当前以及占用内存大小
 void zmalloc_set_oom_handler(void (*oom_handler)(size_t)); // 可自定义设置内存溢出的处理方法
-size_t zmalloc_get_rss(void);               // 获取RSS信息(Resident Set Size)
+size_t zmalloc_get_rss(void);               // 获取RSS信息(Resident Set Size) 常驻内存集
 int zmalloc_get_allocator_info(size_t *allocated, size_t *active, size_t *resident);
 void set_jemalloc_bg_thread(int enable);
 int jemalloc_purge();
@@ -103,15 +113,18 @@ size_t zmalloc_get_smap_bytes_by_field(char *field, long pid); // 获取/proc/se
 size_t zmalloc_get_memory_size(void);       // 获取物理内存大小
 void zlibc_free(void *ptr);                 // 原始系统free释放方法
 
+// 如果开启了内存碎片整理
 #ifdef HAVE_DEFRAG
 void zfree_no_tcache(void *ptr);
 void *zmalloc_no_tcache(size_t size);
 #endif
 
+// 没有获取已分配内存大小的方法, 则声明两个函数, 给 zmalloc.c 进行手动实现, 这里有点像java的抽象方法
 #ifndef HAVE_MALLOC_SIZE
 size_t zmalloc_size(void *ptr);
 size_t zmalloc_usable_size(void *ptr);
 #else
+// 将 zmalloc_size 方法重定义为 zmalloc_usable_size, 用于获取指针对象大小
 #define zmalloc_usable_size(p) zmalloc_size(p)
 #endif
 

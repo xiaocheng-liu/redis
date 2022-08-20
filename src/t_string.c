@@ -161,6 +161,8 @@ void setGenericCommand(client *c, int flags, robj *key, robj *val, robj *expire,
  * The parseExtendedStringArgumentsOrReply() function performs the common validation for extended
  * string arguments used in SET and GET command.
  *
+ * parseExtendedStringArgumentsOrReply方法为SET和GET命令执行一个通用的验证
+ *
  * Get specific commands - PERSIST/DEL
  * Set specific commands - XX/NX/GET
  * Common commands - EX/EXAT/PX/PXAT/KEEPTTL
@@ -175,6 +177,7 @@ void setGenericCommand(client *c, int flags, robj *key, robj *val, robj *expire,
  */
 int parseExtendedStringArgumentsOrReply(client *c, int *flags, int *unit, robj **expire, int command_type) {
 
+    // 判断是GET命令还是SET命令
     int j = command_type == COMMAND_GET ? 2 : 3;
     for (; j < c->argc; j++) {
         char *opt = c->argv[j]->ptr;

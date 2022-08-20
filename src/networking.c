@@ -2187,6 +2187,7 @@ void readQueryFromClient(connection *conn) {
     if (postponeClientRead(c)) return;
 
     /* Update total number of reads on server */
+    // 将读取事件总数加1
     atomicIncr(server.stat_total_reads_processed, 1);
 
     readlen = PROTO_IOBUF_LEN;

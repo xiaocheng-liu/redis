@@ -1362,8 +1362,8 @@ struct redisServer
     long long stat_dump_payload_sanitizations;            /* Number deep dump payloads integrity validations. */
     long long stat_io_reads_processed;                    /* Number of read events processed by IO / Main threads */
     long long stat_io_writes_processed;                   /* Number of write events processed by IO / Main threads */
-    redisAtomic long long stat_total_reads_processed;     /* Total number of read events processed */
-    redisAtomic long long stat_total_writes_processed;    /* Total number of write events processed */
+    redisAtomic long long stat_total_reads_processed;     /* Total number of read events processed 已处理的读取事件总数*/
+    redisAtomic long long stat_total_writes_processed;    /* Total number of write events processed 已处理的写入事件总数*/
     /* The following two are used to track instantaneous metrics, like
      * number of operations per second, network traffic. */
     struct
