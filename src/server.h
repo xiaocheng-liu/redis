@@ -286,9 +286,9 @@ extern int configOOMScoreAdjValuesDefaults[CONFIG_OOM_COUNT];
 #define BLOCKED_PAUSE 6  /* Blocked by CLIENT PAUSE */
 #define BLOCKED_NUM 7    /* Number of blocked states. */
 
-/* Client request types */
-#define PROTO_REQ_INLINE 1
-#define PROTO_REQ_MULTIBULK 2
+/* Client request types 客户端请求类型*/
+#define PROTO_REQ_INLINE 1      // 内联型
+#define PROTO_REQ_MULTIBULK 2   // 协议型
 
 /* Client classes for client limits, currently used only for
  * the max-client-output-buffer limit implementation. */
@@ -784,15 +784,19 @@ typedef struct multiState
 
 /* This structure holds the blocking operation state for a client.
  * The fields used depend on client->btype. */
+// 此结构保存客户端的阻塞操作状态。 使用的字段取决于 client->btype
 typedef struct blockingState
 {
     /* Generic fields. */
+    // 阻塞超过时间
     mstime_t timeout; /* Blocking operation timeout. If UNIX current time
                              * is > timeout then the operation timed out. */
 
     /* BLOCKED_LIST, BLOCKED_ZSET and BLOCKED_STREAM */
-    dict *keys;   /* 该client阻塞等待的key列表 
+    // 造成阻塞的键字典
+    dict *keys;   /* The keys we are waiting to terminate a blocking
                              * operation such as BLPOP or XREAD. Or NULL. */
+    // 存储解除阻塞的键，用于保存PUSH入元素的键，也就是dstkey
     robj *target; /* The key that should receive the element,
                              * for BLMOVE. */
     struct listPos
@@ -907,7 +911,7 @@ typedef struct client
     redisDb *db;                        /* Pointer to currently SELECTed DB. */             // 当前选择的DB
     robj *name;                         /* As set by CLIENT SETNAME. */                     // 客户端名称，可以使用命令CLIENT SETNAME设置。
     sds querybuf;                       /* Buffer we use to accumulate client queries. */   // 输入缓冲区，recv函数接收的客户端命令请求会暂时缓存在此缓冲区。
-    size_t qb_pos;                      /* The position we have read in querybuf. */
+    size_t qb_pos;                      /* The position we have read in querybuf. */        // 记录从querybuf去读的位置
     sds pending_querybuf;               /* If this client is flagged as master, this buffer
                                             represents the yet not applied portion of the
                                             replication stream that we are receiving from
@@ -925,7 +929,7 @@ typedef struct client
     user *user;                         /* User associated with this connection. If the
                                             user is set to NULL the connection can do
                                             anything (admin). */
-    int reqtype;                        /* Request protocol type: PROTO_REQ_* */
+    int reqtype;                        /* Request protocol type: PROTO_REQ_* */                    // 请求协议类型
     int multibulklen;                   /* Number of multi bulk arguments left to read. */
     long bulklen;                       /* Length of bulk argument in multi bulk request. */
     list *reply;                        /* List of reply objects to send to the client. */
@@ -933,7 +937,7 @@ typedef struct client
     unsigned long long reply_bytes;     /* Tot bytes of objects in reply list. */                   //表示输出链表中所有节点的存储空间总和；
     size_t sentlen;                     /* Amount of bytes already sent in the current              //表示已返回给客户端的字节数；
                                buffer or object being sent. */
-    time_t ctime;                       /* Client creation time. */
+    time_t ctime;                       /* Client creation time. */                                 // 客户端创建时间
     long duration;                      /* Current command duration. Used for measuring latency of blocking/non-blocking cmds */
     time_t lastinteraction;             /* Time of the last interaction, used for timeout */        // 客户端上次与服务器交互的时间，以此实现客户端的超时处理。
     time_t obuf_soft_limit_reached_time;
@@ -958,7 +962,7 @@ typedef struct client
     int slave_capa;                           /* Slave capabilities: SLAVE_CAPA_* bitwise OR. */
     multiState mstate;                        /* MULTI/EXEC state */
     int btype;                                /* Type of blocking op if CLIENT_BLOCKED. */
-    blockingState bpop;                       /* blocking state */
+    blockingState bpop;                       /* blocking state  阻塞状态*/
     long long woff;                           /* Last write global replication offset. */
     list *watched_keys;                       /* 保存客户端监听的key， 在MULTI/EXEC中会用到 */
     dict *pubsub_channels;                    /* client订阅的channels (SUBSCRIBE) */

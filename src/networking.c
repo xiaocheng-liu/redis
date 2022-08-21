@@ -107,7 +107,9 @@ static void clientSetDefaultAuth(client *c) {
                        !(c->user->flags & USER_FLAG_DISABLED);
 }
 
+// 客户端的创建
 client *createClient(connection *conn) {
+    // 分配空间
     client *c = zmalloc(sizeof(client));
 
     /* passing NULL as conn it is possible to create a non connected client.
@@ -125,34 +127,36 @@ client *createClient(connection *conn) {
         connSetPrivateData(conn, c);
     }
 
+    // 默认选0号数据库
     selectDb(c,0);
     uint64_t client_id;
+    // 设置client的ID
     atomicGetIncr(server.next_client_id, client_id, 1);
     c->id = client_id;
     c->resp = 2;
     c->conn = conn;
-    c->name = NULL;
-    c->bufpos = 0;
+    c->name = NULL;     // 客户端的名字
+    c->bufpos = 0;      // 回复固定(静态)缓冲区的偏移量
     c->qb_pos = 0;
-    c->querybuf = sdsempty();
+    c->querybuf = sdsempty();   // 输入缓存区
     c->pending_querybuf = sdsempty();
-    c->querybuf_peak = 0;
-    c->reqtype = 0;
-    c->argc = 0;
-    c->argv = NULL;
+    c->querybuf_peak = 0;   // 输入缓存区的峰值
+    c->reqtype = 0;         // 请求协议类型，内联或者多条命令，初始化为0
+    c->argc = 0;            // 参数个数
+    c->argv = NULL;         // 参数列表
     c->argv_len_sum = 0;
     c->original_argc = 0;
     c->original_argv = NULL;
-    c->cmd = c->lastcmd = NULL;
-    c->multibulklen = 0;
-    c->bulklen = -1;
-    c->sentlen = 0;
-    c->flags = 0;
-    c->ctime = c->lastinteraction = server.unixtime;
-    clientSetDefaultAuth(c);
-    c->replstate = REPL_STATE_NONE;
-    c->repl_put_online_on_ack = 0;
-    c->reploff = 0;
+    c->cmd = c->lastcmd = NULL; // 当前执行的命令和最近一次执行的命令
+    c->multibulklen = 0;        // 查询缓冲区剩余未读取命令的数量
+    c->bulklen = -1;            // 读入参数的长度
+    c->sentlen = 0;             // 已发的字节数
+    c->flags = 0;               // client的状态
+    c->ctime = c->lastinteraction = server.unixtime;    // 设置创建client的时间和最后一次互动的时间
+    clientSetDefaultAuth(c);    // 设置认证状态
+    c->replstate = REPL_STATE_NONE; // replication复制的状态，初始为无
+    c->repl_put_online_on_ack = 0;  // 设置从节点的写处理器为ack，是否在slave向master发送ack
+    c->reploff = 0;         // replication复制的偏移量
     c->read_reploff = 0;
     c->repl_ack_off = 0;
     c->repl_ack_time = 0;
@@ -2111,7 +2115,7 @@ void processInputBuffer(client *c) {
             }
         }
 
-        if (c->reqtype == PROTO_REQ_INLINE) {
+        if (c->reqtype == PROTO_REQ_INLINE) {       // 如果请求类型是内联型
             if (processInlineBuffer(c) != C_OK) break;
             /* If the Gopher mode and we got zero or one argument, process
              * the request in Gopher mode. To avoid data race, Redis won't
@@ -2128,7 +2132,7 @@ void processInputBuffer(client *c) {
                 c->flags |= CLIENT_CLOSE_AFTER_REPLY;
                 break;
             }
-        } else if (c->reqtype == PROTO_REQ_MULTIBULK) {
+        } else if (c->reqtype == PROTO_REQ_MULTIBULK) {     // 若果是协议型
             if (processMultibulkBuffer(c) != C_OK) break;
         } else {
             serverPanic("Unknown request type");
