@@ -906,7 +906,7 @@ typedef struct
 typedef struct client
 {
     uint64_t id;                        /* Client incremental unique ID. */                 // 客户端唯一ID
-    connection *conn;
+    connection *conn;                   // 连接
     int resp;                           /* RESP protocol version. Can be 2 or 3. */         // RESP协议版本
     redisDb *db;                        /* Pointer to currently SELECTed DB. */             // 当前选择的DB
     robj *name;                         /* As set by CLIENT SETNAME. */                     // 客户端名称，可以使用命令CLIENT SETNAME设置。
@@ -915,8 +915,8 @@ typedef struct client
     sds pending_querybuf;               /* If this client is flagged as master, this buffer
                                             represents the yet not applied portion of the
                                             replication stream that we are receiving from
-                                            the master. */
-    size_t querybuf_peak;               /* Recent (100ms or more) peak of querybuf size. */
+                                            the master. */  // 如果客户机被标记为主机，那么这个缓存代表从主机复制过来尚未实施的部分流数据
+    size_t querybuf_peak;               /* Recent (100ms or more) peak of querybuf size. */ // 最近查询缓存大小的峰值(100毫秒或更多)
     int argc;                           /* Num of arguments of current command. */          // 当前命令参数的个数
     robj **argv;                        /* Arguments of current command. */                 // 当前命令的参数
     int original_argc;                  /* Num of arguments of original command if arguments were rewritten. */
@@ -928,74 +928,79 @@ typedef struct client
 
     user *user;                         /* User associated with this connection. If the
                                             user is set to NULL the connection can do
-                                            anything (admin). */
+                                            anything (admin). */    // 连接关联的用户，如果用户被设置为空，那么连接可以干任何时期(因为是管理员)
     int reqtype;                        /* Request protocol type: PROTO_REQ_* */                    // 请求协议类型
-    int multibulklen;                   /* Number of multi bulk arguments left to read. */
-    long bulklen;                       /* Length of bulk argument in multi bulk request. */
-    list *reply;                        /* List of reply objects to send to the client. */
-                                        // reply: 输出链表，存储待返回给客户端的命令回复数据。链表节点存储的值类型为clientReplyBlock
+    int multibulklen;                   /* Number of multi bulk arguments left to read. */          // 剩余要读取的多批量参数数
+    long bulklen;                       /* Length of bulk argument in multi bulk request. */        // 多批量请求中批量参数的长度
+    list *reply;                        /* List of reply objects to send to the client. */          // 要发送到客户端的答复对象列表
     unsigned long long reply_bytes;     /* Tot bytes of objects in reply list. */                   //表示输出链表中所有节点的存储空间总和；
     size_t sentlen;                     /* Amount of bytes already sent in the current              //表示已返回给客户端的字节数；
-                               buffer or object being sent. */
+                               buffer or object being sent. */          // 当前缓冲区已经发出的或者正在发送对象的字节大小
     time_t ctime;                       /* Client creation time. */                                 // 客户端创建时间
     long duration;                      /* Current command duration. Used for measuring latency of blocking/non-blocking cmds */
     time_t lastinteraction;             /* Time of the last interaction, used for timeout */        // 客户端上次与服务器交互的时间，以此实现客户端的超时处理。
-    time_t obuf_soft_limit_reached_time;
-    uint64_t flags;                           /* Client flags: CLIENT_* macros. */
-    int authenticated;                        /* Needed when the default user requires auth. */
-    int replstate;                            /* Replication state if this is a slave. */
-    int repl_put_online_on_ack;               /* Install slave write handler on first ACK. */
-    int repldbfd;                             /* Replication DB file descriptor. */
-    off_t repldboff;                          /* Replication DB file offset. */
-    off_t repldbsize;                         /* Replication DB file size. */
-    sds replpreamble;                         /* Replication DB preamble. */
-    long long read_reploff;                   /* Read replication offset if this is a master. */
-    long long reploff;                        /* Applied replication offset if this is a master. */
-    long long repl_ack_off;                   /* Replication ack offset, if this is a slave. */
-    long long repl_ack_time;                  /* Replication ack time, if this is a slave. */
+    time_t obuf_soft_limit_reached_time;       // 输出缓存软性限制大小到达时间
+    uint64_t flags;                           /* Client flags: CLIENT_* macros. */  // 客户端标志 CLIENT_*  宏
+    int authenticated;                        /* Needed when the default user requires auth. */ // 当默认用户需要认证时就需要
+    int replstate;                            /* Replication state if this is a slave. */   // 复制状态,如果这是一个从机
+    int repl_put_online_on_ack;               /* Install slave write handler on first ACK. */   // 在第一个确认之后 安装从机写入句柄
+    int repldbfd;                             /* Replication DB file descriptor. */     // 复制数据库文件描述符
+    off_t repldboff;                          /* Replication DB file offset. */         // 复制数据库文件偏移量
+    off_t repldbsize;                         /* Replication DB file size. */           // 复制数据库文件大小
+    sds replpreamble;                         /* Replication DB preamble. */            // 制数据库前奏（标识）
+    long long read_reploff;                   /* Read replication offset if this is a master. */    // 如果这是主机，则读取复制偏移量。
+    long long reploff;                        /* Applied replication offset if this is a master. */ // 如果这是主机，则应用复制偏移量
+    long long repl_ack_off;                   /* Replication ack offset, if this is a slave. */     // 复制确认偏移量，如果这是从机。
+    long long repl_ack_time;                  /* Replication ack time, if this is a slave. */       // 复制确认时间，如果这是从机。
     long long psync_initial_offset;           /* FULLRESYNC reply offset other slaves
                                        copying this slave output buffer
                                        should use. */
-    char replid[CONFIG_RUN_ID_SIZE + 1];      /* Master replication ID (if master). */
-    int slave_listening_port;                 /* As configured with: REPLCONF listening-port */
-    char slave_ip[NET_IP_STR_LEN];            /* Optionally given by REPLCONF ip-address */
-    int slave_capa;                           /* Slave capabilities: SLAVE_CAPA_* bitwise OR. */
-    multiState mstate;                        /* MULTI/EXEC state */
-    int btype;                                /* Type of blocking op if CLIENT_BLOCKED. */
-    blockingState bpop;                       /* blocking state  阻塞状态*/
-    long long woff;                           /* Last write global replication offset. */
-    list *watched_keys;                       /* 保存客户端监听的key， 在MULTI/EXEC中会用到 */
-    dict *pubsub_channels;                    /* client订阅的channels (SUBSCRIBE) */
-    list *pubsub_patterns;                    /* patterns a client is interested in (SUBSCRIBE) */
-    sds peerid;                               /* Cached peer ID. */
+    char replid[CONFIG_RUN_ID_SIZE + 1];      /* Master replication ID (if master). */              // 主机复制ID（如果是主机） #define CONFIG_RUN_ID_SIZE 40
+    int slave_listening_port;                 /* As configured with: REPLCONF listening-port */     // 配置为：SLAVECONF 侦听端口
+    char slave_ip[NET_IP_STR_LEN];            /* Optionally given by REPLCONF ip-address */         // 由REPLCONF ip地址给出的选项
+    int slave_capa;                           /* Slave capabilities: SLAVE_CAPA_* bitwise OR. */    // 从机功能：从机按位或
+    multiState mstate;                        /* MULTI/EXEC state */                                // 事务状态
+    int btype;                                /* Type of blocking op if CLIENT_BLOCKED. */          // 客户端阻塞类型
+    blockingState bpop;                       /* blocking state */                                  // 阻塞状态
+    long long woff;                           /* Last write global replication offset. */           // 最近一次全局复制的偏移量
+    list *watched_keys;                       /* Keys WATCHED for MULTI/EXEC CAS */                 // 通过事务总线监视的键
+    dict *pubsub_channels;                    /* channels a client is interested in (SUBSCRIBE) */  // 客户感兴趣的频道（订阅）
+    list *pubsub_patterns;                    /* patterns a client is interested in (SUBSCRIBE) */  // 客户感兴趣的模式（订阅）
+    sds peerid;                               /* Cached peer ID. */                                 // 缓存的对方ID
     sds sockname;                             /* Cached connection target address. */
-    listNode *client_list_node;               /* list node in client list */
+    listNode *client_list_node;               /* list node in client list */                        // 客户端列表的节点
     listNode *paused_list_node;               /* list node within the pause list */
     RedisModuleUserChangedFunc auth_callback; /* Module callback to execute
                                                * when the authenticated user
-                                               * changes. */
+                                               * changes. */        // 当认证用户改变时，需要回调执行的模块
     void *auth_callback_privdata;             /* Private data that is passed when the auth
                                    * changed callback is executed. Opaque for
-                                   * Redis Core. */
+                                   * Redis Core. */                 // 执行认证改变回调时传递的私有数据。对Redis核心隐藏
     void *auth_module;                        /* The module that owns the callback, which is used
                              * to disconnect the client if the module is
-                             * unloaded for cleanup. Opaque for Redis Core.*/
+                             * unloaded for cleanup. Opaque for Redis Core.*/       // 拥有回调的模块，用于在卸载该模块进行清理时断开客户端的连接。对于Redis Core来说是不透明的。
 
     /* If this client is in tracking mode and this field is non zero,
      * invalidation messages for keys fetched by this client will be send to
      * the specified client ID. */
+    // 如果这个客户端处于跟踪模式，那么这个字段就不为0，
+    // 通过客户端获取的键的无效消息将被送往指定ID的客户端
     uint64_t client_tracking_redirection;
     rax *client_tracking_prefixes; /* A dictionary of prefixes we are already
                                       subscribed to in BCAST mode, in the
-                                      context of client side caching. */
+                                      context of client side caching. */  // 一个有已经订阅的广播模式的前缀字典，在客户单的上下文缓存中
     /* In clientsCronTrackClientsMemUsage() we track the memory usage of
      * each client and add it to the sum of all the clients of a given type,
      * however we need to remember what was the old contribution of each
      * client, and in which categoty the client was, in order to remove it
      * before adding it the new value. */
+    // 在clientsCronTrackClientsMemUsage（）中，我们跟踪每个客户机的内存使用情况，
+    // 并将其添加到给定类型的所有客户机的总和中，但是我们需要记住每个客户机的旧贡献是什么，
+    // 以及客户机在哪个类别中，以便在添加新值之前将其删除
     uint64_t client_cron_last_memory_usage;
     int client_cron_last_memory_type;
     /* Response buffer */
+    // 回复的缓存
     int bufpos;                                 //表示输出缓冲区中数据的最大字节位置
     char buf[PROTO_REPLY_CHUNK_BYTES];          //输出缓冲区，存储待返回给客户端的命令回复数据，
 } client;
