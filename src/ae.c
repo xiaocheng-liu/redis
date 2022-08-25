@@ -66,6 +66,7 @@
 #endif
 
 
+// 初始化一个时间循环结构体eventLoop
 aeEventLoop *aeCreateEventLoop(int setsize) {
     aeEventLoop *eventLoop;
     int i;
@@ -101,6 +102,7 @@ err:
 }
 
 /* Return the current set size. */
+// 返回当前setsize的值
 int aeGetSetSize(aeEventLoop *eventLoop) {
     return eventLoop->setsize;
 }
@@ -120,6 +122,7 @@ void aeSetDontWait(aeEventLoop *eventLoop, int noWait) {
  * performed at all.
  *
  * Otherwise AE_OK is returned and the operation is successful. */
+// 改变setsize的值（重新分配空间）
 int aeResizeSetSize(aeEventLoop *eventLoop, int setsize) {
     int i;
 
@@ -138,6 +141,7 @@ int aeResizeSetSize(aeEventLoop *eventLoop, int setsize) {
     return AE_OK;
 }
 
+// 删除时间循环eventLoop（释放内存空间）
 void aeDeleteEventLoop(aeEventLoop *eventLoop) {
     aeApiFree(eventLoop);
     zfree(eventLoop->events);
@@ -153,6 +157,7 @@ void aeDeleteEventLoop(aeEventLoop *eventLoop) {
     zfree(eventLoop);
 }
 
+// 停止事件循环，即stop值设为1
 void aeStop(aeEventLoop *eventLoop) {
     eventLoop->stop = 1;
 }
@@ -356,6 +361,7 @@ static int processTimeEvents(aeEventLoop *eventLoop) {
  * if flags has AE_CALL_BEFORE_SLEEP set, the beforesleep callback is called.
  *
  * The function returns the number of events processed. */
+// 核心部分：事件处理逻辑
 int aeProcessEvents(aeEventLoop *eventLoop, int flags)
 {
     /*
@@ -530,6 +536,7 @@ int aeWait(int fd, int mask, long long milliseconds) {
     }
 }
 
+// 启动事件循环，事件循环的入口
 void aeMain(aeEventLoop *eventLoop) {
     eventLoop->stop = 0;
     while (!eventLoop->stop) {
@@ -539,14 +546,17 @@ void aeMain(aeEventLoop *eventLoop) {
     }
 }
 
+// 获取当前用的Api的名称
 char *aeGetApiName(void) {
     return aeApiName();
 }
 
+// 注册回调函数，即每次主循环在休眠之前被调用
 void aeSetBeforeSleepProc(aeEventLoop *eventLoop, aeBeforeSleepProc *beforesleep) {
     eventLoop->beforesleep = beforesleep;
 }
 
+// 注册回调函数，即每次主循环在休眠之后被调用
 void aeSetAfterSleepProc(aeEventLoop *eventLoop, aeBeforeSleepProc *aftersleep) {
     eventLoop->aftersleep = aftersleep;
 }
