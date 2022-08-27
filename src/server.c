@@ -4315,6 +4315,14 @@ int processCommand(client *c)
         return C_OK;
     }
 
+    sds args = sdsempty();
+    int i;
+    for (i = 1; i < c->argc && sdslen(args) < 128; i++)
+        args = sdscatprintf(args, "`%.*s`, ", 128 - (int)sdslen(args), (char *)c->argv[i]->ptr);
+    printf("command `%s`, with args is: %s \n",
+           (char *)c->argv[0]->ptr, args);
+    sdsfree(args);
+
     int is_write_command = (c->cmd->flags & CMD_WRITE) ||
                            (c->cmd->proc == execCommand && (c->mstate.cmd_flags & CMD_WRITE));
     int is_denyoom_command = (c->cmd->flags & CMD_DENYOOM) ||
