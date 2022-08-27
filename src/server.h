@@ -357,7 +357,7 @@ typedef enum
 /* Sort operations */
 #define SORT_OP_GET 0
 
-/* Log levels */
+/* Log levels */        // 日志级别
 #define LL_DEBUG 0
 #define LL_VERBOSE 1
 #define LL_NOTICE 2

@@ -135,7 +135,7 @@ typedef struct aeTimeEvent {
   		   * freed in recursive time event calls. */
 } aeTimeEvent;
 
-/* A fired event */     
+/* A fired event */             // 管理就绪时间结构体
 /* 就绪事件 */
 typedef struct aeFiredEvent {
     /* 就绪事件的文件描述符 */
@@ -171,7 +171,7 @@ typedef struct aeEventLoop {
     int flags;
 } aeEventLoop;
 
-/* Prototypes */
+/* Prototypes */        // ae.h提供的函数声明
 /* 创建aeEventLoop */
 aeEventLoop *aeCreateEventLoop(int setsize);
 /* 删除EventLoop，释放相应的事件所占的空间 */
@@ -200,9 +200,9 @@ int aeWait(int fd, int mask, long long milliseconds);
 void aeMain(aeEventLoop *eventLoop);
 /* 获取接口名 */
 char *aeGetApiName(void);
-/* 设置eventLoop->beforesleep回调函数*/
+/* 设置eventLoop->beforeSleep回调函数*/
 void aeSetBeforeSleepProc(aeEventLoop *eventLoop, aeBeforeSleepProc *beforesleep);
-/* 设置eventLoop->aftersleep回调函数 */
+/* 设置eventLoop->afterSleep回调函数 */
 void aeSetAfterSleepProc(aeEventLoop *eventLoop, aeBeforeSleepProc *aftersleep);
 
 /* 获取eventLoop的长度*/

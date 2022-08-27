@@ -54,7 +54,7 @@ void freeClientMultiState(client *c) {
     zfree(c->mstate.commands);
 }
 
-/* Add a new command into the MULTI commands queue 将一个新命令插入事务队列*/
+/* Add a new command into the MULTI commands queue 将一个新命令插入事务命令队列*/
 void queueMultiCommand(client *c) {
     multiCmd *mc;
     int j;

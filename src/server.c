@@ -3434,7 +3434,7 @@ void initServer(void)
     }
 
     /* Create the Redis databases, and initialize other internal state. */
-    //【8】初始化数据库server.db，用于存储数据。
+    //【8】初始化数据库server.db，并初始化其他内部状态，用于存储数据。
     for (j = 0; j < server.dbnum; j++)
     {
         server.db[j].dict = dictCreate(&dbDictType, NULL);
@@ -4564,7 +4564,7 @@ int processCommand(client *c)
         c->cmd->proc != multiCommand && c->cmd->proc != watchCommand &&
         c->cmd->proc != resetCommand)
     {
-        // 入队列
+        // 将命令入队列
         queueMultiCommand(c);
         addReply(c, shared.queued);
     }

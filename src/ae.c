@@ -66,7 +66,7 @@
 #endif
 
 
-// 初始化一个时间循环结构体eventLoop
+// 初始化一个事件循环结构体eventLoop
 aeEventLoop *aeCreateEventLoop(int setsize) {
     aeEventLoop *eventLoop;
     int i;
