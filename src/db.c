@@ -251,11 +251,13 @@ void dbOverwrite(redisDb *db, robj *key, robj *val) {
  * The client 'c' argument may be set to NULL if the operation is performed
  * in a context where there is no clear client performing the operation. */
 void genericSetKey(client *c, redisDb *db, robj *key, robj *val, int keepttl, int signal) {
+    // 查找键是否存在，不存在则添加，存在则覆盖
     if (lookupKeyWrite(db,key) == NULL) {
         dbAdd(db,key,val);
     } else {
         dbOverwrite(db,key,val);
     }
+    // 给对象增加引用计数
     incrRefCount(val);
     if (!keepttl) removeExpire(db,key);
     if (signal) signalModifiedKey(c,db,key);

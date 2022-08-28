@@ -65,10 +65,10 @@ static int checkStringLength(client *c, long long size) {
  * If abort_reply is NULL, "$-1" is used. */
 
 #define OBJ_NO_FLAGS 0
-#define OBJ_SET_NX (1<<0)          /* Set if key not exists. */
-#define OBJ_SET_XX (1<<1)          /* Set if key exists. */
-#define OBJ_EX (1<<2)              /* Set if time in seconds is given */
-#define OBJ_PX (1<<3)              /* Set if time in ms in given */
+#define OBJ_SET_NX (1<<0)          /* Set if key not exists. */ // 如果键不存在则设置
+#define OBJ_SET_XX (1<<1)          /* Set if key exists. */     // 如果键存在则设置
+#define OBJ_EX (1<<2)              /* Set if time in seconds is given */    // 给定过期时间（以秒为单位）设置
+#define OBJ_PX (1<<3)              /* Set if time in ms in given */         // 给定过期时间（以毫秒为单位）设置
 #define OBJ_KEEPTTL (1<<4)         /* Set and keep the ttl */
 #define OBJ_SET_GET (1<<5)         /* Set if want to get key before set */
 #define OBJ_EXAT (1<<6)            /* Set if timestamp in second is given */
@@ -79,7 +79,7 @@ static int checkStringLength(client *c, long long size) {
 // 下面会继续看到SET系列的具体函数。每个SET函数在完成处理之后，统一调用
 // setGenericCommand函数
 void setGenericCommand(client *c, int flags, robj *key, robj *val, robj *expire, int unit, robj *ok_reply, robj *abort_reply) {
-    long long milliseconds = 0; /* initialized to avoid any harmness warning */
+    long long milliseconds = 0; /* initialized to avoid any harmness warning */ // 初始化以避免任何危害警告
 
     if (expire) {
         if (getLongLongFromObjectOrReply(c, expire, &milliseconds, NULL) != C_OK)
@@ -88,6 +88,7 @@ void setGenericCommand(client *c, int flags, robj *key, robj *val, robj *expire,
             addReplyErrorFormat(c,"invalid expire time in %s",c->cmd->name);
             return;
         }
+        // 如果单位是秒，乘以1000
         if (unit == UNIT_SECONDS) milliseconds *= 1000;
     }
 
@@ -105,7 +106,7 @@ void setGenericCommand(client *c, int flags, robj *key, robj *val, robj *expire,
     // 在数据库中设置key和value的值
     genericSetKey(c,c->db,key, val,flags & OBJ_KEEPTTL,1);
     server.dirty++;
-    // 时间通知
+    // 事件通知
     notifyKeyspaceEvent(NOTIFY_STRING,"set",key,c->db->id);
     if (expire) {
         robj *exp = shared.pxat;
@@ -267,11 +268,14 @@ void setCommand(client *c) {
     int unit = UNIT_SECONDS;
     int flags = OBJ_NO_FLAGS;
 
+    // 解析扩展参数或者回复客户端
     if (parseExtendedStringArgumentsOrReply(c,&flags,&unit,&expire,COMMAND_SET) != C_OK) {
         return;
     }
 
+    // 将第二个参数尝试进行编码
     c->argv[2] = tryObjectEncoding(c->argv[2]);
+    // 调用通用的set命令处理函数
     setGenericCommand(c,flags,c->argv[1],c->argv[2],expire,unit,NULL,NULL);
 }
 

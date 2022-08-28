@@ -1097,6 +1097,7 @@ int ACLCheckUserCredentials(robj *username, robj *password) {
     if (u->flags & USER_FLAG_NOPASS) return C_OK;
 
     /* Check all the user passwords for at least one to match. */
+    // 检查所有密码，至少有一个匹配
     listIter li;
     listNode *ln;
     listRewind(u->passwords,&li);
@@ -1111,6 +1112,7 @@ int ACLCheckUserCredentials(robj *username, robj *password) {
     sdsfree(hashed);
 
     /* If we reached this point, no password matched. */
+    // 到达这里了，没有密码匹配
     errno = EINVAL;
     return C_ERR;
 }
@@ -2234,7 +2236,7 @@ void addReplyCommandCategories(client *c, struct redisCommand *cmd) {
  * When the user is omitted it means that we are trying to authenticate
  * against the default user. */
 void authCommand(client *c) {
-    /* Only two or three argument forms are allowed. */
+    /* Only two or three argument forms are allowed. */ // 仅仅支持两个或者三个参数
     if (c->argc > 3) {
         addReplyErrorObject(c,shared.syntaxerr);
         return;
@@ -2242,10 +2244,12 @@ void authCommand(client *c) {
 
     /* Handle the two different forms here. The form with two arguments
      * will just use "default" as username. */
+    // 处理两种不同的情况，两个参数将default作为用户名
     robj *username, *password;
     if (c->argc == 2) {
         /* Mimic the old behavior of giving an error for the two commands
          * from if no password is configured. */
+        // 如果用户不需要密码，返回提示错误信息
         if (DefaultUser->flags & USER_FLAG_NOPASS) {
             addReplyError(c,"AUTH <password> called without any password "
                             "configured for the default user. Are you sure "
@@ -2253,13 +2257,14 @@ void authCommand(client *c) {
             return;
         }
 
-        username = shared.default_username; 
-        password = c->argv[1];
+        username = shared.default_username;        // 默认用户名
+        password = c->argv[1];                     // 第一个参数作为密码
     } else {
-        username = c->argv[1];
-        password = c->argv[2];
+        username = c->argv[1];                     // 第一个参数作为用户名
+        password = c->argv[2];                     // 第二个参数作为密码
     }
 
+    // 验证用户名密码
     if (ACLAuthenticateUser(c,username,password) == C_OK) {
         addReply(c,shared.ok);
     } else {

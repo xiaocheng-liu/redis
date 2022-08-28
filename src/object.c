@@ -466,19 +466,22 @@ robj *tryObjectEncoding(robj *o) {
             value >= 0 &&
             value < OBJ_SHARED_INTEGERS)
         {
+            // 减少o的引用计数，以便被回收
             decrRefCount(o);
+            // 增加引用共享对象的引用计数
             incrRefCount(shared.integers[value]);
+            // 返回共享对象的值
             return shared.integers[value];
         } else {
-            if (o->encoding == OBJ_ENCODING_RAW) {
-                /* 否则原来如果是RAW类型，直接转为OBJ_ENCODING_INT类型，然后用long来直接存储字符串 */    
+            if (o->encoding == OBJ_ENCODING_RAW) {   /* 否则原来如果是RAW类型，直接转为OBJ_ENCODING_INT类型，然后用long来直接存储字符串 */
                 sdsfree(o->ptr);
                 o->encoding = OBJ_ENCODING_INT;
                 o->ptr = (void*) value;
                 return o;
-            } else if (o->encoding == OBJ_ENCODING_EMBSTR) {
-                /*如果是OBJ_ENCODING_EMBSTR，也会转化为OBJ_ENCODING_INT，并用long存储字符串*/
+            } else if (o->encoding == OBJ_ENCODING_EMBSTR) { /*如果是OBJ_ENCODING_EMBSTR，也会转化为OBJ_ENCODING_INT，并用long存储字符串*/
+                // 减少o的引用计数，以便被回收
                 decrRefCount(o);
+                // 为value创建字符串对象返回
                 return createStringObjectFromLongLongForValue(value);
             }
         }

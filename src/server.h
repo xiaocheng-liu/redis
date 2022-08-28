@@ -237,7 +237,7 @@ extern int configOOMScoreAdjValuesDefaults[CONFIG_OOM_COUNT];
 #define CLIENT_FORCE_REPL (1 << 15)         /* Force replication of current cmd. */
 #define CLIENT_PRE_PSYNC (1 << 16)          /* Instance don't understand PSYNC. */
 #define CLIENT_READONLY (1 << 17)           /* Cluster client is in read-only state. */
-#define CLIENT_PUBSUB (1 << 18)             /* Client is in Pub/Sub mode. */
+#define CLIENT_PUBSUB (1 << 18)             /* Client is in Pub/Sub mode. */        // 客户端是发布/订阅模式
 #define CLIENT_PREVENT_AOF_PROP (1 << 19)   /* Don't propagate to AOF. */
 #define CLIENT_PREVENT_REPL_PROP (1 << 20)  /* Don't propagate to slaves. */
 #define CLIENT_PREVENT_PROP (CLIENT_PREVENT_AOF_PROP | CLIENT_PREVENT_REPL_PROP)

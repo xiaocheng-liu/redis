@@ -135,8 +135,8 @@ client *createClient(connection *conn) {
         if (server.tcpkeepalive)        // 如果设置了使用系统协议判断是否存活
             connKeepAlive(conn,server.tcpkeepalive);    // 设置网络存活判断
         
-        //设置readhandler ,readQueryFromClient 
-        connSetReadHandler(conn, readQueryFromClient);  // 设置读取回调函数，当客户端准备好久可以读数据
+        //设置readHandler ,readQueryFromClient
+        connSetReadHandler(conn, readQueryFromClient);  // 设置读取回调函数，当客户端准备好就可以读数据
         connSetPrivateData(conn, c);                    // 将客户端数据指针同连接关联在一起
     }
 
@@ -377,18 +377,18 @@ void addReply(client *c, robj *obj) {
     // 判断是否推迟执行客户端写操作
     if (prepareClientToWrite(c) != C_OK) return;
 
-    if (sdsEncodedObject(obj)) {    // 是否字符串编码
-        if (_addReplyToBuffer(c,obj->ptr,sdslen(obj->ptr)) != C_OK) // 添加字符串到缓存不成功
-            _addReplyProtoToList(c,obj->ptr,sdslen(obj->ptr));      // 添加原型数据到列表
-    } else if (obj->encoding == OBJ_ENCODING_INT) {     // 整型编码
+    if (sdsEncodedObject(obj)) {                                                // 是否字符串编码
+        if (_addReplyToBuffer(c,obj->ptr,sdslen(obj->ptr)) != C_OK)  // 添加字符串到缓存不成功
+            _addReplyProtoToList(c,obj->ptr,sdslen(obj->ptr));       // 添加原型数据到列表
+    } else if (obj->encoding == OBJ_ENCODING_INT) {                             // 整型编码
         /* For integer encoded strings we just convert it into a string
          * using our optimized function, and attach the resulting string
          * to the output buffer. */
         // 对整型编码的字符串，我们值需要使用我们的优化函数转化为字符串，添加结果字符串到输出缓存。
         char buf[32];
-        size_t len = ll2string(buf,sizeof(buf),(long)obj->ptr); // 转字符串
-        if (_addReplyToBuffer(c,buf,len) != C_OK)   // 添加字符串到缓存不成功
-            _addReplyProtoToList(c,buf,len);        // 添加到输出列表
+        size_t len = ll2string(buf,sizeof(buf),(long)obj->ptr);      // 转字符串
+        if (_addReplyToBuffer(c,buf,len) != C_OK)                               // 添加字符串到缓存不成功
+            _addReplyProtoToList(c,buf,len);                                    // 添加到输出列表
     } else {
         serverPanic("Wrong obj->encoding in addReply()");   // 编码错误
     }
@@ -841,7 +841,7 @@ void addReplyBulkLen(client *c, robj *obj) {
     addReplyLongLongWithPrefix(c,len,'$');
 }
 
-/* Add a Redis Object as a bulk reply */
+/* Add a Redis Object as a bulk reply */    // 作为批回复
 void addReplyBulk(client *c, robj *obj) {
     addReplyBulkLen(c,obj);
     addReply(c,obj);

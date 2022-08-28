@@ -4783,6 +4783,7 @@ void pingCommand(client *c)
         return;
     }
 
+    // 如果客户端是发布订阅模式，并且客户端协议版本是2
     if (c->flags & CLIENT_PUBSUB && c->resp == 2)
     {
         addReply(c, shared.mbulkhdr[2]);
