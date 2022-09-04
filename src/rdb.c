@@ -1427,6 +1427,7 @@ werr:
 int rdbSaveBackground(char *filename, rdbSaveInfo *rsi) {
     pid_t childpid;
 
+    // 已经有后台子进程了， 直接返回C_ERR
     if (hasActiveChildProcess()) return C_ERR;
 
     server.dirty_before_bgsave = server.dirty;
@@ -1437,8 +1438,10 @@ int rdbSaveBackground(char *filename, rdbSaveInfo *rsi) {
         /* 子进程 */
         redisSetProcTitle("redis-rdb-bgsave");
         redisSetCpuAffinity(server.bgsave_cpulist);
+        // 生成RDB文件
         retval = rdbSave(filename,rsi);
         if (retval == C_OK) {
+            // 子进程通过pipe通知父进程，RDB文件生成完毕
             sendChildCOWInfo(CHILD_TYPE_RDB, 1, "RDB");
         }
         exitFromChild((retval == C_OK) ? 0 : 1);
@@ -1451,8 +1454,8 @@ int rdbSaveBackground(char *filename, rdbSaveInfo *rsi) {
             return C_ERR;
         }
         serverLog(LL_NOTICE,"Background saving started by pid %ld",(long) childpid);
-        server.rdb_save_time_start = time(NULL);
-        server.rdb_child_type = RDB_CHILD_TYPE_DISK;
+        server.rdb_save_time_start = time(NULL);                // 记录当前开始时间
+        server.rdb_child_type = RDB_CHILD_TYPE_DISK;            // RDB存储类型，RDB_CHILD_TYPE_DISK是保存到磁盘
         return C_OK;
     }
     return C_OK; /* unreached */

@@ -6887,7 +6887,7 @@ int main(int argc, char **argv)
     //【16】尽可能将Redis主线程绑定到server.server_cpulist配置的CPU列表上，Redis 4开始使用多线程，该操作可以减少不必要的线程切换，提高性能。
     redisSetCpuAffinity(server.server_cpulist);
     setOOMScoreAdj(-1);
-    //【17】启动事件循环器。事件循环器是Redis中的重要组件。在Redis运行期间，由事件循环器提供服务。启动eventloop开始接受请求
+    //【17】启动事件循环器。事件循环器是Redis中的重要组件。在Redis运行期间，由事件循环器提供服务。启动eventLoop开始接受请求
     aeMain(server.el);
     //【18】执行到这里，说明Redis服务已停止，aeDeleteEventLoop函数清除事件循环器中的事件，最后退出程序。
     aeDeleteEventLoop(server.el);

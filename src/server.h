@@ -460,9 +460,10 @@ typedef enum
 } pause_type;
 
 /* RDB active child save type. */
+// RDB 活动存储类型
 #define RDB_CHILD_TYPE_NONE 0
-#define RDB_CHILD_TYPE_DISK 1   /* RDB is written to disk. */
-#define RDB_CHILD_TYPE_SOCKET 2 /* RDB is written to slave socket. */
+#define RDB_CHILD_TYPE_DISK 1   /* RDB is written to disk. */           // 保存到磁盘
+#define RDB_CHILD_TYPE_SOCKET 2 /* RDB is written to slave socket. */   // RDB被写入从套接字
 
 /* Keyspace changes notification classes. Every class is associated with a
  * character for configuration purposes. */
@@ -695,7 +696,7 @@ typedef struct RedisModuleDigest
 
 typedef struct redisObject
 {
-    unsigned type : 4;          // 数据类型  string  list  set
+    unsigned type : 4;          // 数据类型  string  list  set sortset hash
     unsigned encoding : 4;      // 这个属性指明了对象底层的存储结构，比如 ZSet 类型对象可能的存储结构有 ZIPLIST 和 SKIPLIST
     unsigned lru : LRU_BITS;    /* LRU time (relative to global lru_clock) or
                                     * LFU data (least significant 8 bits frequency
@@ -706,6 +707,7 @@ typedef struct redisObject
                                 // lru 记录的是对象最后一次被命令程序访问的时间
     int refcount;               // 引用计数
                                 // refcount 记录的是该对象被引用的次数，类型为整型。refcount 的作用，主要在于对象的引用计数和内存回收。
+                                // 当refcount减少到0时，就可以释放robj
     void *ptr;                  // 指针指向具体存储的值，类型用type区分
                                 // ptr 指针指向具体的数据，比如:set hello world，ptr 指向包含字符串 world 的 SDS。
 } robj;
@@ -1457,8 +1459,8 @@ struct redisServer
                                        the instance does not use persistence. */
     time_t lastsave;               /* Unix time of last successful save */
     time_t lastbgsave_try;         /* Unix time of last attempted bgsave */
-    time_t rdb_save_time_last;     /* Time used by last RDB save run. */
-    time_t rdb_save_time_start;    /* Current RDB save start time. */
+    time_t rdb_save_time_last;     /* Time used by last RDB save run. */    // 记录最后一次RDB保存的时间
+    time_t rdb_save_time_start;    /* Current RDB save start time. */       // 记录当前的RDB保存的时间
     int rdb_bgsave_scheduled;      /* BGSAVE when possible if true. */
     int rdb_child_type;            /* Type of save by active child. */
     int lastbgsave_status;         /* C_OK or C_ERR */

@@ -454,6 +454,7 @@ robj *tryObjectEncoding(robj *o) {
      * 检查是否可以把字符串表示为一个长整型数。注意如果长度大于20个字符的字符串是
      * 不能被表示为32或者64位的整数的*/
     len = sdslen(s);
+    // 尝试进行 OBJ_ENCODING_INT 编码
     if (len <= 20 && string2l(s,len,&value)) {
         /* This object is encodable as a long. Try to use a shared object.
          * Note that we avoid using shared integers when maxmemory is used
@@ -492,7 +493,10 @@ robj *tryObjectEncoding(robj *o) {
      * try the EMBSTR encoding which is more efficient.
      * In this representation the object and the SDS string are allocated
      * in the same chunk of memory to save space and cache misses. 
-     * 如果字符串太小，长度小于等于44，直接转为OBJ_ENCODING_EMBSTR*/
+     *
+     */
+    // 尝试进行 OBJ_ENCODING_EMBSTR 编码
+    // 如果字符串太小，长度小于等于44，直接转为OBJ_ENCODING_EMBSTR
     if (len <= OBJ_ENCODING_EMBSTR_SIZE_LIMIT) {
         robj *emb;
 

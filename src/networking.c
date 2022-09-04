@@ -2233,6 +2233,7 @@ void readQueryFromClient(connection *conn) {
     /* Check if we want to read from the client later when exiting from
      * the event loop. This is the case if threaded I/O is enabled. */
      /* 判断是否需要推迟客户端的读取操作 */
+     // 检查是否开启多线程，如果是则把 client 加入到异步队列后返回
     if (postponeClientRead(c)) return;
 
     /* Update total number of reads on server */

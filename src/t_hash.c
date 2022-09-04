@@ -46,6 +46,7 @@ void hashTypeTryConversion(robj *o, robj **argv, int start, int end) {
         if (sdsEncodedObject(argv[i]) &&
             sdslen(argv[i]->ptr) > server.hash_max_ziplist_value)
         {
+            // 尝试更改底层编码为OBJ_ENCODING_HT
             hashTypeConvert(o, OBJ_ENCODING_HT);
             break;
         }
@@ -476,14 +477,18 @@ void hashTypeConvertZiplist(robj *o, int enc) {
         dict *dict;
         int ret;
 
+        // 创建ziplist的迭代器
         hi = hashTypeInitIterator(o);
+        // 创建编码方式为OBJ_ENCODING_HT的dict
         dict = dictCreate(&hashDictType, NULL);
 
+        // 逐个KV迭代
         while (hashTypeNext(hi) != C_ERR) {
             sds key, value;
 
             key = hashTypeCurrentObjectNewSds(hi,OBJ_HASH_KEY);
             value = hashTypeCurrentObjectNewSds(hi,OBJ_HASH_VALUE);
+            // 将ziplist中的KV对添加到dict中
             ret = dictAdd(dict, key, value);
             if (ret != DICT_OK) {
                 serverLogHexDump(LL_WARNING,"ziplist with dup elements dump",
@@ -493,6 +498,7 @@ void hashTypeConvertZiplist(robj *o, int enc) {
         }
         hashTypeReleaseIterator(hi);
         zfree(o->ptr);
+        // 最后更改编码方式，设置新的指针指向
         o->encoding = OBJ_ENCODING_HT;
         o->ptr = dict;
     } else {
@@ -502,6 +508,7 @@ void hashTypeConvertZiplist(robj *o, int enc) {
 
 void hashTypeConvert(robj *o, int enc) {
     if (o->encoding == OBJ_ENCODING_ZIPLIST) {
+        // 只有OBJ_ENCODING_ZIPLIST才能转化成OBJ_ENCODING_HT
         hashTypeConvertZiplist(o, enc);
     } else if (o->encoding == OBJ_ENCODING_HT) {
         serverPanic("Not implemented");
@@ -669,9 +676,12 @@ void hsetCommand(client *c) {
         return;
     }
 
+    // 查找key，没有就新建
     if ((o = hashTypeLookupWriteOrCreate(c,c->argv[1])) == NULL) return;
+    // 尝试转化hash底层的编码方式
     hashTypeTryConversion(o,c->argv,2,c->argc-1);
 
+    // 逐一设置hash中对应field的value
     for (i = 2; i < c->argc; i += 2)
         created += !hashTypeSet(o,c->argv[i]->ptr,c->argv[i+1]->ptr,HASH_SET_COPY);
 
@@ -808,6 +818,7 @@ static void addHashFieldToReply(client *c, robj *o, sds field) {
     }
 }
 
+// 根据编码类型做响应的查找操作
 void hgetCommand(client *c) {
     robj *o;
 
@@ -831,7 +842,7 @@ void hmgetCommand(client *c) {
         addHashFieldToReply(c, o, c->argv[i]->ptr);
     }
 }
-
+// 根据编码类型做响应的删除操作
 void hdelCommand(client *c) {
     robj *o;
     int j, deleted = 0, keyremoved = 0;

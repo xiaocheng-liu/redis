@@ -105,7 +105,7 @@ struct __attribute__((__packed__)) sdshdr64
 #define SDS_HDR(T, s) ((struct sdshdr##T *)((s) - (sizeof(struct sdshdr##T))))
 #define SDS_TYPE_5_LEN(f) ((f) >> SDS_TYPE_BITS)    // 获取sdshdr5的长度
 
-// 获取sds的长度
+// 获取sds支持的长度
 static inline size_t sdslen(const sds s)
 {
     unsigned char flags = s[-1]; // -1 相当于获取到了sdshdr中的flag字段

@@ -81,6 +81,7 @@ static int checkStringLength(client *c, long long size) {
 void setGenericCommand(client *c, int flags, robj *key, robj *val, robj *expire, int unit, robj *ok_reply, robj *abort_reply) {
     long long milliseconds = 0; /* initialized to avoid any harmness warning */ // 初始化以避免任何危害警告
 
+    // 判断过期时间是否是整数
     if (expire) {
         if (getLongLongFromObjectOrReply(c, expire, &milliseconds, NULL) != C_OK)
             return;
@@ -92,6 +93,7 @@ void setGenericCommand(client *c, int flags, robj *key, robj *val, robj *expire,
         if (unit == UNIT_SECONDS) milliseconds *= 1000;
     }
 
+    // 判断是否符合nx的要求
     if ((flags & OBJ_SET_NX && lookupKeyWrite(c->db,key) != NULL) ||
         (flags & OBJ_SET_XX && lookupKeyWrite(c->db,key) == NULL))
     {
@@ -108,6 +110,8 @@ void setGenericCommand(client *c, int flags, robj *key, robj *val, robj *expire,
     server.dirty++;
     // 事件通知
     notifyKeyspaceEvent(NOTIFY_STRING,"set",key,c->db->id);
+
+    // 如果有过期时间，则设置
     if (expire) {
         robj *exp = shared.pxat;
 

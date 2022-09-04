@@ -57,7 +57,7 @@
 const char *SDS_NOINIT = "SDS_NOINIT";
 
 /**
- * @brief 根据类型获取大小
+ * @brief 根据类型获取结构体大小
  * 
  * @param type header类型
  * @return int 
@@ -167,7 +167,7 @@ sds _sdsnewlen(const void *init, size_t initlen, int trymalloc) {
      * 根据s和hdrlen计算出来 */
     // s 此时指向buf
     s = (char *) sh + hdrlen;
-    // 指向flags
+    // fp指向flags
     fp = ((unsigned char *) s) - 1;
     usable = usable - hdrlen - 1;
     // 对不同类型的 SDS 可分配空间进行截断
@@ -272,8 +272,8 @@ void sdsclear(sds s) {
 }
 
 /* 扩大sds的实际可用空间，以便后续能拼接更多字符串。 
- * 注意：这里实际不会改变sds的长度，只是增加了更多可用的空间(buf)*/
-/* s: 源字符串
+ * 注意：这里实际不会改变sds的长度，只是增加了更多可用的空间(buf)
+ * s: 源字符串
  * addlen: 新增长度
  */
 sds sdsMakeRoomFor(sds s, size_t addlen) {
@@ -319,6 +319,8 @@ sds sdsMakeRoomFor(sds s, size_t addlen) {
         // 获取指向buf的指针
         s = (char *) newsh + hdrlen;
     } else {
+        /* Since the header size changes, need to move the string forward,
+         * and can't use realloc */
         // 扩容其实就是申请新的空间，然后把旧数据挪过去  
         // 类型变化导致 header 的大小也变化，需要向前移动字符串，不能使用 realloc
         newsh = s_malloc_usable(hdrlen + newlen + 1, &usable);
@@ -346,9 +348,10 @@ sds sdsMakeRoomFor(sds s, size_t addlen) {
 /* Reallocate the sds string so that it has no free space at the end. The
  * contained string remains not altered, but next concatenation operations
  * will require a reallocation.
- * 释放sds占用的多余空间
+ *
  * After the call, the passed sds string is no longer valid and all the
  * references must be substituted with the new pointer returned by the call. */
+// 释放sds占用的多余空间
 sds sdsRemoveFreeSpace(sds s) {
     void *sh, *newsh;
     // 获取类型
