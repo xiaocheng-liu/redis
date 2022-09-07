@@ -6621,10 +6621,14 @@ int main(int argc, char **argv)
     spt_init(argc, argv);
 #endif
     setlocale(LC_COLLATE, "");
+    // 设置时间环境变量
     tzset(); /* Populates 'timezone' global. */
+    // 内存超出的handler(记录日志)
     zmalloc_set_oom_handler(redisOutOfMemoryHandler);
+    // 随机数初始化
     srand(time(NULL) ^ getpid());
     srandom(time(NULL) ^ getpid());
+    // 精确时间
     gettimeofday(&tv, NULL);
     init_genrand64(((long long)tv.tv_sec * 1000000 + tv.tv_usec) ^ getpid());
     crc64_init();
@@ -6635,6 +6639,7 @@ int main(int argc, char **argv)
      */
     umask(server.umask = umask(0777));
 
+    // hash算法种子
     uint8_t hashseed[16];
     getRandomBytes(hashseed, sizeof(hashseed));
     dictSetHashFunctionSeed(hashseed);
@@ -6653,6 +6658,7 @@ int main(int argc, char **argv)
      * to be able to restart the server later. */
     //【3】记录Redis程序可执行路径及启动参数，以便后续重启服务器。
     server.executable = getAbsolutePath(argv[0]);
+    //printf("%s\n", argv[1]);
     server.exec_argv = zmalloc(sizeof(char *) * (argc + 1));
     server.exec_argv[argc] = NULL;
     for (j = 0; j < argc; j++)
@@ -6680,7 +6686,7 @@ int main(int argc, char **argv)
     else if (strstr(argv[0], "redis-check-aof") != NULL)
         redis_check_aof_main(argc, argv);
 
-    if (argc >= 2)
+    if (argc >= 2)      // 如果启动参数大于等于2
     {
         j = 1; /* First option to parse in argv[] */
         sds options = sdsempty();
@@ -6696,12 +6702,13 @@ int main(int argc, char **argv)
             usage();
         if (strcmp(argv[1], "--test-memory") == 0)
         {
-            if (argc == 3)
+            if (argc == 3)  // 如果参数个数为3个
             {
+                // 进行内存测试
                 memtest(atoi(argv[2]), 50);
                 exit(0);
             }
-            else
+            else    // 参数不是3个，给错误提示
             {
                 fprintf(stderr, "Please specify the amount of memory to test in megabytes.\n");
                 fprintf(stderr, "Example: ./redis-server --test-memory 4096\n\n");
@@ -6799,7 +6806,7 @@ int main(int argc, char **argv)
         createPidFile();
     if (server.set_proc_title)
         redisSetProcTitle(NULL);
-    redisAsciiArt();
+    redisAsciiArt();        // 打印启动ascii_logo
     checkTcpBacklogSettings();
 
     if (!server.sentinel_mode)
@@ -6878,7 +6885,7 @@ int main(int argc, char **argv)
         }
     }
 
-    /* Warning the user about suspicious maxmemory setting. */
+    /* Warning the user about suspicious maxmemory setting. */ // 检查最大内存是否小于1M，并给与警告提示
     if (server.maxmemory > 0 && server.maxmemory < 1024 * 1024)
     {
         serverLog(LL_WARNING, "WARNING: You specified a maxmemory value that is less than 1MB (current value is %llu bytes). Are you sure this is what you really want?", server.maxmemory);

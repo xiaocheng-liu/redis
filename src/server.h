@@ -1241,8 +1241,8 @@ struct redisServer
     pid_t pid;                /* Main process pid. */
     pthread_t main_thread_id; /* Main thread id */
     char *configfile;         /* Absolute config file path, or NULL */              // 配置文件路径
-    char *executable;         /* Absolute executable file path. */
-    char **exec_argv;         /* Executable argv vector (copy). */
+    char *executable;         /* Absolute executable file path. */                  // redis的可执行文件路径
+    char **exec_argv;         /* Executable argv vector (copy). */                  // 记录redis执行的参数
     int dynamic_hz;           /* Change hz value depending on # of clients. */
     int config_hz;            /* Configured HZ value. May be different than
                                    the actual 'hz' field value if dynamic-hz
