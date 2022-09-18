@@ -13,9 +13,13 @@
 # Just use 'make dep', but this is only needed by developers.
 
 release_hdr := $(shell sh -c './mkreleasehdr.sh')
+# uname -s 获取操作系统的类型 Linux
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
+# uname -m 获取操作系统的版本 x86_64
 uname_M := $(shell sh -c 'uname -m 2>/dev/null || echo not')
+# 优化选项
 OPTIMIZATION?=-O2
+# 依赖目标
 DEPENDENCY_TARGETS=hiredis linenoise lua hdr_histogram
 NODEPS:=clean distclean
 
@@ -27,6 +31,7 @@ ifneq (,$(findstring FreeBSD,$(uname_S)))
   STD+=-Wno-c11-extensions
 endif
 endif
+# 输出所有编译警告信息 ，Wno-missing-field-initializers 不输出missing-的警告信息
 WARN=-Wall -W -Wno-missing-field-initializers
 OPT=$(OPTIMIZATION)
 
@@ -40,12 +45,15 @@ else
 	STD+=-std=c99
 endif
 
+# 默认目录
 PREFIX?=/usr/local
+# 安装的默认目录
 INSTALL_BIN=$(PREFIX)/bin
 INSTALL=install
 PKG_CONFIG?=pkg-config
 
 # Default allocator defaults to Jemalloc if it's not an ARM
+# 内存分配器的指定 默认libc，linux系统而且架构不是armv61和71的时候则是jemalloc
 MALLOC=libc
 ifneq ($(uname_M),armv6l)
 ifneq ($(uname_M),armv7l)
@@ -65,6 +73,7 @@ endif
 endif
 
 # Backwards compatibility for selecting an allocator
+# 编译的时候指定内存分配器
 ifeq ($(USE_TCMALLOC),yes)
 	MALLOC=tcmalloc
 endif
@@ -84,6 +93,7 @@ endif
 # Override default settings if possible
 -include .make-settings
 
+# 最终的编译选项CFLAGS是-c的选项，LDFLAGS是链接的选项
 FINAL_CFLAGS=$(STD) $(WARN) $(OPT) $(DEBUG) $(CFLAGS) $(REDIS_CFLAGS)
 FINAL_LDFLAGS=$(LDFLAGS) $(REDIS_LDFLAGS) $(DEBUG)
 FINAL_LIBS=-lm
@@ -252,8 +262,11 @@ endif
 	FINAL_LIBS += ../deps/hiredis/libhiredis_ssl.a $(LIBSSL_LIBS) $(LIBCRYPTO_LIBS)
 endif
 
+# redis 的gcc -c 选项
 REDIS_CC=$(QUIET_CC)$(CC) $(FINAL_CFLAGS)
+# redis的gcc 链接选项
 REDIS_LD=$(QUIET_LINK)$(CC) $(FINAL_LDFLAGS)
+# redis的安装选项
 REDIS_INSTALL=$(QUIET_INSTALL)$(INSTALL)
 
 CCCOLOR="\033[34m"
@@ -281,11 +294,12 @@ REDIS_BENCHMARK_OBJ=ae.o anet.o redis-benchmark.o adlist.o dict.o zmalloc.o rele
 REDIS_CHECK_RDB_NAME=redis-check-rdb$(PROG_SUFFIX)
 REDIS_CHECK_AOF_NAME=redis-check-aof$(PROG_SUFFIX)
 
+# MakeFile真正开始Work的地方
 all: $(REDIS_SERVER_NAME) $(REDIS_SENTINEL_NAME) $(REDIS_CLI_NAME) $(REDIS_BENCHMARK_NAME) $(REDIS_CHECK_RDB_NAME) $(REDIS_CHECK_AOF_NAME)
 	@echo ""
 	@echo "Hint: It's a good idea to run 'make test' ;)"
 	@echo ""
-
+# Makefile.dep 的生成
 Makefile.dep:
 	-$(REDIS_CC) -MM *.c > Makefile.dep 2> /dev/null || true
 
@@ -297,6 +311,7 @@ endif
 
 .PHONY: all
 
+# 先清除所有编译的输出然后，将所有设置持久化
 persist-settings: distclean
 	echo STD=$(STD) >> .make-settings
 	echo WARN=$(WARN) >> .make-settings
@@ -319,6 +334,7 @@ persist-settings: distclean
 	@touch $@
 
 # Clean everything, persist settings and build dependencies if anything changed
+# 当设置有变化的时候清除并重新持久化设置
 ifneq ($(strip $(PREV_FINAL_CFLAGS)), $(strip $(FINAL_CFLAGS)))
 .make-prerequisites: persist-settings
 endif
@@ -327,6 +343,7 @@ ifneq ($(strip $(PREV_FINAL_LDFLAGS)), $(strip $(FINAL_LDFLAGS)))
 .make-prerequisites: persist-settings
 endif
 
+# 下面生成redis-server redis-cli等可执行程序
 # redis-server
 $(REDIS_SERVER_NAME): $(REDIS_SERVER_OBJ)
 	$(REDIS_LD) -o $@ $^ ../deps/hiredis/libhiredis.a ../deps/lua/src/liblua.a $(FINAL_LIBS)
@@ -360,9 +377,11 @@ DEP = $(REDIS_SERVER_OBJ:%.o=%.d) $(REDIS_CLI_OBJ:%.o=%.d) $(REDIS_BENCHMARK_OBJ
 # Because the jemalloc.h header is generated as a part of the jemalloc build,
 # building it should complete before building any other object. Instead of
 # depending on a single artifact, build all dependencies first.
+# 将所有点c文件编译成.o文件 自动完成file.c 到file.o的对应
 %.o: %.c .make-prerequisites
 	$(REDIS_CC) -MMD -o $@ -c $<
 
+# 接下来是删除编译产物
 clean:
 	rm -rf $(REDIS_SERVER_NAME) $(REDIS_SENTINEL_NAME) $(REDIS_CLI_NAME) $(REDIS_BENCHMARK_NAME) $(REDIS_CHECK_RDB_NAME) $(REDIS_CHECK_AOF_NAME) *.o *.gcda *.gcno *.gcov redis.info lcov-html Makefile.dep dict-benchmark
 	rm -f $(DEP)
@@ -375,6 +394,7 @@ distclean: clean
 
 .PHONY: distclean
 
+# 测试编译产物redis-server redis-cli等
 test: $(REDIS_SERVER_NAME) $(REDIS_CHECK_AOF_NAME) $(REDIS_CLI_NAME) $(REDIS_BENCHMARK_NAME)
 	@(cd ..; ./runtest)
 
@@ -416,6 +436,7 @@ src/help.h:
 	@../utils/generate-command-help.rb > help.h
 
 install: all
+	# 安装到/usr/local/bin
 	@mkdir -p $(INSTALL_BIN)
 	$(REDIS_INSTALL) $(REDIS_SERVER_NAME) $(INSTALL_BIN)
 	$(REDIS_INSTALL) $(REDIS_BENCHMARK_NAME) $(INSTALL_BIN)
@@ -424,5 +445,6 @@ install: all
 	@ln -sf $(REDIS_SERVER_NAME) $(INSTALL_BIN)/$(REDIS_CHECK_AOF_NAME)
 	@ln -sf $(REDIS_SERVER_NAME) $(INSTALL_BIN)/$(REDIS_SENTINEL_NAME)
 
+# 卸载
 uninstall:
 	rm -f $(INSTALL_BIN)/{$(REDIS_SERVER_NAME),$(REDIS_BENCHMARK_NAME),$(REDIS_CLI_NAME),$(REDIS_CHECK_RDB_NAME),$(REDIS_CHECK_AOF_NAME),$(REDIS_SENTINEL_NAME)}

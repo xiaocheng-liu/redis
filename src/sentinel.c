@@ -685,6 +685,13 @@ sds announceSentinelAddrAndPort(const sentinelAddr *a) {
  *
  *  Any other specifier after "%@" is processed by printf itself.
  */
+/*
+ * - level 表示当前的日志级别；
+ * - type 表示发送事件信息所用的订阅频道；
+ * - ri 表示对应交互的主节点；
+ * - fmt 则表示发送的消息内容。
+ * - ...表示可变参数，用于填充fmt
+ */
 void sentinelEvent(int level, char *type, sentinelRedisInstance *ri,
                    const char *fmt, ...) {
     va_list ap;
@@ -692,10 +699,13 @@ void sentinelEvent(int level, char *type, sentinelRedisInstance *ri,
     robj *channel, *payload;
 
     /* Handle %@ */
+    // 如果传递消息以"%"和"@"开头，就判断实例是否为主节点
     if (fmt[0] == '%' && fmt[1] == '@') {
+        // 判断实例的flags标签是否为SRI_MASTER，如果是，就表明实例是主节点
         sentinelRedisInstance *master = (ri->flags & SRI_MASTER) ?
                                          NULL : ri->master;
 
+        // 如果当前实例是主节点，根据实例的名称、IP地址、端口号等信息调用snprintf生成传递的消息msg
         if (master) {
             snprintf(msg, sizeof(msg), "%s %s %s %d @ %s %s %d",
                 sentinelRedisInstanceTypeStr(ri),
@@ -712,6 +722,7 @@ void sentinelEvent(int level, char *type, sentinelRedisInstance *ri,
     }
 
     /* Use vsprintf for the rest of the formatting if any. */
+    // 如果fmt后还有其他格式，使用 vsprintf来获取数据
     if (fmt[0] != '\0') {
         va_start(ap, fmt);
         vsnprintf(msg+strlen(msg), sizeof(msg)-strlen(msg), fmt, ap);
@@ -719,10 +730,12 @@ void sentinelEvent(int level, char *type, sentinelRedisInstance *ri,
     }
 
     /* Log the message if the log level allows it to be logged. */
+    // 如果日志级别允许记录该消息，则记录该消息。
     if (level >= server.verbosity)
         serverLog(level,"%s %s",type,msg);
 
     /* Publish the message via Pub/Sub if it's not a debugging one. */
+    // 如果不是调试消息，请通过 Pub/Sub 发布消息
     if (level != LL_DEBUG) {
         channel = createStringObject(type,strlen(type));
         payload = createStringObject(msg,strlen(msg));
@@ -732,6 +745,7 @@ void sentinelEvent(int level, char *type, sentinelRedisInstance *ri,
     }
 
     /* Call the notification script if applicable. */
+    // 如果可应用，调用通知脚本
     if (level == LL_WARNING && ri != NULL) {
         sentinelRedisInstance *master = (ri->flags & SRI_MASTER) ?
                                          ri : ri->master;
@@ -4153,20 +4167,25 @@ void sentinelPublishCommand(client *c) {
 /* ===================== SENTINEL availability checks ======================= */
 
 /* Is this instance down from our point of view? */
+// 从主观的角度看这个实例是否是下线状态*/
 void sentinelCheckSubjectivelyDown(sentinelRedisInstance *ri) {
     mstime_t elapsed = 0;
 
+    // 获取命令响应已经过去的时长
     if (ri->link->act_ping_time)
         elapsed = mstime() - ri->link->act_ping_time;
+    // 实例连接断开了
     else if (ri->link->disconnected)
         elapsed = mstime() - ri->link->last_avail_time;
 
     /* Check if we are in need for a reconnection of one of the
      * links, because we are detecting low activity.
+     * 低活跃度重新连接，即 连接超过了 1.5秒，并且之前发送了 PING 命令但是活跃度很低
      *
      * 1) Check if the command link seems connected, was connected not less
      *    than SENTINEL_MIN_LINK_RECONNECT_PERIOD, but still we have a
-     *    pending ping for more than half the timeout. */
+     *    pending ping for more than half the timeout.
+     *    检查命令链接是否似乎已连接，连接时间不少于 SENTINEL_MIN_LINK_RECONNECT_PERIOD，但我们仍有超过一半超时的待处理 ping*/
     if (ri->link->cc &&
         (mstime() - ri->link->cc_conn_time) >
         SENTINEL_MIN_LINK_RECONNECT_PERIOD &&
@@ -4184,6 +4203,7 @@ void sentinelCheckSubjectivelyDown(sentinelRedisInstance *ri) {
      *    activity in the Pub/Sub channel for more than
      *    SENTINEL_PUBLISH_PERIOD * 3.
      */
+    // 检查 订阅发布的连接是不是也是出于 低活跃度
     if (ri->link->pc &&
         (mstime() - ri->link->pc_conn_time) >
          SENTINEL_MIN_LINK_RECONNECT_PERIOD &&
@@ -4193,25 +4213,25 @@ void sentinelCheckSubjectivelyDown(sentinelRedisInstance *ri) {
     }
 
     /* Update the SDOWN flag. We believe the instance is SDOWN if:
-     *
-     * 1) It is not replying.
+     *  更新 SDOWN 标志。我们认为实例是 SDOWN 如果
+     * 1) It is not replying.   它没有回复
      * 2) We believe it is a master, it reports to be a slave for enough time
      *    to meet the down_after_period, plus enough time to get two times
-     *    INFO report from the instance. */
+     *    INFO report from the instance. 认为是主节点但是 报告是从节点 */
     if (elapsed > ri->down_after_period ||
         (ri->flags & SRI_MASTER &&
          ri->role_reported == SRI_SLAVE &&
          mstime() - ri->role_reported_time >
           (ri->down_after_period+SENTINEL_INFO_PERIOD*2)))
     {
-        /* Is subjectively down */
+        /* Is subjectively down 设置主观下线标识 */
         if ((ri->flags & SRI_S_DOWN) == 0) {
             sentinelEvent(LL_WARNING,"+sdown",ri,"%@");
             ri->s_down_since_time = mstime();
             ri->flags |= SRI_S_DOWN;
         }
     } else {
-        /* Is subjectively up */
+        /* Is subjectively up 如果已经是主观下线状态，则取消标识 */
         if (ri->flags & SRI_S_DOWN) {
             sentinelEvent(LL_WARNING,"-sdown",ri,"%@");
             ri->flags &= ~(SRI_S_DOWN|SRI_SCRIPT_KILL_SENT);
@@ -4224,29 +4244,37 @@ void sentinelCheckSubjectivelyDown(sentinelRedisInstance *ri) {
  * Note that ODOWN is a weak quorum, it only means that enough Sentinels
  * reported in a given time range that the instance was not reachable.
  * However messages can be delayed so there are no strong guarantees about
- * N instances agreeing at the same time about the down state. */
+ * N instances agreeing at the same time about the down state.
+ * 请注意，ODOWN 是一个弱仲裁，它仅表示在给定时间范围内报告了足够多的 Sentinel 报告该实例无法访问。
+ * 但是消息可能会延迟，因此无法保证 N 个实例同时同意关闭状态*/
 void sentinelCheckObjectivelyDown(sentinelRedisInstance *master) {
     dictIterator *di;
     dictEntry *de;
     unsigned int quorum = 0, odown = 0;
 
+    // 如果已经被判断为主观下线
     if (master->flags & SRI_S_DOWN) {
         /* Is down for enough sentinels? */
+        // 当前 哨兵认为下线，投票1
         quorum = 1; /* the current sentinel. */
         /* Count all the other sentinels. */
         di = dictGetIterator(master->sentinels);
+        // 遍历所有监控该主节点的所有 sentinel
         while((de = dictNext(di)) != NULL) {
             sentinelRedisInstance *ri = dictGetVal(de);
-            
+
+            // 如果 sentinel 投票主观下线，投票 +1
             if (ri->flags & SRI_MASTER_DOWN) quorum++;
         }
         dictReleaseIterator(di);
-        // 如果有超过master->quorum个sentinel实例判master为宕机则认为是客观当家  
+        // 如果有超过master->quorum个sentinel实例判master为宕机则认为是客观下线
         if (quorum >= master->quorum) odown = 1;
     }
 
     /* Set the flag accordingly to the outcome. */
+    // 如果已经判定为 客观下线了
     if (odown) {
+        // 如果主服务器节点还没改变状态，则修改其 客观下线状态
         if ((master->flags & SRI_O_DOWN) == 0) {
             sentinelEvent(LL_WARNING,"+odown",master,"%@ #quorum %d/%d",
                 quorum, master->quorum);
@@ -4254,6 +4282,7 @@ void sentinelCheckObjectivelyDown(sentinelRedisInstance *master) {
             master->o_down_since_time = mstime();
         }
     } else {
+        // 如果票数不足，原本 客观下线就要改回来为 主观下线
         if (master->flags & SRI_O_DOWN) {
             sentinelEvent(LL_WARNING,"-odown",master,"%@");
             master->flags &= ~SRI_O_DOWN;
