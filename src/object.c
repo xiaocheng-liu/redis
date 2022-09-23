@@ -725,6 +725,7 @@ int getLongLongFromObjectOrReply(client *c, robj *o, long long *target, const ch
     return C_OK;
 }
 
+/* 以下为获取端口的时候调用的【getLongFromObjectOrReply】的实现步骤 */
 int getLongFromObjectOrReply(client *c, robj *o, long *target, const char *msg) {
     long long value;
 

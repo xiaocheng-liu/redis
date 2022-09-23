@@ -2522,11 +2522,21 @@ write_error: /* Handle sendCommand() errors. */
     goto error;
 }
 
+/* 以非阻塞的方式建立与master的连接 */
 int connectWithMaster(void) {
-    // 和master建立一个socket连接  
+    /* connection *repl_transfer_s; --是serverRedis中的成员变量
+       int tls_replication;         --是serverRedis中的成员变量,TLS Configuration
+       获取server.repl_transfer_s的值,如果配置了TLS,就调用connCreateTLS()返回一个
+       加密的客户端连接,否则就调用connCreateSocket返回一个非加密的客户端连接.
+    */
+    /* 为一个客户端连接申请内存初始化 */
     server.repl_transfer_s = server.tls_replication ? connCreateTLS() : connCreateSocket();
+    /* 创建socket链接,注册循环事件,设置连接处理函数为syncWithMaster */
     if (connConnect(server.repl_transfer_s, server.masterhost, server.masterport,
                 NET_FIRST_BIND_ADDR, syncWithMaster) == C_ERR) {
+        /* 如果创建socket,注册循环事件,设置连接处理函数等失败,则打印出提示内容,关闭连接,
+           将服务中用来复制同步内容的链接置为NULL
+        */
         serverLog(LL_WARNING,"Unable to connect to MASTER: %s",
                 connGetLastError(server.repl_transfer_s));
         connClose(server.repl_transfer_s);
@@ -2534,8 +2544,11 @@ int connectWithMaster(void) {
         return C_ERR;
     }
 
-
+    /* 最近一次读到RDB文件内容的时间,在之后的超时判断中会有用处
+       server.unixtime在rdbLoadProgressCallback中更新.
+     */
     server.repl_transfer_lastio = server.unixtime;
+    /* 将server.repl_state置为“Socket连接成功”*/
     server.repl_state = REPL_STATE_CONNECTING;
     serverLog(LL_NOTICE,"MASTER <-> REPLICA sync started");
     return C_OK;
@@ -2598,15 +2611,28 @@ int cancelReplicationHandshake(int reconnect) {
     return 1;
 }
 
-/* 将当前实例作为特定master的副本 */
+/* 设置当前服务为指定ip,port所代表的主机的从机 */
 void replicationSetMaster(char *ip, int port) {
+    /* == 的优先级高于 = */
+    /* 判断server.masterhost是否为空，并且将是否为空的结果存入was_master中 */
     int was_master = server.masterhost == NULL;
 
+    /* 清空释放server.masterhost之前存入的内容*/
     sdsfree(server.masterhost);
     server.masterhost = NULL;
+    /* 如果server.master不为NULL */
+    /* 这里可以这么理解：
+        假设当前节点是B，且当前B的主节点是A，现在B想要将自己设置成C的从节点，那么B就要把自己之前存的关于A节点的信息给释放掉,
+        因为当前B的主节点是A,作为网络中的两个节点，那么它必定与A保持一定的连接，所以可将A看作是B的客户端，存入server.master中.
+    */
+    /* 如果server.masterhost不为空 */
     if (server.master) {
         freeClient(server.master);
     }
+    /*
+      断开所有阻塞着的客户端，现在可能出现主机变成别的主机的从机的情况，连接到本台机器上的连接
+      可能已经不安全了，需要将它们与当前机器的连接断开
+    */
     disconnectAllBlockedClients(); /* Clients blocked in master, now slave. */
 
     /* Setting masterhost only after the call to freeClient since it calls
@@ -2616,25 +2642,34 @@ void replicationSetMaster(char *ip, int port) {
     server.masterport = port;
 
     /* Update oom_score_adj */
+    /* 设置更新内存溢出得分调整值*/
     setOOMScoreAdj(-1);
 
     /* Force our slaves to resync with us as well. They may hopefully be able
      * to partially resync with us, but we can notify the replid change. */
+    /* 关闭所有从节点服务器的连接，强制从节点服务器进行重新同步操作 */
     disconnectSlaves();
+    /* 取消主从复制的握手功能 */
     cancelReplicationHandshake(0);
     /* Before destroying our master state, create a cached master using
      * our own parameters, to later PSYNC with the new master. */
+    /* 如果server.masterhost非空 */
     if (was_master) {
+        /* 释放之前缓存的master的相关状态 */
         replicationDiscardCachedMaster();
+        /* 同步一下自己的master中的一些信息，也许在之后可以少同步一些内容，设置
+           server.cached_master = server.master*/
         replicationCacheMasterUsingMyself();
     }
 
     /* Fire the role change modules event. */
+    /* 触发服务器的角色转变模块的事件 */
     moduleFireServerEvent(REDISMODULE_EVENT_REPLICATION_ROLE_CHANGED,
                           REDISMODULE_EVENT_REPLROLECHANGED_NOW_REPLICA,
                           NULL);
 
     /* Fire the master link modules event. */
+    /* 如果server.repl_state的状态是REPL_STATE_CONNECTED,触发主机连接模块的事件 */
     if (server.repl_state == REPL_STATE_CONNECTED)
         moduleFireServerEvent(REDISMODULE_EVENT_MASTER_LINK_CHANGE,
                               REDISMODULE_SUBEVENT_MASTER_LINK_DOWN,
@@ -2731,9 +2766,14 @@ void replicationHandleMasterDisconnection(void) {
 
 /* replicaof和slaveof命令的具体实现 
  * SLAVEOF host port 可以把当前redis实例变成某个实例的从服务器 */
+// 判断当前环境是否在集群模式下, 如果是的, 就不能执行命令,给出相关提示并且返回;
+// 如果输入的命令是slaveof no one,那么解除主从关系，设置当前节点为主节点服务器;
+// 判断是否已经是指定host,ip所代表的服务器的从机了, 如果已经是了,就不能再执行这个命令了,给出相关提示并且返回;
+// 如果不是以上三个步骤中的情况, 调用replicationSetMaster设置执行slaveof命令的服务器为指定host,ip所代表的主服务器的从服务器.
 void replicaofCommand(client *c) {
     /* SLAVEOF is not allowed in cluster mode as replication is automatically
      * configured using the current address of the master node. */
+    /* 如果服务器当前处于集群模式，不可以执行此操作 */
     if (server.cluster_enabled) {
         addReplyError(c,"REPLICAOF not allowed in cluster mode.");
         return;
@@ -2746,31 +2786,45 @@ void replicaofCommand(client *c) {
 
     /* The special host/port combination "NO" "ONE" turns the instance
      * into a master. Otherwise the new master address is set. */
+    /* SLAVEOF NO ONE命令使得这个从节点关闭复制功能，并从从节点的身份转变回主节点，
+       原来同步所得的数据集不会被丢弃*/
     if (!strcasecmp(c->argv[1]->ptr,"no") &&
         !strcasecmp(c->argv[2]->ptr,"one")) {
+        /* 如果当前服务器的主节点的主机名不为NULL */
         if (server.masterhost) {
+            /* 取消复制操作，设置服务器为主服务器 */
             replicationUnsetMaster();
+            /* 获取client的每种信息，并以sds形式返回，并打印到日志中 */
             sds client = catClientInfoString(sdsempty(),c);
             serverLog(LL_NOTICE,"MASTER MODE enabled (user request from '%s')",
                 client);
+            /* 释放内存 */
             sdsfree(client);
         }
     } else {
         long port;
 
+        /* 如果当前客户端已经是一个从机 */
         if (c->flags & CLIENT_SLAVE)
         {
             /* If a client is already a replica they cannot run this command,
              * because it involves flushing all replicas (including this
              * client) */
+            /* 返回错误,给出错误提示：当前机器已经被部属为从机,不可以使用此命令 */
             addReplyError(c, "Command is not valid when client is a replica.");
             return;
         }
 
+        /* 获取端口号 */
         if ((getLongFromObjectOrReply(c, c->argv[2], &port, NULL) != C_OK))
             return;
 
         /* Check if we are already attached to the specified slave */
+        /*
+          如果已存在从属于masterhost主节点且命令参数指定的主节点的host及port信息和
+          server.masterhost，server.masterport也相等，给出“已经是指定主机指定端
+          口的主服务器的从机了”,并直接返回
+        */
         if (server.masterhost && !strcasecmp(server.masterhost,c->argv[1]->ptr)
             && server.masterport == port) {
             serverLog(LL_NOTICE,"REPLICAOF would result into synchronization "
@@ -2782,12 +2836,17 @@ void replicaofCommand(client *c) {
         }
         /* There was no previous master or the user specified a different one,
          * we can continue. */
+        /* 第一次设置端口和ip指定为某主服务器的从机或者是重新设置端口和IP指定当前机器为另一台主
+           服务器的的从服务器,这两种情况我们都可以继续 */
+        /* 设置端口和IP */
         replicationSetMaster(c->argv[1]->ptr, port);
+        /* 获取client的每种信息, 并以sds形式返回, 并打印到日志中, 然后释放内存 */
         sds client = catClientInfoString(sdsempty(),c);
         serverLog(LL_NOTICE,"REPLICAOF %s:%d enabled (user request from '%s')",
             server.masterhost, server.masterport, client);
         sdsfree(client);
     }
+    /* 回复ok */
     addReply(c,shared.ok);
 }
 
@@ -3273,7 +3332,8 @@ long long replicationGetSlaveOffset(void) {
 
 /* --------------------------- REPLICATION CRON  ---------------------------- */
 
-/* Replication cron function, 1秒执行一次. */
+/* Replication cron function, called 1 time per second. */
+/* 复制的定时任务函数,每一秒钟调用一次 */
 void replicationCron(void) {
     static long long replication_cron_loops = 0;
 
@@ -3307,13 +3367,23 @@ void replicationCron(void) {
         freeClient(server.master);
     }
 
-    /* 检查是否应该连master */
+    /* Check if we should connect to a master */
+    /* 检查我们是否应该去尝试去连接master,当server.repl_state是REPL_STATE_CONNECT
+      (等待向主服务器发起Socket连接并且必须连接的状态)的时候,我们需要开始去连接
+    */
     if (server.repl_state == REPL_STATE_CONNECT) {
         serverLog(LL_NOTICE,"Connecting to MASTER %s:%d",
             server.masterhost, server.masterport);
+        /* 以非阻塞的方式连接主节点 */
         connectWithMaster();
     }
 
+    /* 当server.masterhost不为NULL且server.master不为NULL且master节点是支持
+       部分重同步功能的时候,向master节点发送一个REPLCONF ACK命令给主节点去报告关于
+       当前处理的offset
+       from time to time --- 定时
+       CLIENT_PRE_PSYNC  --- 不支持PSYNC功能的客户端(PSYNC中有部分重传功能)
+       #define CLIENT_PRE_PSYNC (1<<16) /* Instance don't understand PSYNC.*/
     /* Send ACK to master from time to time.
      * Note that we do not send periodic acks to masters that don't
      * support PSYNC and replication offsets. */

@@ -73,7 +73,7 @@ ConnectionType CT_Socket;
  * 3. The container_of() approach is anyway risky because connections may
  * be embedded in different structs, not just client.
  */
-//初始化连接
+/* 创建一个非加密的客户端连接 */
 connection *connCreateSocket() {
     //分配空间
     connection *conn = zcalloc(sizeof(connection));

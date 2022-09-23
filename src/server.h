@@ -305,11 +305,11 @@ extern int configOOMScoreAdjValuesDefaults[CONFIG_OOM_COUNT];
  * what to do next. */
 typedef enum
 {
-    REPL_STATE_NONE = 0,   /* No active replication */
-    REPL_STATE_CONNECT,    /* Must connect to master */
-    REPL_STATE_CONNECTING, /* Connecting to master */
+    REPL_STATE_NONE = 0,   /* No active replication */  // 未开启主从复制功能，当前服务器是普通的Redis实例；
+    REPL_STATE_CONNECT,    /* Must connect to master */ // 待发起Socket连接主服务器；
+    REPL_STATE_CONNECTING, /* Connecting to master */   // Socket连接成功；
     /* --- Handshake states, must be ordered --- */
-    REPL_STATE_RECEIVE_PING_REPLY,  /* Wait for PING reply */
+    REPL_STATE_RECEIVE_PING_REPLY,  /* Wait for PING reply */   // 等待PING的回复
     REPL_STATE_SEND_HANDSHAKE,      /* Send handshake sequance to master */
     REPL_STATE_RECEIVE_AUTH_REPLY,  /* Wait for AUTH reply */
     REPL_STATE_RECEIVE_PORT_REPLY,  /* Wait for REPLCONF reply */
@@ -318,8 +318,10 @@ typedef enum
     REPL_STATE_SEND_PSYNC,          /* Send PSYNC */
     REPL_STATE_RECEIVE_PSYNC_REPLY, /* Wait for PSYNC reply */
     /* --- End of handshake states --- */
-    REPL_STATE_TRANSFER,  /* Receiving .rdb from master */
-    REPL_STATE_CONNECTED, /* Connected to master */
+    REPL_STATE_TRANSFER,  /* Receiving .rdb from master */  // 正在接收RDB文件；
+    REPL_STATE_CONNECTED, /* Connected to master */     // RDB文件接收并载入完毕，主从复制连接建立成功，
+                                                        // 此时从服务器只需要等待接收主服务器同步数据即可。
+
 } repl_state;
 
 /* The state of an in progress coordinated failover */
@@ -1300,6 +1302,8 @@ struct redisServer
     list *clients_to_close;                   /* Clients to close asynchronously */
     list *clients_pending_write;              /* 服务所有需要回复的client列表 */                    //待写回数据的客户端
     list *clients_pending_read;               /* Client has pending read socket buffers. */     //待读取数据的客户端
+    /* 记录所有的从服务器，是一个链表，链表节点值类型为client */
+    /* 记录所有的监控器，是一个链表，链表节点值类型为monitor */
     list *slaves, *monitors;                  /* List of slaves and MONITORs */
     client *current_client;                   /* Current client executing the command. */
     rax *clients_timeout_table;               /* Radix tree for blocked clients timeouts. */
@@ -1495,39 +1499,76 @@ struct redisServer
     int use_exit_on_panic; /* Use exit() on panic and assert rather than
                                      * abort(). useful for Valgrind. */
     /* Replication (master) */
-    char replid[CONFIG_RUN_ID_SIZE + 1];  /* My current replication ID. */
-    char replid2[CONFIG_RUN_ID_SIZE + 1]; /* replid inherited from master*/
-    long long master_repl_offset;         /* 当前副本的偏移量 */
-    long long second_replid_offset;       /* Accept offsets up to this for replid2. */
-    int slaveseldb;                       /* 当前需要写入副本的dbid */
+    char replid[CONFIG_RUN_ID_SIZE + 1];  /* My current replication ID. */  // 当前任期的master的运行Id
+    char replid2[CONFIG_RUN_ID_SIZE + 1]; /* replid inherited from master*/ // 上个任期的master的运行Id
+    long long master_repl_offset;         /* My current replication offset */ // 当前任期的缓冲区最后一个字节的复制偏移量
+    long long second_replid_offset;       /* Accept offsets up to this for replid2. */  // 上一个任期的缓冲区最后一个字节的复制偏移量
+    int slaveseldb;                       /* Last SELECTed DB in replication output */
+    /*
+      表示发送心跳包的周期，主服务器以此周期向所有从服务器发送心跳包.
+      主服务器和从服务器之间是通过TCP长连接交互数据的，就必然需要周期性地发送心跳包来检测连接有
+      效性，该字段表示发送心跳包的周期，主服务器以此周期向所有从服务器发送心跳包. 可通过配置参数
+      repl-ping-replica-period或者repl-ping-slave-period设置，默认为10.
+    */
     int repl_ping_slave_period;           /* Master pings the slave every N seconds */
-    char *repl_backlog;                   /* 用于主从部分同步时的环形缓冲队列 */
+    /*
+      复制缓冲区，用于缓存主服务器已执行且待发送给从服务器的命令请求；
+      缓冲区大小由字段repl_backlog_size指定，其可通过配置参数repl-backlog-size设置，
+      默认为1MB
+    */
+    char *repl_backlog;                   /* Replication backlog for partial syncs */
+    /* 复制缓冲区的大小 */
     long long repl_backlog_size;          /* Backlog circular buffer size */
+    /* 复制缓冲区中存储的命令请求数据长度 */
     long long repl_backlog_histlen;       /* Backlog actual data length */
+    /* 复制缓冲区中存储的命令请求最后一个字节索引位置,即向复制缓冲区写入数据时会从该索引位置开始 */
     long long repl_backlog_idx;           /* Backlog circular buffer current offset,
                                        that is the next byte will'll write to.*/
+    /* 复制缓冲区中第一个字节的复制偏移量 */
     long long repl_backlog_off;           /* Replication "master offset" of first
                                        byte in the replication backlog buffer.*/
     time_t repl_backlog_time_limit;       /* Time without slaves after the backlog
                                        gets released. */
+    /* 表示有多久没有从机了*/
     time_t repl_no_slaves_since;          /* We have no slaves since that time.
                                        Only valid if server.slaves len is 0. */
+    /* 当有效从服务器的数目小于该值时，主服务器会拒绝执行写命令 */
     int repl_min_slaves_to_write;         /* Min number of slaves to write. */
+    /* 决定从服务器是否处于失效状态的超时门限 */
     int repl_min_slaves_max_lag;          /* Max lag of <count> slaves to write. */
+    /*
+        当前有效从服务器的数目.
+        什么样的从服务器是有效的呢？我们说过主服务器和从服务器之间是通过TCP长连接交互数据的，并
+        且会发送心跳包来检测连接有效性；主服务器会记录每个从服务器上次心跳检测成功的时间
+        repl_ack_time，并且定时检测当前时间距离repl_ack_time是否超过一定超时门限，如果超过
+        则认为从服务器处于失效状态。字段repl_min_slaves_max_lag存储的就是该超时门限，可通过
+        配置参数min-slaves-max-lag或者min-replicas-max-lag设置，默认为10，单位秒。
+     */
     int repl_good_slaves_count;           /* Number of slaves with lag <= max_lag. */
     int repl_diskless_sync;               /* Master send RDB to slaves sockets directly. */
     int repl_diskless_load;               /* Slave parse RDB directly from the socket.
                                      * see REPL_DISKLESS_LOAD_* enum */
     int repl_diskless_sync_delay;         /* Delay to start a diskless repl BGSAVE. */
     /* Replication (slave) */
+    /* 必须要这个用户才能登录 */
     char *masteruser;                   /* AUTH with this user and masterauth with master */
-    sds masterauth;                     /* 和master交互的权限验证密码 */
+    /* masteruser用户对应的验证密码，当主服务器配置了“requirepass password”时，即表示从服
+       务器必须通过密码认证才能同步主服务器数据。同样的需要在从服务器配置“masterauth<master-
+       password>”，用于设置请求同步主服务器时的认证密码.
+     */
+    sds masterauth;                     /* AUTH with this password with master */
+    /* 主服务器的IP */
     char *masterhost;                   /* Hostname of master */
+    /* 主服务器的端口 */
     int masterport;                     /* Port of master */
     int repl_timeout;                   /* Timeout after N seconds of master idle */
+    /* 当主从服务器成功建立连接之后，从服务器将成为主服务器的客户端，同样的主服务器也会成为从服务
+       器的客户端，master即为主服务器，类型为client
+    */
     client *master;                     /* Client that is master for this slave */
     client *cached_master;              /* Cached master to be reused for PSYNC. */
     int repl_syncio_timeout;            /* Timeout for synchronous I/O calls */
+    /* 主从复制流程的进展（从服务器状态）*/
     int repl_state;                     /* Replication status if the instance is a slave */
     off_t repl_transfer_size;           /* Size of RDB to read from master during sync. */
     off_t repl_transfer_read;           /* Amount of RDB read from master during sync. */
@@ -1536,9 +1577,19 @@ struct redisServer
     int repl_transfer_fd;               /* Slave -> Master SYNC temp file descriptor */
     char *repl_transfer_tmpfile;        /* Slave-> master SYNC temp file name */
     time_t repl_transfer_lastio;        /* Unix time of the latest read, for timeout */
+    /* 当主从服务器断开连接时，该变量表示从服务器是否继续处理命令请求，可通过配置参数
+       slave-serve-stale-data或者replica-serve-stale-data设置，默认为1，即可以继续处理
+       命令请求。
+    */
     int repl_serve_stale_data;          /* Serve stale data when link is down? */
+    /* 配置从机是否只是可读的(不处理除了主服务器发来以外的写命令).
+       可通过配置参数slave-read-only或者replica-read-only设置,默认为1,即从服务器不处理写命
+       令请求，除非该命令是主服务器发送过来的.
+    */
     int repl_slave_ro;                  /* Slave is read only? */
+    /* 从机是否没有键的过期处理策略*/
     int repl_slave_ignore_maxmemory;    /* If true slaves do not evict. */
+    /* 从机与主机断开的时间 */
     time_t repl_down_since;             /* Unix time at which link with master went down */
     int repl_disable_tcp_nodelay;       /* Disable TCP_NODELAY after SYNC? */
     int slave_priority;                 /* Reported in INFO and used by Sentinel. */
