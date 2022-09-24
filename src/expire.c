@@ -262,7 +262,7 @@ void activeExpireCycle(int type) {
                     dictEntry *de = db->expires->ht[table].table[idx];
                     long long ttl;
 
-                    /* 遍历当前bucket中的所有entry*/
+                    /* 遍历当前bucket中的所有entry */
                     checked_buckets++;
                     while(de) {
                         /* Get the next entry now since this entry may get

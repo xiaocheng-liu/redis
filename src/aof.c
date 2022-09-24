@@ -637,6 +637,7 @@ void feedAppendOnlyFile(struct redisCommand *cmd, int dictid, robj **argv, int a
             buf = catAppendOnlyGenericCommand(buf,5,newargs);
             decrRefCount(newargs[4]);
         } else {
+            /* 其他的命令都不需要转化 */
             buf = catAppendOnlyGenericCommand(buf,argc,argv);
         }
     } else {

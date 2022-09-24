@@ -2290,6 +2290,7 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData)
     }
 
     /* Check if a background saving or AOF rewrite in progress terminated. */
+    /* 检测bgsave和aof重写是否在执行过程中 */
     if (hasActiveChildProcess() || ldbPendingChildren())
     {
         run_with_period(1000) receiveChildInfo();
@@ -2307,6 +2308,7 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData)
              * the given amount of seconds, and if the latest bgsave was
              * successful or if, in case of an error, at least
              * CONFIG_BGSAVE_RETRY_DELAY seconds already elapsed. */
+            /* 检查是否达到了执行save的标准 */
             if (server.dirty >= sp->changes &&
                 server.unixtime - server.lastsave > sp->seconds &&
                 (server.unixtime - server.lastbgsave_try >
@@ -2407,6 +2409,10 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData)
      * Note: this code must be after the replicationCron() call above so
      * make sure when refactoring this file to keep this order. This is useful
      * because we want to give priority to RDB savings for replication. */
+    /*
+     * 如果上次触发bgsave时已经有进程在执行了，就会标记rdb_bgsave_scheduled=1，然后放到serverCron
+     * 中执行
+     */
     if (!hasActiveChildProcess() &&
         server.rdb_bgsave_scheduled &&
         (server.unixtime - server.lastbgsave_try > CONFIG_BGSAVE_RETRY_DELAY ||
@@ -3860,6 +3866,7 @@ struct redisCommand *lookupCommandOrOriginal(sds name)
  * command execution, for example when serving a blocked client, you
  * want to use propagate().
  */
+// propagate函数的作用就是将带来数据改动的命令传播给slave和AOF
 void propagate(struct redisCommand *cmd, int dbid, robj **argv, int argc,
                int flags)
 {
@@ -4014,6 +4021,7 @@ void call(client *c, int flags)
     elapsedStart(&call_timer);
 
     // 会调用客户端命令对应的 redisCommand 的处理方法
+    // 执行命令
     c->cmd->proc(c);
     const long duration = elapsedUs(call_timer);
     c->duration = duration;

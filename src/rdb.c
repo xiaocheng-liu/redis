@@ -1375,12 +1375,14 @@ int rdbSave(char *filename, rdbSaveInfo *rsi) {
         return C_ERR;
     }
 
+    // 初始化rio，
     rioInitWithFile(&rdb,fp);
     startSaving(RDBFLAGS_NONE);
 
     if (server.rdb_save_incremental_fsync)
         rioSetAutoSync(&rdb,REDIS_AUTOSYNC_BYTES);
 
+    // 内存数据dump到rdb
     if (rdbSaveRio(&rdb,&error,RDBFLAGS_NONE,rsi) == C_ERR) {
         errno = error;
         goto werr;
@@ -1432,7 +1434,8 @@ int rdbSaveBackground(char *filename, rdbSaveInfo *rsi) {
 
     server.dirty_before_bgsave = server.dirty;
     server.lastbgsave_try = time(NULL);
-    
+
+    // 创建子进程，redisFork实际就是对fork的封装
     if ((childpid = redisFork(CHILD_TYPE_RDB)) == 0) {
         int retval;
         /* 子进程 */
@@ -2861,6 +2864,7 @@ int rdbSaveToSlavesSockets(rdbSaveInfo *rsi) {
 }
 
 void saveCommand(client *c) {
+    // 检查是否后台已经有进程在执行save，如果有就停止执行。
     if (server.child_type == CHILD_TYPE_RDB) {
         addReplyError(c,"Background save already in progress");
         return;
@@ -2875,7 +2879,7 @@ void saveCommand(client *c) {
 }
 
 /* BGSAVE [SCHEDULE] */
-/* 生成rdb快照 */
+/* 后台生成rdb快照 */
 void bgsaveCommand(client *c) {
     int schedule = 0;
 
@@ -2897,7 +2901,7 @@ void bgsaveCommand(client *c) {
         addReplyError(c,"Background save already in progress");
     } else if (hasActiveChildProcess()) {
         if (schedule) {
-            server.rdb_bgsave_scheduled = 1;
+            server.rdb_bgsave_scheduled = 1;    // 如果bgsave已经在执行中了，这次执行会放到serverCron中执行
             addReplyStatus(c,"Background saving scheduled");
         } else {
             addReplyError(c,

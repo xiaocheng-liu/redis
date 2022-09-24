@@ -417,13 +417,21 @@ typedef enum
 #define MAXMEMORY_FLAG_NO_SHARED_INTEGERS \
     (MAXMEMORY_FLAG_LRU | MAXMEMORY_FLAG_LFU)
 // redis的8中淘汰策略
+// 仅在有过期时间的数据上执行LRU
 #define MAXMEMORY_VOLATILE_LRU ((0 << 8) | MAXMEMORY_FLAG_LRU)
+// 仅在有过期时间的数据上执行LFU
 #define MAXMEMORY_VOLATILE_LFU ((1 << 8) | MAXMEMORY_FLAG_LFU)
+// 在有过期时间的数据上按TTL长度淘汰
 #define MAXMEMORY_VOLATILE_TTL (2 << 8)
+// 仅在有过期时间的数据上随机淘汰
 #define MAXMEMORY_VOLATILE_RANDOM (3 << 8)
+// 在全局数据上执行LRU
 #define MAXMEMORY_ALLKEYS_LRU ((4 << 8) | MAXMEMORY_FLAG_LRU | MAXMEMORY_FLAG_ALLKEYS)
+// 在全局数据上执行LFU
 #define MAXMEMORY_ALLKEYS_LFU ((5 << 8) | MAXMEMORY_FLAG_LFU | MAXMEMORY_FLAG_ALLKEYS)
+// 在全局数据上随机淘汰
 #define MAXMEMORY_ALLKEYS_RANDOM ((6 << 8) | MAXMEMORY_FLAG_ALLKEYS)
+// 不淘汰数，当内存空间满时插入数据会报错
 #define MAXMEMORY_NO_EVICTION (7 << 8)
 
 /* Units */

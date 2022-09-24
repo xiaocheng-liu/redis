@@ -1533,10 +1533,13 @@ int expireIfNeeded(redisDb *db, robj *key) {
     if (checkClientPauseTimeoutAndReturnIfPaused()) return 1;
 
     /* Delete the key */
+    /* 删除key */
     server.stat_expiredkeys++;
     propagateExpire(db,key,server.lazyfree_lazy_expire);
     notifyKeyspaceEvent(NOTIFY_EXPIRED,
         "expired",key,db->id);
+    // 判断当前时间戳和上次更新时间戳之间的gap是否超过设定的过期时间
+    // lazyfree_lazy_expire 是Redis的配置项之一，它的作用是是否开启惰性删除(默认不开启)，很显然如果开启就会执行异步删除
     int retval = server.lazyfree_lazy_expire ? dbAsyncDelete(db,key) :
                                                dbSyncDelete(db,key);
     if (retval) signalModifiedKey(NULL,db,key);

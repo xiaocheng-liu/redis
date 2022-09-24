@@ -451,7 +451,7 @@ void geoaddCommand(client *c) {
 
     if ((c->argc - longidx) % 3 || (xx && nx)) {
         /* 解析所有的经纬度值和member，并对其个数做校验 */
-            addReplyErrorObject(c,shared.syntaxerr);
+        addReplyErrorObject(c,shared.syntaxerr);
         return;
     }
 
@@ -514,7 +514,7 @@ void georadiusGeneric(client *c, int srcKeyIndex, int flags) {
     robj *storekey = NULL;
     int storedist = 0; /* 0 for STORE, 1 for STOREDIST. */
 
-    /* 根据key找找到对应的zojb */
+    /* 根据key找找到对应的zobj */
     robj *zobj = NULL;
     if ((zobj = lookupKeyReadOrReply(c, c->argv[srcKeyIndex], shared.emptyarray)) == NULL ||
         checkType(c, zobj, OBJ_ZSET)) {
@@ -684,6 +684,7 @@ void georadiusGeneric(client *c, int srcKeyIndex, int flags) {
     GeoHashRadius georadius = geohashCalculateAreasByShapeWGS84(&shape);
 
     /* Search the zset for all matching points */
+    /* 创建geoArray存储结果列表 */
     geoArray *ga = geoArrayCreate();
     /* 扫描9个区域中是否有满足条的点，有就放到geoArray中 */
     membersOfAllNeighbors(zobj, georadius, &shape, ga, any ? count : 0);
@@ -803,6 +804,7 @@ void georadiusGeneric(client *c, int srcKeyIndex, int flags) {
         }
         addReplyLongLong(c, returned_items);
     }
+    // 释放geoArray占用的空间
     geoArrayFree(ga);
 }
 
