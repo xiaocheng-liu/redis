@@ -414,6 +414,7 @@ void getexCommand(client *c) {
     }
 }
 
+// 获取并删除键
 void getdelCommand(client *c) {
     if (getGenericCommand(c) == C_ERR) return;
     int deleted = server.lazyfree_lazy_user_del ? dbAsyncDelete(c->db, c->argv[1]) :

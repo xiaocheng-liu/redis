@@ -205,7 +205,7 @@ int _dictExpand(dict *d, unsigned long size, int* malloc_failed)
         return DICT_OK;
     }
 
-    // 非初始化的情况，将新表赋值给ht[1], 然后标记rehashidx 0
+    // 非初始化的情况，将新表赋值给ht[1], 然后标记rehashidx=0
     d->ht[1] = n;
     d->rehashidx = 0; // rehashidx表示当前rehash到ht[0]的下标位置 
     return DICT_OK;

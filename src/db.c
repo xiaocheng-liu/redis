@@ -695,10 +695,12 @@ void delGenericCommand(client *c, int lazy) {
     addReplyLongLong(c,numdel);
 }
 
+// DEL key
 void delCommand(client *c) {
     delGenericCommand(c,server.lazyfree_lazy_user_del);
 }
 
+// UNLINK key
 void unlinkCommand(client *c) {
     delGenericCommand(c,1);
 }
