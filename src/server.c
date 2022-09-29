@@ -4385,8 +4385,8 @@ int processCommand(client *c)
      * 2) The command has no key arguments. */
     /* 如果启用了群集，请在此处执行群集重定向。
      * 但是，在以下情况下，我们不会执行重定向：
-     * 1）此命令的发送者是我们的主人。
-     * 2） 该命令没有关键参数。*/
+     * 1）命令的发送者是本节点的主节点。
+     * 2）该命令没有key参数。*/
     if (server.cluster_enabled &&
         !(c->flags & CLIENT_MASTER) &&
         !(c->flags & CLIENT_LUA &&

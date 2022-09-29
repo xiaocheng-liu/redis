@@ -199,12 +199,14 @@ ssize_t aofRewriteBufferWrite(int fd) {
 
 /* Return true if an AOf fsync is currently already in progress in a
  * BIO thread. */
+// 检查是否有aof异步进程在执行
 int aofFsyncInProgress(void) {
     return bioPendingJobsOfType(BIO_AOF_FSYNC) != 0;
 }
 
 /* Starts a background task that performs fsync() against the specified
  * file descriptor (the one of the AOF file) in another thread. */
+// 开启后台同步任务
 void aof_background_fsync(int fd) {
     bioCreateFsyncJob(fd);
 }

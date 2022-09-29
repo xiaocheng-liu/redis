@@ -65,12 +65,12 @@ static int checkStringLength(client *c, long long size) {
  * If abort_reply is NULL, "$-1" is used. */
 
 #define OBJ_NO_FLAGS 0
-#define OBJ_SET_NX (1<<0)          /* Set if key not exists. */ // 如果键不存在则设置
-#define OBJ_SET_XX (1<<1)          /* Set if key exists. */     // 如果键存在则设置
+#define OBJ_SET_NX (1<<0)          /* Set if key not exists. */             // 如果键不存在则设置
+#define OBJ_SET_XX (1<<1)          /* Set if key exists. */                 // 如果键存在则设置
 #define OBJ_EX (1<<2)              /* Set if time in seconds is given */    // 给定过期时间（以秒为单位）设置
 #define OBJ_PX (1<<3)              /* Set if time in ms in given */         // 给定过期时间（以毫秒为单位）设置
-#define OBJ_KEEPTTL (1<<4)         /* Set and keep the ttl */
-#define OBJ_SET_GET (1<<5)         /* Set if want to get key before set */
+#define OBJ_KEEPTTL (1<<4)         /* Set and keep the ttl */               // 设置过期时间
+#define OBJ_SET_GET (1<<5)         /* Set if want to get key before set */  // 想要在设置之前返回之前的值
 #define OBJ_EXAT (1<<6)            /* Set if timestamp in second is given */
 #define OBJ_PXAT (1<<7)            /* Set if timestamp in ms is given */
 #define OBJ_PERSIST (1<<8)         /* Set if we need to remove the ttl */
@@ -93,7 +93,7 @@ void setGenericCommand(client *c, int flags, robj *key, robj *val, robj *expire,
         if (unit == UNIT_SECONDS) milliseconds *= 1000;
     }
 
-    // 判断是否符合nx的要求
+    // 判断是否符合NX或者XX的要求
     if ((flags & OBJ_SET_NX && lookupKeyWrite(c->db,key) != NULL) ||
         (flags & OBJ_SET_XX && lookupKeyWrite(c->db,key) == NULL))
     {
@@ -101,6 +101,7 @@ void setGenericCommand(client *c, int flags, robj *key, robj *val, robj *expire,
         return;
     }
 
+    // 是否需要在设置之前返回旧值
     if (flags & OBJ_SET_GET) {
         if (getGenericCommand(c) == C_ERR) return;
     }
@@ -283,16 +284,19 @@ void setCommand(client *c) {
     setGenericCommand(c,flags,c->argv[1],c->argv[2],expire,unit,NULL,NULL);
 }
 
+// SETNX key value 如果key不存在则设置
 void setnxCommand(client *c) {
     c->argv[2] = tryObjectEncoding(c->argv[2]);
     setGenericCommand(c,OBJ_SET_NX,c->argv[1],c->argv[2],NULL,0,shared.cone,shared.czero);
 }
 
+// SETEX key seconds value 过期时间以秒设置键值
 void setexCommand(client *c) {
     c->argv[3] = tryObjectEncoding(c->argv[3]);
     setGenericCommand(c,OBJ_EX,c->argv[1],c->argv[3],c->argv[2],UNIT_SECONDS,NULL,NULL);
 }
 
+// PSETEX key seconds value 过期时间以毫秒设置键值
 void psetexCommand(client *c) {
     c->argv[3] = tryObjectEncoding(c->argv[3]);
     setGenericCommand(c,OBJ_PX,c->argv[1],c->argv[3],c->argv[2],UNIT_MILLISECONDS,NULL,NULL);
@@ -304,6 +308,7 @@ int getGenericCommand(client *c) {
     if ((o = lookupKeyReadOrReply(c,c->argv[1],shared.null[c->resp])) == NULL)
         return C_OK;
 
+    // 检查类型
     if (checkType(c,o,OBJ_STRING)) {
         return C_ERR;
     }
@@ -336,6 +341,7 @@ void getCommand(client *c) {
  *
  * Command would either return the bulk string, error or nil.
  */
+// 获取键并追加设置过期时间
 void getexCommand(client *c) {
     robj *expire = NULL;
     int unit = UNIT_SECONDS;
@@ -562,6 +568,7 @@ void msetGenericCommand(client *c, int nx) {
 
     /* Handle the NX flag. The MSETNX semantic is to return zero and don't
      * set anything if at least one key already exists. */
+    // 处理NX标识，如果Key已存在，则不设置值
     if (nx) {
         for (j = 1; j < c->argc; j += 2) {
             if (lookupKeyWrite(c->db,c->argv[j]) != NULL) {
@@ -571,6 +578,7 @@ void msetGenericCommand(client *c, int nx) {
         }
     }
 
+    // 设置key-value
     for (j = 1; j < c->argc; j += 2) {
         c->argv[j+1] = tryObjectEncoding(c->argv[j+1]);
         setKey(c,c->db,c->argv[j],c->argv[j+1]);
