@@ -43,7 +43,7 @@
  *
  * redis sds（动态字符）的实现，类似于java中的StringBuffer StringBuilder，但为了节省存储空间，
  * 做了更极致的设计。 redis针对不同的字符串长度设计了多种不同的结构体，比如sdshdr8 sdshdr16 
- * ……sdshdr32，其差异在于sdshdr中len和alloc字段的数据类型。  
+ * sdshdr32，其差异在于sdshdr中len和allo其差异在于sdshdr中len和alloc字段的数据类型c字段的数据类型。
  * 以 sdshdr8为例，其存储结构如下。  
  * |  len  | alloc | flag |   buff   |
  * | 1byte | 1byte | 1byte|  n bytes | 
@@ -59,7 +59,7 @@ const char *SDS_NOINIT = "SDS_NOINIT";
 /**
  * @brief 根据类型获取结构体大小
  * 
- * @param type header类型
+ * @param type sds类型
  * @return int 
  */
 static inline int sdsHdrSize(char type) {
@@ -308,7 +308,7 @@ sds sdsMakeRoomFor(sds s, size_t addlen) {
     /*  在真正使用过程中不会用到type5，如果遇到type5直接使用type8*/
     if (type == SDS_TYPE_5) type = SDS_TYPE_8;
 
-    // 获取新的 header 大小
+    // 获取新的type的 header 大小
     hdrlen = sdsHdrSize(type);
     if (oldtype == type) {
         // 类型没变
@@ -332,7 +332,7 @@ sds sdsMakeRoomFor(sds s, size_t addlen) {
         s = (char *) newsh + hdrlen;
         // 更新 SDS 类型
         s[-1] = type;
-        // 设置长度
+        // 设置已使用的长度
         sdssetlen(s, len);
     }
     // 获取 buf 总长度(待定)

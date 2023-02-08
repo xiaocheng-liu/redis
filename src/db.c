@@ -61,8 +61,10 @@ void updateLFU(robj *val) {
  * implementations that should instead rely on lookupKeyRead(),
  * lookupKeyWrite() and lookupKeyReadWithFlags(). */
 robj *lookupKey(redisDb *db, robj *key, int flags) {
+    // 查找键值对
     dictEntry *de = dictFind(db->dict,key->ptr);
     if (de) {
+        // 获取键值对对应的redisObject结构体
         robj *val = dictGetVal(de);
 
         /* Update the access time for the ageing algorithm.
@@ -70,9 +72,11 @@ robj *lookupKey(redisDb *db, robj *key, int flags) {
          * a copy on write madness. */
         // 查找时更新val的LRU或LFU信息
         if (!hasActiveChildProcess() && !(flags & LOOKUP_NOTOUCH)){
+            // 如果使用了LFU策略，更新LFU计数值
             if (server.maxmemory_policy & MAXMEMORY_FLAG_LFU) {
                 updateLFU(val);
             } else {
+                // 否则，调用LRU_CLOCK函数获取全局LRU时钟值
                 val->lru = LRU_CLOCK();
             }
         }

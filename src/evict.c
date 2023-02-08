@@ -54,9 +54,9 @@
 #define EVPOOL_CACHED_SDS_SIZE 255
 struct evictionPoolEntry {
     unsigned long long idle;    /* 对象的空闲时间 (inverse frequency for LFU) */
-    sds key;                    /* key的名字 */
-    sds cached;                 /* Cached SDS object for key name. */
-    int dbid;                   /* Key DB number. */
+    sds key;                    /* key的名字 待淘汰的键值对的key*/
+    sds cached;                 /* Cached SDS object for key name. 缓存的SDS对象*/
+    int dbid;                   /* Key DB number. 待淘汰键值对的key所在的数据库ID*/
 };
 
 static struct evictionPoolEntry *EvictionPoolLRU;
@@ -147,7 +147,8 @@ void evictionPoolAlloc(void) {
 void evictionPoolPopulate(int dbid, dict *sampledict, dict *keydict, struct evictionPoolEntry *pool) {
     int j, k, count;
     dictEntry *samples[server.maxmemory_samples];
-    // 随机采样部分key  
+    // 随机采样部分key
+    // 将待采样的哈希表sampledict、采样后的集合samples、以及采样数量maxmemory_samples，作为参数传给dictGetSomeKeys
     count = dictGetSomeKeys(sampledict,samples,server.maxmemory_samples);
     for (j = 0; j < count; j++) {
         unsigned long long idle;
@@ -172,6 +173,7 @@ void evictionPoolPopulate(int dbid, dict *sampledict, dict *keydict, struct evic
          * just a score where an higher score means better candidate. 
          * 根据key中的LRU信息和具体的配置策略计算idle值 */
         if (server.maxmemory_policy & MAXMEMORY_FLAG_LRU) {
+            // 计算在采样集合中的每一个键值对的空闲时间
             idle = estimateObjectIdleTime(o);
         } else if (server.maxmemory_policy & MAXMEMORY_FLAG_LFU) {
             /* When we use an LRU policy, we sort the keys by idle time
@@ -385,6 +387,7 @@ int getMaxmemoryState(size_t *total, size_t *logical, size_t *tofree, float *lev
 
     /* Check if we are over the memory usage limit. If we are not, no need
      * to subtract the slaves output buffers. We can just return ASAP. */
+    // 计算已使用的内存量
     mem_reported = zmalloc_used_memory();
     if (total) *total = mem_reported;
 
@@ -394,6 +397,7 @@ int getMaxmemoryState(size_t *total, size_t *logical, size_t *tofree, float *lev
 
     /* Remove the size of slaves output buffers and AOF buffer from the
      * count of used memory. */
+    // 将用于主从复制的复制缓冲区大小从已使用内存量中扣除
     mem_used = mem_reported;
     size_t overhead = freeMemoryGetNotCountedMemory();
     mem_used = (mem_used > overhead) ? mem_used-overhead : 0;
@@ -413,6 +417,7 @@ int getMaxmemoryState(size_t *total, size_t *logical, size_t *tofree, float *lev
     if (mem_used <= server.maxmemory) return C_OK;
 
     /* Compute how much memory we need to free. */
+    // 计算需要释放的内存量
     mem_tofree = mem_used - server.maxmemory;
 
     if (logical) *logical = mem_used;
@@ -562,10 +567,11 @@ int performEvictions(void) {
                  * every DB. 
                  * 先从dict中采样key并放到pool中 */
                 for (i = 0; i < server.dbnum; i++) {
-                    db = server.db+i;
+                    db = server.db+i;   //对Redis server上的每一个数据库都执行
                     dict = (server.maxmemory_policy & MAXMEMORY_FLAG_ALLKEYS) ?
-                            db->dict : db->expires;
+                            db->dict : db->expires;  // 根据淘汰策略，决定使用全局哈希表还是设置了过期时间的key的哈希表
                     if ((keys = dictSize(dict)) != 0) {
+                        // 将选择的哈希表dict传入evictionPoolPopulate函数，同时将全局哈希表也传给evictionPoolPopulate函数
                         evictionPoolPopulate(i, dict, db->dict, pool);
                         total_keys += keys;
                     }
@@ -574,7 +580,7 @@ int performEvictions(void) {
 
                 /* 从pool中选择最适合淘汰的key. */
                 for (k = EVPOOL_SIZE-1; k >= 0; k--) {
-                    if (pool[k].key == NULL) continue;
+                    if (pool[k].key == NULL) continue;  //当前key为空值，则查找下一个key
                     bestdbid = pool[k].dbid;
 
                     if (server.maxmemory_policy & MAXMEMORY_FLAG_ALLKEYS) {
@@ -593,11 +599,12 @@ int performEvictions(void) {
 
                     /* If the key exists, is our pick. Otherwise it is
                      * a ghost and we need to try the next element. */
+                    // 如果当前key对应的键值对不为空，选择当前key为被淘汰的key
                     if (de) {
                         bestkey = dictGetKey(de);
                         break;
                     } else {
-                        /* Ghost... Iterate again. */
+                        /* Ghost... Iterate again. */   //否则，继续查找下个key
                     }
                 }
             }
@@ -633,8 +640,9 @@ int performEvictions(void) {
             delta = (long long) zmalloc_used_memory();
             latencyStartMonitor(eviction_latency);
             if (server.lazyfree_lazy_eviction)
+                //如果配置了惰性删除，则进行异步删除
                 dbAsyncDelete(db,keyobj);
-            else
+            else    //否则进行同步删除
                 dbSyncDelete(db,keyobj);
             latencyEndMonitor(eviction_latency);
             latencyAddSampleIfNeeded("eviction-del",eviction_latency);

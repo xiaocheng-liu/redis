@@ -697,7 +697,9 @@ typedef struct RedisModuleDigest
 #define OBJ_ENCODING_STREAM 10    /* Encoded as a radix tree of listpacks */    //流 stream
 
 #define LRU_BITS 24
+// LRU时钟的最大值
 #define LRU_CLOCK_MAX ((1 << LRU_BITS) - 1) /* Max value of obj->lru */
+// 以毫秒为单位的LRU时钟精度
 #define LRU_CLOCK_RESOLUTION 1000           /* LRU clock resolution in ms */
 
 #define OBJ_SHARED_REFCOUNT INT_MAX       /* Global object never destroyed. */
@@ -1265,7 +1267,7 @@ struct redisServer
     dict *orig_commands;                /* Command table before command renaming. */        //没有转化的命令
     aeEventLoop *el;                                                                        //redis 事件循环实例
     rax *errors;                         /* Errors table */
-    redisAtomic unsigned int lruclock;   /* Clock for LRU eviction */
+    redisAtomic unsigned int lruclock;   /* Clock for LRU eviction */   // LRU驱逐时钟
     volatile sig_atomic_t shutdown_asap; /* SHUTDOWN needed ASAP */
     int activerehashing;                 /* Incremental rehash in serverCron() */
     int active_defrag_running;           /* Active defragmentation running (holds current scan aggressiveness) */
@@ -1620,7 +1622,7 @@ struct redisServer
     unsigned int maxclients;                    /* Max number of simultaneous clients */
     unsigned long long maxmemory;               /* Max number of memory bytes to use */
     int maxmemory_policy;                       /* Policy for key eviction */
-    int maxmemory_samples;                      /* Precision of random sampling */
+    int maxmemory_samples;                      /* Precision of random sampling */  // 由 redis.conf 中的配置项 maxmemory-samples 决定的，该配置项的默认值是 5
     int maxmemory_eviction_tenacity;            /* Aggressiveness of eviction processing */
     int lfu_log_factor;                         /* LFU logarithmic counter factor. */
     int lfu_decay_time;                         /* LFU counter decay factor. */

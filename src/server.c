@@ -1241,6 +1241,7 @@ long long ustime(void)
 }
 
 /* Return the UNIX time in milliseconds */
+// 以毫秒为单位计算的 UNIX 时间戳
 mstime_t mstime(void)
 {
     return ustime() / 1000;
@@ -2226,7 +2227,9 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData)
      *
      * Note that you can change the resolution altering the
      * LRU_CLOCK_RESOLUTION define. */
+    // 默认情况下，每100毫秒调用getLRUClock函数更新一次全局LRU时钟值
     unsigned int lruclock = getLRUClock();
+    // 设置lruclock变量
     atomicSet(server.lruclock, lruclock);
 
     cronUpdateMemoryStats();
@@ -2866,7 +2869,9 @@ void initServerConfig(void)
     server.next_client_id = 1; /* Client IDs, start from 1 .*/
     server.loading_process_events_interval_bytes = (1024 * 1024 * 2);
 
+    // 调用getLRUClock函数计算全局LRU时钟值
     unsigned int lruclock = getLRUClock();
+    // 设置lruclock为刚计算的LRU时钟值
     atomicSet(server.lruclock, lruclock);
     resetServerSaveParams();
 
@@ -3455,6 +3460,7 @@ void initServer(void)
         listSetFreeMethod(server.db[j].defrag_later, (void (*)(void *))sdsfree);
     }
     //【9】evictionPoolAlloc函数初始化LRU/LFU样本池，用于实现LRU/LFU近似算法。继续初始化server中存储运行时数据的相关属性：
+    // 该数组的大小由宏定义 EVPOOL_SIZE（在 evict.c 文件中）决定，默认是 16 个元素，也就是可以保存 16 个待淘汰的候选键值对。
     evictionPoolAlloc(); /* Initialize the LRU keys pool. */
     server.pubsub_channels = dictCreate(&keylistDictType, NULL);
     server.pubsub_patterns = listCreate();
