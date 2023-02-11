@@ -150,20 +150,31 @@ typedef struct aeEventLoop {
     /* 当前已注册的最大的文件描述符 */
     int maxfd;   /* highest file descriptor currently registered */
     /* 文件描述符监听集合的大小 */
+    /**
+     * 指定事件循环要监听的文件描述符集合的大小。这个值与配置文件中得maxclients有关。
+     *
+     * setsize参数表示了eventloop可以监听的网络事件fd的个数（不包含超时事件），
+     * 如果当前监听的fd个数超过了setsize，eventloop将不能继续注册。
+     */
     int setsize; /* max number of file descriptors tracked */
     /* 下一个时间事件的ID */
     long long timeEventNextId;
     /* 已注册的事件 */
+    /**
+     * 存放所有注册的读写事件，是大小为setsize的数组。内核会保证新建连接的fd是当前可用描述符的最小值，
+     * 所以最多监听setsize个描述符，那么最大的fd就是setsize - 1。这种组织方式的好处是，可以以fd为下标，
+     * 索引到对应的事件，在事件触发后根据fd快速查找到对应的事件。
+     */
     aeFileEvent *events; /* Registered events */
-    /* 已触发的事件 */
+    /* 已触发的事件 同样是setsize大小的数组。*/
     aeFiredEvent *fired; /* Fired events */
-    /* 时间事件的头节点指针 */
+    /* 时间事件的头节点指针 redis将定时器事件组织成链表*/
     aeTimeEvent *timeEventHead;
     /* 事件处理开关 */
     int stop;
     /* 多路复用库的事件状态数据 */
     void *apidata; /* This is used for polling API specific data */
-    /* 执行处理事件之前的函数 */
+    /* 事件循环在每次迭代前执行处理事件之前的函数 */
     aeBeforeSleepProc *beforesleep;
     /* 执行处理事件之后的函数 */
     aeBeforeSleepProc *aftersleep;

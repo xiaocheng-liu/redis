@@ -3398,7 +3398,8 @@ void initServer(void)
     const char *clk_msg = monotonicInit();
     serverLog(LL_NOTICE, "monotonic clock: %s", clk_msg);
     //【6】创建事件循环器。
-    /* 初始化server.el ,注意在这里的aeCreateEventLoop内部调用了epoll_create */
+    /* 初始化server.el ,注意在这里的aeCreateEventLoop内部调用了epoll_create。
+     * 传入的最大文件描述符个数为客户端最大连接数+宏定义CONFIG_FDSET_INCR的大小*/
     server.el = aeCreateEventLoop(server.maxclients + CONFIG_FDSET_INCR);
     if (server.el == NULL)
     {
@@ -3526,9 +3527,9 @@ void initServer(void)
     /* TCP新连接是可以读事件，这里指定了处理TCP连接的handler为acceptTcpHandler函数*/
     //【11】分别为TCP Socket、TSL Socks、UNIX Socket注册监听AE_READABLE类型的文件事件，
     // 事件处理函数分别为acceptTcpHandler、acceptTLSHandler、acceptUnixHandler，这些函数负责接收Socket中的新连接，
-    // 本书后续会详细分析acceptTcpHandler函数。
     for (j = 0; j < server.ipfd_count; j++)
     {
+        // 注册监听事件，server.ipfd是TCP文件描述符，AE_READABLE可读事件，acceptTcpHandler事件处理回调函数
         if (aeCreateFileEvent(server.el, server.ipfd[j], AE_READABLE,
                               acceptTcpHandler, NULL) == AE_ERR)
         {

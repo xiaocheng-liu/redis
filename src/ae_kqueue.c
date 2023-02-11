@@ -34,19 +34,22 @@
 #include <sys/time.h>
 
 typedef struct aeApiState {
-    int kqfd;
-    struct kevent *events;
+    int kqfd;               // 实例文件描述符
+    struct kevent *events;  // 记录就绪的事件
 } aeApiState;
 
 static int aeApiCreate(aeEventLoop *eventLoop) {
+    // 分配内存
     aeApiState *state = zmalloc(sizeof(aeApiState));
 
     if (!state) return -1;
+    // 为kqueue事件分配内存
     state->events = zmalloc(sizeof(struct kevent)*eventLoop->setsize);
     if (!state->events) {
         zfree(state);
         return -1;
     }
+    // 返回文件描述符，保存在state的kqfd中
     state->kqfd = kqueue();
     if (state->kqfd == -1) {
         zfree(state->events);
@@ -54,6 +57,7 @@ static int aeApiCreate(aeEventLoop *eventLoop) {
         return -1;
     }
     anetCloexec(state->kqfd);
+    // 将aeApiState设置到eventLoop的apidata
     eventLoop->apidata = state;
     return 0;
 }
@@ -74,6 +78,7 @@ static void aeApiFree(aeEventLoop *eventLoop) {
 }
 
 static int aeApiAddEvent(aeEventLoop *eventLoop, int fd, int mask) {
+    // 获取aeApiState
     aeApiState *state = eventLoop->apidata;
     struct kevent ke;
 

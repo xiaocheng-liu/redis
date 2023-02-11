@@ -68,12 +68,15 @@
 
 // 初始化一个事件循环结构体eventLoop
 aeEventLoop *aeCreateEventLoop(int setsize) {
+    // aeEventLoop结构体
     aeEventLoop *eventLoop;
     int i;
 
     monotonicInit();    /* just in case the calling app didn't initialize */
 
+    // 分配eventLoop内存
     if ((eventLoop = zmalloc(sizeof(*eventLoop))) == NULL) goto err;
+    // 分配IO事件内存
     eventLoop->events = zmalloc(sizeof(aeFileEvent)*setsize);
     eventLoop->fired = zmalloc(sizeof(aeFiredEvent)*setsize);
     if (eventLoop->events == NULL || eventLoop->fired == NULL) goto err;
@@ -85,11 +88,12 @@ aeEventLoop *aeCreateEventLoop(int setsize) {
     eventLoop->beforesleep = NULL;
     eventLoop->aftersleep = NULL;
     eventLoop->flags = 0;
+    // 创建poll实例
     if (aeApiCreate(eventLoop) == -1) goto err;
     /* Events with mask == AE_NONE are not set. So let's initialize the
      * vector with it. */
     for (i = 0; i < setsize; i++)
-        eventLoop->events[i].mask = AE_NONE;
+        eventLoop->events[i].mask = AE_NONE; // 初始化为空事件
     return eventLoop;
 
 err:
@@ -170,13 +174,15 @@ int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, int mask,
         errno = ERANGE;
         return AE_ERR;
     }
+    // 根据传入的文件描述符获取对应的IO事件
     aeFileEvent *fe = &eventLoop->events[fd];
 
+    // 注册要监听的事件，让内核可以监听到当前文件描述符上的IO事件
     if (aeApiAddEvent(eventLoop, fd, mask) == -1)
         return AE_ERR;
     fe->mask |= mask;
-    if (mask & AE_READABLE) fe->rfileProc = proc;
-    if (mask & AE_WRITABLE) fe->wfileProc = proc;
+    if (mask & AE_READABLE) fe->rfileProc = proc;   // 设置写事件的回调函数
+    if (mask & AE_WRITABLE) fe->wfileProc = proc;   // 设置读事件的回调函数
     fe->clientData = clientData;
     if (fd > eventLoop->maxfd)
         eventLoop->maxfd = fd;
@@ -370,7 +376,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
     */
     int processed = 0, numevents;
 
-    /* 如果flag位既不是时间事件，又不是文件事件，返回0 */
+    /* 如果没有事件。如果flag位既不是时间事件，又不是文件事件，返回0 */
     if (!(flags & AE_TIME_EVENTS) && !(flags & AE_FILE_EVENTS)) return 0;
 
     /* 请注意，既然我们要处理时间事件，即使没有要处理的文件事件，我们仍要调用select()，以便在下
@@ -438,8 +444,11 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
         /* 循环处理触发的文件事件 */
         for (j = 0; j < numevents; j++) {
             /* 获取触发的文件事件 */
+            // aeApiPoll中已将就绪的事件放在了fired中,通过fired可以获取到产生事件的文件描述符fd
+            // 根据文件描述符fd获取对应的事件aeFileEvent,aeFileEvent中记录了事件的回调函数
             aeFileEvent *fe = &eventLoop->events[eventLoop->fired[j].fd];
             int mask = eventLoop->fired[j].mask;
+            // 获取文件描述符
             int fd = eventLoop->fired[j].fd;
             int fired = 0; /* Number of events fired for current fd. */
 
@@ -454,6 +463,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
              * This is useful when, for instance, we want to do things
              * in the beforeSleep() hook, like fsyncing a file to disk,
              * before replying to a client. */
+            // 判断屏障
             /* 查看事件是否设置AE_BARRIER标志,如果设置了AE_BARRIER标志,优先处理写事件 */
             int invert = fe->mask & AE_BARRIER;
 
@@ -465,6 +475,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
              * inverted. */
             /* 如果没有设置AE_BARRIER标志，优先处理读事件 */
             if (!invert && fe->mask & mask & AE_READABLE) {
+                // 如果是可读事件，调用可读事件的回调函数，参数分别为eventLoop、文件描述符、aeFileEvent的clientData、事件类型掩码
                 fe->rfileProc(eventLoop,fd,fe->clientData,mask);
                 fired++;
                 fe = &eventLoop->events[fd]; /* Refresh in case of resize. */
@@ -477,7 +488,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
                        可能是默写版本中的错误，下面有refresh in case of resize，应该
                        是为了解决一些存在的瞬时状态的bug而产生的更严谨的写法.
             */
-            /* Fire the writable event. */
+            /* Fire the writable event. 处理可写事件*/
             if (fe->mask & mask & AE_WRITABLE) {
                 if (!fired || fe->wfileProc != fe->rfileProc) {
                     fe->wfileProc(eventLoop,fd,fe->clientData,mask);
@@ -506,7 +517,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
             processed++;
         }
     }
-    /* 如果是时间事件 */
+    /* 如果有时间事件 */
     if (flags & AE_TIME_EVENTS)
         /* 调用时间事件处理函数 */
         processed += processTimeEvents(eventLoop);
@@ -540,6 +551,7 @@ int aeWait(int fd, int mask, long long milliseconds) {
 void aeMain(aeEventLoop *eventLoop) {
     eventLoop->stop = 0;
     while (!eventLoop->stop) {
+        // 调用了aeProcessEvents处理事件
         aeProcessEvents(eventLoop, AE_ALL_EVENTS|
                                    AE_CALL_BEFORE_SLEEP|
                                    AE_CALL_AFTER_SLEEP);

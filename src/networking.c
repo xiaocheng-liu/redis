@@ -1114,6 +1114,7 @@ static void acceptCommonHandler(connection *conn, int flags, char *ip) {
     }
 
     /* Create connection and client */
+    // 调用createClient
     // 为客户端连接分配一个接收数据的结构体
     // 并将新的连接放入epoll 里面
     if ((c = createClient(conn)) == NULL) {
@@ -1158,7 +1159,7 @@ void acceptTcpHandler(aeEventLoop *el, int fd, void *privdata, int mask) {
     UNUSED(privdata);
 
     while(max--) {
-        //跟客户端建立通道，为客户端分配一个fd.
+        // 跟客户端建立通道，为客户端分配一个fd.
         cfd = anetTcpAccept(server.neterr, fd, cip, sizeof(cip), &cport);
         if (cfd == ANET_ERR) {
             if (errno != EWOULDBLOCK)
@@ -1650,7 +1651,9 @@ int handleClientsWithPendingWrites(void) {
     listNode *ln;
     int processed = listLength(server.clients_pending_write);
 
+    // 获取待写回数据的客户端列表
     listRewind(server.clients_pending_write,&li);
+    // 遍历每一个待写回数据的客户端
     while((ln = listNext(&li))) {
         client *c = listNodeValue(ln);
         c->flags &= ~CLIENT_PENDING_WRITE;
@@ -1664,10 +1667,12 @@ int handleClientsWithPendingWrites(void) {
         if (c->flags & CLIENT_CLOSE_ASAP) continue;
 
         /* Try to write buffers to the client socket. */
+        // 将缓冲区的数据写到客户端socket中
         if (writeToClient(c,0) == C_ERR) continue;
 
         /* If after the synchronous writes above we still have data to
          * output to the client, we need to install the writable handler. */
+        // 如果数据未全部写回到客户端
         if (clientHasPendingReplies(c)) {
             int ae_barrier = 0;
             /* For the fsync=always policy, we want that a given FD is never
@@ -2265,6 +2270,7 @@ void readQueryFromClient(connection *conn) {
     qblen = sdslen(c->querybuf);
     if (c->querybuf_peak < qblen) c->querybuf_peak = qblen; // 修改最近读的最大值
     c->querybuf = sdsMakeRoomFor(c->querybuf, readlen); // 开辟空间
+    // 从已连接的套接字中读取客户端的请求数据到输入缓冲区
     nread = connRead(c->conn, c->querybuf+qblen, readlen);  // 读取字节
     if (nread == -1) {  // 读不到数据
         if (connGetState(conn) == CONN_STATE_CONNECTED) {   // 确认连接是否正常
