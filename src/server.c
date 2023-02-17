@@ -3460,6 +3460,7 @@ void initServer(void)
         server.db[j].defrag_later = listCreate();
         listSetFreeMethod(server.db[j].defrag_later, (void (*)(void *))sdsfree);
     }
+
     //【9】evictionPoolAlloc函数初始化LRU/LFU样本池，用于实现LRU/LFU近似算法。继续初始化server中存储运行时数据的相关属性：
     // 该数组的大小由宏定义 EVPOOL_SIZE（在 evict.c 文件中）决定，默认是 16 个元素，也就是可以保存 16 个待淘汰的候选键值对。
     evictionPoolAlloc(); /* Initialize the LRU keys pool. */

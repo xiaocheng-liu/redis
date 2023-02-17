@@ -1,4 +1,7 @@
-/* ziplist是为了提高存储效率而设计的一种特殊编码的双向链表。它可以存储字符串或者整数，
+/*
+ *
+ *
+ * ziplist是为了提高存储效率而设计的一种特殊编码的双向链表。它可以存储字符串或者整数，
  * 存储整数时是采用整数的二进制而不是字符串形式存储。他能在O(1)的时间复杂度下完成list两端
  * 的push和pop操作。但是因为每次操作都需要重新分配ziplist的内存，所以实际复杂度和ziplist
  * 的内存使用量相关。    
@@ -200,11 +203,11 @@
 /* The size of a ziplist header: two 32 bit integers for the total
  * bytes count and last item offset. One 16 bit integer for the number
  * of items field. */
-//定义由zlbytes，zltail跟zllen组成的压缩链表的头大小
+//定义由zlbytes，zltail跟zllen组成的压缩链表的头大小。包括zlbytes、zltail和zllen所占用的大小：32 bits * 2 + 16 bits
 #define ZIPLIST_HEADER_SIZE     (sizeof(uint32_t)*2+sizeof(uint16_t))
 
 /* Size of the "end of ziplist" entry. Just one byte. */
-// 压缩列表的结尾，占一个字节
+// 压缩列表的结尾，占一个字节。8bits
 #define ZIPLIST_END_SIZE        (sizeof(uint8_t))
 
 /* Return the pointer to the first entry of a ziplist. */
@@ -742,7 +745,7 @@ unsigned char *__ziplistCascadeUpdate(unsigned char *zl, unsigned char *p) {
 
         /* Update prev entry's info and advance the cursor. */
         rawlen = cur.headersize + cur.len;
-        prevlen = rawlen + delta; 
+        prevlen = rawlen + delta;
         prevlensize = zipStorePrevEntryLength(NULL, prevlen);
         prevoffset = p - zl;
         p += rawlen;
@@ -780,8 +783,8 @@ unsigned char *__ziplistCascadeUpdate(unsigned char *zl, unsigned char *p) {
         zipEntry(zl + prevoffset, &cur); /* no need for "safe" variant since we already iterated on all these entries above. */
         rawlen = cur.headersize + cur.len;
         /* Move entry to tail and reset prevlen. */
-        memmove(p - (rawlen - cur.prevrawlensize), 
-                zl + prevoffset + cur.prevrawlensize, 
+        memmove(p - (rawlen - cur.prevrawlensize),
+                zl + prevoffset + cur.prevrawlensize,
                 rawlen - cur.prevrawlensize);
         p -= (rawlen + delta);
         if (cur.prevrawlen == 0) {

@@ -138,6 +138,7 @@ void connSetPrivateData(connection *conn, void *data) {
 }
 
 /* Get the associated private data pointer */
+// 获取关联的私有数据指针
 void *connGetPrivateData(connection *conn) {
     return conn->private_data;
 }
@@ -222,6 +223,9 @@ static int connSocketAccept(connection *conn, ConnectionCallbackFunc accept_hand
  * always called before and not after the read handler in a single event
  * loop.
  */
+// 注册一个写处理程序，在连接可写时调用。如果为NULL，则删除现有处理程序。
+// 屏障标志表示请求写入屏障，结果为CONN_FLAG_WRITE_BARRIER集合。这将确保写入处理程序
+// 在单个事件中始终在读取处理程序之前而不是之后调用循环。
 static int connSocketSetWriteHandler(connection *conn, ConnectionCallbackFunc func, int barrier) {
     if (func == conn->write_handler) return C_OK;
 
@@ -241,7 +245,7 @@ static int connSocketSetWriteHandler(connection *conn, ConnectionCallbackFunc fu
 /* Register a read handler, to be called when the connection is readable.
  * If NULL, the existing handler is removed.
  */
-//设置新的reader handler
+// 设置新的reader handler
 static int connSocketSetReadHandler(connection *conn, ConnectionCallbackFunc func) {
     if (func == conn->read_handler) return C_OK;
 

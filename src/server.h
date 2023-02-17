@@ -136,9 +136,9 @@ typedef long long ustime_t; /* microsecond time type. */
 #define STATS_METRIC_NET_OUTPUT 2 /* Bytes written to network. */
 #define STATS_METRIC_COUNT 3
 
-/* Protocol and I/O related defines */
+/* Protocol and I/O related defines 协议和 IO 相关定义*/
 #define PROTO_MAX_QUERYBUF_LEN (1024 * 1024 * 1024) /* 1GB max query buffer. */
-#define PROTO_IOBUF_LEN (1024 * 16)                 /* Generic I/O buffer size */
+#define PROTO_IOBUF_LEN (1024 * 16)                 /* Generic I/O buffer size 通用 IO 缓冲区大小*/
 #define PROTO_REPLY_CHUNK_BYTES (16 * 1024)         /* 16k output buffer */
 #define PROTO_INLINE_MAX_SIZE (1024 * 64)           /* Max size of inline reads */
 #define PROTO_MBULK_BIG_ARG (1024 * 32)
@@ -727,6 +727,7 @@ typedef struct redisObject
 /* The a string name for an object's type as listed above
  * Native types are checked against the OBJ_STRING, OBJ_LIST, OBJ_* defines,
  * and Module types have their registered name returned. */
+// 根据对象获取对象名称名称
 char *getObjectTypeName(robj *);
 
 /* Macro used to initialize a Redis object allocated on the stack.
@@ -746,6 +747,7 @@ struct evictionPoolEntry; /* Defined in evict.c */
 
 /* This structure is used in order to represent the output buffer of a client,
  * which is actually a linked list of blocks like that, that is: client->reply. */
+// 该结构用于表示客户端的输出缓冲器，这实际上是一个类似的块链接列表，即：client->reply。
 typedef struct clientReplyBlock
 {
     size_t size, used;
@@ -755,16 +757,16 @@ typedef struct clientReplyBlock
 /* Redis database representation. There are multiple databases identified
  * by integers from 0 (the default database) up to the max configured
  * database. The database number is the 'id' field in the structure. */
+// Redis数据库表示。已识别多个数据库从0（默认数据库）到配置的最大值的整数数据库。数据库编号是结构中的“id”字段。
 typedef struct redisDb
 {
-    dict *dict;                   /* The keyspace for this DB // 保存着数据库中的所有键值对数据
-                                     // 这个属性也被称为键空间（key space）*/
+    dict *dict;                   /* The keyspace for this DB // 保存着数据库中的所有键值对数据, 这个属性也被称为键空间（key space）*/
     dict *expires;                /* 保存key对应的过期时间 */
     dict *blocking_keys;          /* key对应的等待数据的client列表 (BLPOP)*/
     dict *ready_keys;             /* Blocked keys that received a PUSH */
     dict *watched_keys;           /* WATCHED keys for MULTI/EXEC CAS 存储监听key的clients */
     int id;                       /* Database ID 保存着数据库以整数表示的号码*/
-    long long avg_ttl;            /* Average TTL, just for stats */         //存储的数据库对象的平均ttl(time to live)，用于统计
+    long long avg_ttl;            /* Average TTL, just for stats */  //存储的数据库对象的平均ttl(time to live)，用于统计
     unsigned long expires_cursor; /* 过期删除过程中的下标 */
     list *defrag_later;           /* List of key names to attempt to defrag one by one, gradually. */
 } redisDb;
@@ -772,9 +774,12 @@ typedef struct redisDb
 /* Declare database backup that include redis main DBs and slots to keys map.
  * Definition is in db.c. We can't define it here since we define CLUSTER_SLOTS
  * in cluster.h. */
+// 声明数据库备份，包括redis主DB和槽到键映射。定义在db.c中。
+// 我们无法在此处定义它，因为我们定义了CLUSTER_SLOTS在cluster.h中。
 typedef struct dbBackup dbBackup;
 
 /* Client MULTI/EXEC state */
+// 客户端MULTI/EXEC状态
 typedef struct multiCmd
 {
     robj **argv;

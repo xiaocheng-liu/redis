@@ -2091,7 +2091,9 @@ void commandProcessed(client *c) {
 int processCommandAndResetClient(client *c) {
     int deadclient = 0;
     server.current_client = c;
+    // 准备解析命令
     if (processCommand(c) == C_OK) {
+        // 命令处理
         commandProcessed(c);
     }
     if (server.current_client == NULL) deadclient = 1;
@@ -2156,7 +2158,7 @@ void processInputBuffer(client *c) {
         if (c->flags & (CLIENT_CLOSE_AFTER_REPLY|CLIENT_CLOSE_ASAP)) break;
 
         /* Determine request type when unknown. */
-        /* 在未知时确定请求类型。*/
+        /* 在未知请求协议类型时确定请求协议类型。*/
         if (!c->reqtype) {
             if (c->querybuf[c->qb_pos] == '*') {
                 c->reqtype = PROTO_REQ_MULTIBULK;
@@ -2182,7 +2184,7 @@ void processInputBuffer(client *c) {
                 c->flags |= CLIENT_CLOSE_AFTER_REPLY;
                 break;
             }
-        } else if (c->reqtype == PROTO_REQ_MULTIBULK) {     // 若果是协议型
+        } else if (c->reqtype == PROTO_REQ_MULTIBULK) {     // 如果是协议型
             if (processMultibulkBuffer(c) != C_OK) break;
         } else {
             serverPanic("Unknown request type");
@@ -3782,6 +3784,8 @@ int handleClientsWithPendingWritesUsingThreads(void) {
  * This is called by the readable handler of the event loop.
  * As a side effect of calling this function the client is put in the
  * pending read clients and flagged as such. */
+// 如果我们想稍后使用线程 IO 处理客户端读取，则返回 1。这由事件循环的可读处理程序调用。
+// 作为调用此函数的副作用，客户端被放入挂起的读取客户端中并标记为这样。
 int postponeClientRead(client *c) {
     if (server.io_threads_active &&         // 条件一：全局变量 server 的 io_threads_active 值为 1
         server.io_threads_do_reads &&       // 条件二：全局变量 server 的 io_threads_do_read 值为 1
@@ -3789,6 +3793,7 @@ int postponeClientRead(client *c) {
         !(c->flags & (CLIENT_MASTER|CLIENT_SLAVE|CLIENT_PENDING_READ)))     //条件四：客户端现有标识不能有 CLIENT_MASTER、CLIENT_SLAVE 和 CLIENT_PENDING_READ
     {
         c->flags |= CLIENT_PENDING_READ;
+        // 将c放入带读取数据的链表中
         listAddNodeHead(server.clients_pending_read,c);
         return 1;
     } else {
