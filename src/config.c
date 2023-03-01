@@ -659,12 +659,14 @@ loaderr:
  * Both filename and options can be NULL, in such a case are considered
  * empty. This way loadServerConfig can be used to just load a file or
  * just load a string. */
+// 从指定的文件名加载服务配置
 void loadServerConfig(char *filename, char config_from_stdin, char *options) {
     sds config = sdsempty();
     char buf[CONFIG_MAX_LINE+1];
     FILE *fp;
 
     /* Load the file content */
+    // 加载文件内容
     if (filename) {
         if ((fp = fopen(filename,"r")) == NULL) {
             serverLog(LL_WARNING,
@@ -677,6 +679,7 @@ void loadServerConfig(char *filename, char config_from_stdin, char *options) {
         fclose(fp);
     }
     /* Append content from stdin */
+    // 从标准输入追加内容
     if (config_from_stdin) {
         serverLog(LL_WARNING,"Reading config from stdin");
         fp = stdin;
@@ -685,10 +688,12 @@ void loadServerConfig(char *filename, char config_from_stdin, char *options) {
     }
 
     /* Append the additional options */
+    // 附加其他选项
     if (options) {
         config = sdscat(config,"\n");
         config = sdscat(config,options);
     }
+    // 从config中加载服务配置
     loadServerConfigFromString(config);
     sdsfree(config);
 }

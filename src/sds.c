@@ -209,8 +209,8 @@ sds _sdsnewlen(const void *init, size_t initlen, int trymalloc) {
     }
     if (initlen && init)
         memcpy(s, init, initlen);   // 拷贝数据部分
-    s[initlen] = '\0';  // 与C字符串兼容
-    return s;           // 返回创建的sds字符串指针
+    s[initlen] = '\0';              // 与C字符串兼容
+    return s;                       // 返回创建的sds字符串指针
 }
 
 sds sdsnewlen(const void *init, size_t initlen) {

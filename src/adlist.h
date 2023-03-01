@@ -73,7 +73,7 @@ typedef struct list {
 #define listGetFreeMethod(l) ((l)->free)            // 获取节点值释放函数
 #define listGetMatchMethod(l) ((l)->match)          // 获取节点值匹配函数
 
-/* Prototypes */
+/* Prototypes 原型*/
 list *listCreate(void);                             // 创建
 void listRelease(list *list);                       // 释放
 void listEmpty(list *list);                         // 判断是否为空

@@ -268,6 +268,7 @@ int parseExtendedStringArgumentsOrReply(client *c, int *flags, int *unit, robj *
 
 /* SET key value [NX] [XX] [KEEPTTL] [GET] [EX <seconds>] [PX <milliseconds>]
  *     [EXAT <seconds-timestamp>][PXAT <milliseconds-timestamp>] */
+// set命令
 void setCommand(client *c) {
     robj *expire = NULL;
     int unit = UNIT_SECONDS;

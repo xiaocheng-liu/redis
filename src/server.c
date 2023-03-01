@@ -744,6 +744,7 @@ struct redisCommand redisCommandTable[] = {
      "random fast ok-loading ok-stale @admin @dangerous",
      0, NULL, 0, 0, 0, 0, 0, 0},
 
+     // 查看数据类型
     {"type", typeCommand, 2,
      "read-only fast @keyspace",
      0, NULL, 1, 1, 1, 0, 0, 0},
@@ -892,6 +893,7 @@ struct redisCommand redisCommandTable[] = {
      "read-only random @keyspace",
      0, NULL, 1, 1, 1, 0, 0, 0},
 
+     // object命令
     {"object", objectCommand, -2,
      "read-only random @keyspace",
      0, NULL, 2, 2, 1, 0, 0, 0},
@@ -6674,7 +6676,8 @@ int main(int argc, char **argv)
      * to be able to restart the server later. */
     //【3】记录Redis程序可执行路径及启动参数，以便后续重启服务器。
     server.executable = getAbsolutePath(argv[0]);
-    //printf("%s\n", argv[1]);
+    serverLog(LL_WARNING, "运行参数个数：argc: %d", argc);
+    serverLog(LL_WARNING, "程序绝对路径：%s", argv[0]);
     server.exec_argv = zmalloc(sizeof(char *) * (argc + 1));
     server.exec_argv[argc] = NULL;
     for (j = 0; j < argc; j++)
@@ -6822,7 +6825,7 @@ int main(int argc, char **argv)
         createPidFile();
     if (server.set_proc_title)
         redisSetProcTitle(NULL);
-    redisAsciiArt();        // 打印启动ascii_logo
+    redisAsciiArt();            // 打印启动ascii_logo
     checkTcpBacklogSettings();
 
     if (!server.sentinel_mode)

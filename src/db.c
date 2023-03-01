@@ -1043,6 +1043,7 @@ void lastsaveCommand(client *c) {
     addReplyLongLong(c,server.lastsave);
 }
 
+// 查看对象的类型
 char* getObjectTypeName(robj *o) {
     char* type;
     if (o == NULL) {
@@ -1065,6 +1066,7 @@ char* getObjectTypeName(robj *o) {
     return type;
 }
 
+// 查看数据类型
 void typeCommand(client *c) {
     robj *o;
     o = lookupKeyReadWithFlags(c->db,c->argv[1],LOOKUP_NOTOUCH);

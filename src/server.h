@@ -325,6 +325,7 @@ typedef enum
 } repl_state;
 
 /* The state of an in progress coordinated failover */
+// 正在进行的协调故障转移的状态
 typedef enum
 {
     NO_FAILOVER = 0,        /* No failover in progress */
@@ -351,6 +352,7 @@ typedef enum
 #define CONFIG_REPL_SYNCIO_TIMEOUT 5
 
 /* List related stuff */
+// List相关
 #define LIST_HEAD 0
 #define LIST_TAIL 1
 #define ZSET_MIN 0
@@ -512,7 +514,7 @@ typedef enum
 /* A redis object, that is a type able to hold a string / list / set */
 
 /* The actual Redis Object */
-// type是表示当然robj里所存储的数据类型
+// type是表示当前robj里所存储的数据类型
 // 对象类型 5种基础数据类型
 #define OBJ_STRING 0 /* String object. */       // 字符串(string)
 #define OBJ_LIST 1   /* List object. */         // 列表(list)
@@ -681,12 +683,13 @@ typedef struct RedisModuleDigest
  * is set to one of this fields for this object. */
 /*
  * 编码方式，如果说每个类型只有一种方式，那么其实type和encoding两个字段只需要保留一个即可，
- * 但redis为了在各种情况下尽可能节约内存，对每种类型的数据在不同情况下有不同的编码格式，所以这里需要用额外的字段标识出来。
-*/
+ * 但redis为了在各种情况下尽可能节约内存，对每种类型的数据在不同情况下有不同的编码格式，
+ * 所以这里需要用额外的字段标识出来。
+ */
 // 对象编码  对象编码(数据结构类型)。某些类型的对象（如字符串和哈希）可以通过多种方式在内部表示。ENCODING表明表示方式。
 #define OBJ_ENCODING_RAW 0        /* Raw representation */      // 最原始的标识方式，只有string才会用到
 #define OBJ_ENCODING_INT 1        /* Encoded as integer */      // 整数
-#define OBJ_ENCODING_HT 2         /* Encoded as hash table */   // dict
+#define OBJ_ENCODING_HT 2         /* Encoded as hash table */   // 哈希表
 #define OBJ_ENCODING_ZIPMAP 3     /* Encoded as zipmap */       
 #define OBJ_ENCODING_LINKEDLIST 4 /* No longer used: old list encoding. */
 #define OBJ_ENCODING_ZIPLIST 5    /* Encoded as ziplist */      // ziplist
@@ -1282,7 +1285,7 @@ struct redisServer
     char runid[CONFIG_RUN_ID_SIZE + 1];  /* ID always different at every exec. */ //当前 redis 实例的 runid
     int sentinel_mode;                   /* True if this instance is a Sentinel. */
     size_t initial_memory_usage;         /* Bytes used after initialization. */
-    int always_show_logo;                /* Show logo even for non-stdout logging. */
+    int always_show_logo;                /* Show logo even for non-stdout logging. 始终显示logo*/
     int in_eval;                         /* Are we inside EVAL? */
     int in_exec;                         /* Are we inside EXEC? */
     int propagate_in_transaction;        /* Make sure we don't propagate nested MULTI/EXEC */
@@ -1503,9 +1506,9 @@ struct redisServer
     int child_info_nread;   /* Num of bytes of the last read from pipe */
     /* Propagation of commands in AOF / replication */
     redisOpArray also_propagate; /* Additional command to propagate. */
-    /* Logging */
-    char *logfile;         /* Path of log file */
-    int syslog_enabled;    /* Is syslog enabled? */
+    /* Logging 日志*/
+    char *logfile;         /* Path of log file 日志文件路径*/
+    int syslog_enabled;    /* Is syslog enabled? 是否开启系统日志*/
     char *syslog_ident;    /* Syslog ident */
     int syslog_facility;   /* Syslog facility */
     int crashlog_enabled;  /* Enable signal handler for crashlog.

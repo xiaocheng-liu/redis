@@ -453,10 +453,11 @@ robj *tryObjectEncoding(robj *o) {
     /* Check if we can represent this string as a long integer.
      * Note that we are sure that a string larger than 20 chars is not
      * representable as a 32 nor 64 bit integer. 
-     * 检查是否可以把字符串表示为一个长整型数。注意如果长度大于20个字符的字符串是
-     * 不能被表示为32或者64位的整数的*/
+     * 检查是否可以把字符串表示为一个长整型数。
+     * 注意如果长度大于20个字符的字符串是不能被表示为32或者64位的整数的
+     */
     len = sdslen(s);
-    // 尝试进行 OBJ_ENCODING_INT 编码
+    // 尝试进行 OBJ_ENCODING_INT 编码，长度小于等于20，并且能转为长整型
     if (len <= 20 && string2l(s,len,&value)) {
         /* This object is encodable as a long. Try to use a shared object.
          * Note that we avoid using shared integers when maxmemory is used
@@ -1290,10 +1291,12 @@ NULL
                 == NULL) return;
         addReplyLongLong(c,o->refcount);
     } else if (!strcasecmp(c->argv[1]->ptr,"encoding") && c->argc == 3) {
+        // object encoding key 查看编码
         if ((o = objectCommandLookupOrReply(c,c->argv[2],shared.null[c->resp]))
                 == NULL) return;
         addReplyBulkCString(c,strEncoding(o->encoding));
     } else if (!strcasecmp(c->argv[1]->ptr,"idletime") && c->argc == 3) {
+        // object idletime key 查看空闲时间
         if ((o = objectCommandLookupOrReply(c,c->argv[2],shared.null[c->resp]))
                 == NULL) return;
         if (server.maxmemory_policy & MAXMEMORY_FLAG_LFU) {
