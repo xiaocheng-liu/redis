@@ -145,13 +145,14 @@ int aeResizeSetSize(aeEventLoop *eventLoop, int setsize) {
     return AE_OK;
 }
 
-// 删除时间循环eventLoop（释放内存空间）
+// 删除事件循环eventLoop（释放内存空间）
 void aeDeleteEventLoop(aeEventLoop *eventLoop) {
     aeApiFree(eventLoop);
     zfree(eventLoop->events);
     zfree(eventLoop->fired);
 
     /* Free the time events list. */
+    // 释放时间事件列表
     aeTimeEvent *next_te, *te = eventLoop->timeEventHead;
     while (te) {
         next_te = te->next;

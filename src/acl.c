@@ -1065,6 +1065,7 @@ void ACLInitDefaultUser(void) {
 }
 
 /* Initialization of the ACL subsystem. */
+// ACL 子系统的初始化。
 void ACLInit(void) {
     Users = raxNew();
     UsersToLoad = listCreate();

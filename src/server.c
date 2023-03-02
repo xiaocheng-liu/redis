@@ -2658,12 +2658,14 @@ void afterSleep(struct aeEventLoop *eventLoop)
 }
 
 /* =========================== Server initialization ======================== */
+/* =========================== 服务器初始化 ======================== */
 
 void createSharedObjects(void)
 {
     int j;
 
     /* Shared command responses */
+    // 共享命令响应
     shared.crlf = createObject(OBJ_STRING, sdsnew("\r\n"));
     shared.ok = createObject(OBJ_STRING, sdsnew("+OK\r\n"));
     shared.emptybulk = createObject(OBJ_STRING, sdsnew("$0\r\n\r\n"));
@@ -2678,6 +2680,7 @@ void createSharedObjects(void)
     shared.plus = createObject(OBJ_STRING, sdsnew("+"));
 
     /* Shared command error responses */
+    // 共享命令错误响应
     shared.wrongtypeerr = createObject(OBJ_STRING, sdsnew(
                                                        "-WRONGTYPE Operation against a key holding the wrong kind of value\r\n"));
     shared.err = createObject(OBJ_STRING, sdsnew("-ERR\r\n"));
@@ -2713,6 +2716,7 @@ void createSharedObjects(void)
                                                      "-BUSYKEY Target key name already exists.\r\n"));
 
     /* The shared NULL depends on the protocol version. */
+    // 共享 NULL 取决于协议版本。
     shared.null[0] = NULL;
     shared.null[1] = NULL;
     shared.null[2] = createObject(OBJ_STRING, sdsnew("$-1\r\n"));
@@ -2752,6 +2756,7 @@ void createSharedObjects(void)
     shared.punsubscribebulk = createStringObject("$12\r\npunsubscribe\r\n", 19);
 
     /* Shared command names */
+    // 共享命令名称
     shared.del = createStringObject("DEL", 3);
     shared.unlink = createStringObject("UNLINK", 6);
     shared.rpop = createStringObject("RPOP", 4);
@@ -2777,6 +2782,7 @@ void createSharedObjects(void)
     shared.eval = createStringObject("EVAL", 4);
 
     /* Shared command argument */
+    // 共享命令参数
     shared.left = createStringObject("left", 4);
     shared.right = createStringObject("right", 5);
     shared.pxat = createStringObject("PXAT", 4);
@@ -3387,14 +3393,17 @@ void initServer(void)
     server.blocked_last_cron = 0;
     server.blocking_op_nesting = 0;
 
-    if ((server.tls_port || server.tls_replication || server.tls_cluster) && tlsConfigure(&server.tls_ctx_config) == C_ERR)
+    if ((server.tls_port || server.tls_replication || server.tls_cluster)
+            && tlsConfigure(&server.tls_ctx_config) == C_ERR)
     {
         serverLog(LL_WARNING, "Failed to configure TLS. Check logs for more info.");
         exit(1);
     }
 
-    //【5】createSharedObjects函数创建共享数据集，这些数据可在各场景中共享使用，如小数字0～9999、常用字符串+OK\r\n（命令处理成功响应字符串）、+PONG\r\n（ping命令响应字符串）。
-    // adjustOpenFilesLimit函数尝试修改环境变量，提高系统允许打开的文件描述符上限，避免由于大量客户端连接（Socket文件描述符）导致错误。
+    //【5】createSharedObjects函数创建共享数据集，这些数据可在各场景中共享使用，
+    // 如小数字0～9999、常用字符串+OK\r\n（命令处理成功响应字符串）、+PONG\r\n（ping命令响应字符串）。
+    // adjustOpenFilesLimit函数尝试修改环境变量，提高系统允许打开的文件描述符上限，
+    // 避免由于大量客户端连接（Socket文件描述符）导致错误。
     createSharedObjects();
     adjustOpenFilesLimit();
     const char *clk_msg = monotonicInit();
@@ -4790,6 +4799,7 @@ int writeCommandsDeniedByDiskError(void)
 
 /* The PING command. It works in a different way if the client is in
  * in Pub/Sub mode. */
+// ping命令，如果客户端处于 PubSub 模式，则它以不同的方式工作。
 void pingCommand(client *c)
 {
     /* The command takes zero or one arguments. */
@@ -6317,6 +6327,7 @@ void memtest(size_t megabytes, int passes);
 
 /* Returns 1 if there is --sentinel among the arguments or if
  * argv[0] contains "redis-sentinel". */
+// 如果参数中有 --sentinel，或者 argv[0] 包含 “redis-sentinel”，则返回 1。
 int checkForSentinelMode(int argc, char **argv)
 {
     int j;
@@ -6375,6 +6386,7 @@ void loadDataFromDisk(void)
     }
 }
 
+// Redis内存溢出处理函数
 void redisOutOfMemoryHandler(size_t allocation_size)
 {
     serverLog(LL_WARNING, "Out Of Memory allocating %zu bytes!",
@@ -6635,6 +6647,7 @@ int main(int argc, char **argv)
 #endif
 
     /* We need to initialize our libraries, and the server configuration. */
+    // 我们需要初始化我们的库和服务器配置。
 #ifdef INIT_SETPROCTITLE_REPLACEMENT
     spt_init(argc, argv);
 #endif
@@ -6665,8 +6678,9 @@ int main(int argc, char **argv)
     server.sentinel_mode = checkForSentinelMode(argc, argv);
 
     //【2】initServerConfig函数将redisServer中记录配置项的属性初始化为默认值。
-    // ACLInit函数初始化ACL机制，moduleInitModulesSystem函数初始化Module机制。
     initServerConfig();
+    // ACLInit函数初始化ACL机制，moduleInitModulesSystem函数初始化Module机制。
+    // ACL 子系统必须尽快初始化，因为基本网络代码和客户端创建依赖于它。
     ACLInit();          /* The ACL subsystem must be initialized ASAP because the
                   basic networking code and client creation depends on it. */
     moduleInitModulesSystem();
@@ -6828,9 +6842,11 @@ int main(int argc, char **argv)
     redisAsciiArt();            // 打印启动ascii_logo
     checkTcpBacklogSettings();
 
+    // 如果服务器不是哨兵模式
     if (!server.sentinel_mode)
     {
         /* Things not needed when running in Sentinel mode. */
+        // 在哨兵模式下运行时不需要的东西。
         serverLog(LL_WARNING, "Server initialized");
 #ifdef __linux__
         linuxMemoryWarnings();
@@ -6904,13 +6920,15 @@ int main(int argc, char **argv)
         }
     }
 
-    /* Warning the user about suspicious maxmemory setting. */ // 检查最大内存是否小于1M，并给与警告提示
+    /* Warning the user about suspicious maxmemory setting. */
+    // 检查最大内存是否小于1M，并给与警告提示
     if (server.maxmemory > 0 && server.maxmemory < 1024 * 1024)
     {
         serverLog(LL_WARNING, "WARNING: You specified a maxmemory value that is less than 1MB (current value is %llu bytes). Are you sure this is what you really want?", server.maxmemory);
     }
 
-    //【16】尽可能将Redis主线程绑定到server.server_cpulist配置的CPU列表上，Redis 4开始使用多线程，该操作可以减少不必要的线程切换，提高性能。
+    //【16】尽可能将Redis主线程绑定到server.server_cpulist配置的CPU列表上，
+    // Redis 4开始使用多线程，该操作可以减少不必要的线程切换，提高性能。
     redisSetCpuAffinity(server.server_cpulist);
     setOOMScoreAdj(-1);
     //【17】启动事件循环器。事件循环器是Redis中的重要组件。在Redis运行期间，由事件循环器提供服务。启动eventLoop开始接受请求

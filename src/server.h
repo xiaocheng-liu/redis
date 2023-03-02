@@ -2804,6 +2804,7 @@ robj *activeDefragStringOb(robj *ob, long *defragged);
 int restartServer(int flags, mstime_t delay);
 
 /* Set data type */
+// Set数据类型
 robj *setTypeCreate(sds value);
 
 int setTypeAdd(robj *subject, sds value);
@@ -2831,6 +2832,7 @@ void setTypeConvert(robj *subject, int enc);
 robj *setTypeDup(robj *o);
 
 /* Hash data type */
+// Hash数据类型
 #define HASH_SET_TAKE_FIELD (1 << 0)
 #define HASH_SET_TAKE_VALUE (1 << 1)
 #define HASH_SET_COPY 0
@@ -2873,6 +2875,7 @@ robj *hashTypeDup(robj *o);
 int hashZiplistValidateIntegrity(unsigned char *zl, size_t size, int deep);
 
 /* Pub / Sub */
+// 发布/订阅
 int pubsubUnsubscribeAllChannels(client *c, int notify);
 
 int pubsubUnsubscribeAllPatterns(client *c, int notify);
@@ -2893,10 +2896,14 @@ int keyspaceEventsStringToFlags(char *classes);
 sds keyspaceEventsFlagsToString(int flags);
 
 /* Configuration */
+// 配置
+// 加载服务配置
 void loadServerConfig(char *filename, char config_from_stdin, char *options);
 
+// 追加服务器保存参数
 void appendServerSaveParams(time_t seconds, int changes);
 
+// 重置服务器保存参数
 void resetServerSaveParams(void);
 
 struct rewriteConfigState; /* Forward declaration to export API. */
@@ -2909,6 +2916,7 @@ int rewriteConfig(char *path, int force_all);
 void initConfigValues();
 
 /* db.c -- Keyspace access API */
+// 键访问API
 int removeExpire(redisDb *db, robj *key);
 
 void propagateExpire(redisDb *db, robj *key, int lazy);
@@ -3044,7 +3052,7 @@ int memoryGetKeys(struct redisCommand *cmd, robj **argv, int argc, getKeysResult
 
 int lcsGetKeys(struct redisCommand *cmd, robj **argv, int argc, getKeysResult *result);
 
-/* Cluster */
+/* Cluster */   // 集群
 void clusterInit(void);
 
 unsigned short crc16(const char *buf, int len);
@@ -3062,7 +3070,7 @@ void clusterBeforeSleep(void);
 int clusterSendModuleMessageToTarget(const char *target, uint64_t module_id, uint8_t type, unsigned char *payload,
                                      uint32_t len);
 
-/* Sentinel */
+/* Sentinel */ // 哨兵
 void initSentinelConfig(void);
 
 void initSentinel(void);
@@ -3084,7 +3092,7 @@ int redis_check_rdb_main(int argc, char **argv, FILE *fp);
 
 int redis_check_aof_main(int argc, char **argv);
 
-/* Scripting */
+/* Scripting */ // 脚本
 void scriptingInit(int setup);
 
 int ldbRemoveChild(pid_t pid);
@@ -3097,7 +3105,7 @@ sds luaCreateFunction(client *c, lua_State *lua, robj *body);
 
 void freeLuaScriptsAsync(dict *lua_scripts);
 
-/* Blocked clients */
+/* Blocked clients */   // 被阻止的客户端
 void processUnblockedClients(void);
 
 void blockClient(client *c, int btype);
@@ -3122,6 +3130,7 @@ void blockForKeys(client *c, int btype, robj **keys, int numkeys, mstime_t timeo
 void updateStatsOnUnblock(client *c, long blocked_us, long reply_us);
 
 /* timeout.c -- Blocked clients timeout and connections timeout. */
+// 阻止的客户端超时和连接超时
 void addClientToTimeoutTable(client *c);
 
 void removeClientFromTimeoutTable(client *c);
@@ -3131,6 +3140,7 @@ void handleBlockedClientsTimeout(void);
 int clientsCronHandleTimeout(client *c, mstime_t now_ms);
 
 /* expire.c -- Handling of expired keys */
+// 过期密钥的处理
 void activeExpireCycle(int type);
 
 void expireSlaveKeys(void);
@@ -3142,6 +3152,7 @@ void flushSlaveKeysWithExpireList(void);
 size_t getSlaveKeyWithExpireCount(void);
 
 /* evict.c -- maxmemory handling and LRU eviction. */
+// 最大内存处理和 LRU 逐出。
 void evictionPoolAlloc(void);
 
 #define LFU_INIT_VAL 5
@@ -3159,6 +3170,7 @@ unsigned long LFUDecrAndReturn(robj *o);
 int performEvictions(void);
 
 /* Keys hashing / comparison functions for dict.c hash tables. */
+// 哈希表的键哈希比较函数。
 uint64_t dictSdsHash(const void *key);
 
 int dictSdsKeyCompare(void *privdata, const void *key1, const void *key2);
@@ -3174,11 +3186,13 @@ uint64_t redisBuildId(void);
 
 char *redisBuildIdString(void);
 
-/* Commands prototypes */
+/* Commands prototypes */   //命令原型
 void authCommand(client *c);
 
+// ping命令
 void pingCommand(client *c);
 
+// echo命令
 void echoCommand(client *c);
 
 void commandCommand(client *c);
