@@ -690,8 +690,8 @@ typedef struct RedisModuleDigest
 #define OBJ_ENCODING_RAW 0        /* Raw representation */      // 最原始的标识方式，只有string才会用到
 #define OBJ_ENCODING_INT 1        /* Encoded as integer */      // 整数
 #define OBJ_ENCODING_HT 2         /* Encoded as hash table */   // 哈希表
-#define OBJ_ENCODING_ZIPMAP 3     /* Encoded as zipmap */       
-#define OBJ_ENCODING_LINKEDLIST 4 /* No longer used: old list encoding. */
+#define OBJ_ENCODING_ZIPMAP 3     /* Encoded as zipmap */       // ZIPMAP
+#define OBJ_ENCODING_LINKEDLIST 4 /* No longer used: old list encoding. */  // LINKEDLIST
 #define OBJ_ENCODING_ZIPLIST 5    /* Encoded as ziplist */      // ziplist
 #define OBJ_ENCODING_INTSET 6     /* Encoded as intset */       // intset
 #define OBJ_ENCODING_SKIPLIST 7   /* Encoded as skiplist */     // skiplist跳表

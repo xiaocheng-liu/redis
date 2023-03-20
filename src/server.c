@@ -2935,6 +2935,7 @@ void initServerConfig(void)
      * redis.conf using the rename-command directive. */
     server.commands = dictCreate(&commandTableDictType, NULL);
     server.orig_commands = dictCreate(&commandTableDictType, NULL);
+    //将预定义的命令填充到server.commands
     populateCommandTable();
     server.delCommand = lookupCommandByCString("del");
     server.multiCommand = lookupCommandByCString("multi");
@@ -6809,6 +6810,7 @@ int main(int argc, char **argv)
     //【11】server.supervised属性指定是否以upstart服务或systemd服务启动Redis。
     // 如果配置了server.daemonize且没有配置server.supervised，则以守护进程的方式启动Redis。
     server.supervised = redisIsSupervised(server.supervised_mode);
+    // 守护进程
     int background = server.daemonize && !server.supervised;
     if (background)
         daemonize();

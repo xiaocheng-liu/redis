@@ -102,7 +102,7 @@ typedef struct dict {
     unsigned long iterators; /* 正在运行的迭代器数量 */
 } dict;
 
-/*  字典的迭代器。如果safe为1，说明他是一个安全的迭代器，可以调用dictAdd、dictFind或者其他dict函数。
+/* 字典的迭代器。如果safe为1，说明他是一个安全的迭代器，可以调用dictAdd、dictFind或者其他dict函数。
  * 否则，说明当前迭代器是非安全的，只能调用dictNext()方法 */
 typedef struct dictIterator { 
     dict *d;        // 正在迭代的字典

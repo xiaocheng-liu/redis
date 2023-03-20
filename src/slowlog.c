@@ -125,9 +125,9 @@ void slowlogFreeEntry(void *septr)
 // 初始化慢日志。此函数应在服务器启动时调用一次。
 void slowlogInit(void)
 {
-    server.slowlog = listCreate();
-    server.slowlog_entry_id = 0;
-    listSetFreeMethod(server.slowlog, slowlogFreeEntry);
+    server.slowlog = listCreate();      /* 创建一个list列表 */
+    server.slowlog_entry_id = 0;        /* 日志ID从0开始 */
+    listSetFreeMethod(server.slowlog, slowlogFreeEntry);    /* 指定慢查询日志list空间的释放方法 */
 }
 
 /* Push a new entry into the slow log.
@@ -135,15 +135,15 @@ void slowlogInit(void)
  * configured max length. */
 void slowlogPushEntryIfNeeded(client *c, robj **argv, int argc, long long duration)
 {
-    if (server.slowlog_log_slower_than < 0)
+    if (server.slowlog_log_slower_than < 0)             /* 负数表示禁用 */
         return; /* Slowlog disabled */
-    if (duration >= server.slowlog_log_slower_than)
+    if (duration >= server.slowlog_log_slower_than)     /* 如果执行时间 > 指定阈值*/
         listAddNodeHead(server.slowlog,
-                        slowlogCreateEntry(c, argv, argc, duration));
+                        slowlogCreateEntry(c, argv, argc, duration));   /* 创建一个slowlogEntry对象,添加到列表首部*/
 
     /* Remove old entries if needed. */
-    while (listLength(server.slowlog) > server.slowlog_max_len)
-        listDelNode(server.slowlog, listLast(server.slowlog));
+    while (listLength(server.slowlog) > server.slowlog_max_len)               /* 如果列表长度 > 指定长度 */
+        listDelNode(server.slowlog, listLast(server.slowlog));      /* 移除列表尾部元素 */
 }
 
 /* Remove all the entries from the current slow log. */
