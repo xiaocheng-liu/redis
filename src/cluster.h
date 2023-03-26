@@ -45,6 +45,7 @@ typedef struct clusterLink {
 } clusterLink;
 
 /* Cluster node flags and macros. */
+/* 群集节点标志和宏。*/
 #define CLUSTER_NODE_MASTER 1     /* The node is a master */
 #define CLUSTER_NODE_SLAVE 2      /* The node is a slave */
 #define CLUSTER_NODE_PFAIL 4      /* Failure? Need acknowledge */
@@ -57,7 +58,9 @@ typedef struct clusterLink {
 #define CLUSTER_NODE_NOFAILOVER 512 /* Slave will not try to failover. */
 #define CLUSTER_NODE_NULL_NAME "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000"
 
+// 节点是否是主节点
 #define nodeIsMaster(n) ((n)->flags & CLUSTER_NODE_MASTER)
+// 节点是否是从节点
 #define nodeIsSlave(n) ((n)->flags & CLUSTER_NODE_SLAVE)
 #define nodeInHandshake(n) ((n)->flags & CLUSTER_NODE_HANDSHAKE)
 #define nodeHasAddr(n) (!((n)->flags & CLUSTER_NODE_NOADDR))
@@ -67,6 +70,7 @@ typedef struct clusterLink {
 #define nodeCantFailover(n) ((n)->flags & CLUSTER_NODE_NOFAILOVER)
 
 /* Reasons why a slave is not able to failover. */
+/* 从节点无法故障转移的原因。*/
 #define CLUSTER_CANT_FAILOVER_NONE 0
 #define CLUSTER_CANT_FAILOVER_DATA_AGE 1
 #define CLUSTER_CANT_FAILOVER_WAITING_DELAY 2
@@ -75,6 +79,7 @@ typedef struct clusterLink {
 #define CLUSTER_CANT_FAILOVER_RELOG_PERIOD (60*5) /* seconds. */
 
 /* clusterState todo_before_sleep flags. */
+/* 群集状态todo_before_sleep标志。*/
 #define CLUSTER_TODO_HANDLE_FAILOVER (1<<0)
 #define CLUSTER_TODO_UPDATE_STATE (1<<1)
 #define CLUSTER_TODO_SAVE_CONFIG (1<<2)
@@ -108,8 +113,8 @@ typedef struct clusterLink {
 
 /* This structure represent elements of node->fail_reports. */
 typedef struct clusterNodeFailReport {
-    struct clusterNode *node;  /* Node reporting the failure condition. */
-    mstime_t time;             /* Time of the last report from this node. */
+    struct clusterNode *node;  /* Node reporting the failure condition. */      // 报告故障情况的节点。
+    mstime_t time;             /* Time of the last report from this node. */    // 来自此节点的最后一个报告的时间。
 } clusterNodeFailReport;
 
 // 集群模式下节点数据结构

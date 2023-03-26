@@ -127,15 +127,19 @@ client *createClient(connection *conn) {
      * This is useful since all the commands needs to be executed
      * in the context of a client. When commands are executed in other
      * contexts (for instance a Lua script) we need a non connected client. */
-    // 传入空的连接可能是为了创建一个没有连接的客户端。这有时候会非常有用，因为所有命令都需要在客户机的上下文中执行。
+    // 传入空的连接可能是为了创建一个没有连接的客户端。
+    // 这有时候会非常有用，因为所有命令都需要在客户机的上下文中执行。
     // 当在其他上下文中执行命令（例如Lua脚本）时，我们需要一个未连接的客户端。
     if (conn) { // 连接非空
         connNonBlock(conn);             // 设置非阻塞
+        // 禁用 Nagle 算法 因为服务器这个需要高性能的地方不需要禁止小包 Nagle还可能导致网络上的死锁 使得时延增加
         connEnableTcpNoDelay(conn);     // 设置不延迟发送
+        // 设置 keep alive
         if (server.tcpkeepalive)        // 如果设置了使用系统协议判断是否存活
             connKeepAlive(conn,server.tcpkeepalive);    // 设置网络存活判断
-        
-        //设置readHandler ,readQueryFromClient
+
+        // 绑定读事件到事件 loop （开始接收命令请求）
+        // 设置readHandler ,readQueryFromClient
         connSetReadHandler(conn, readQueryFromClient);  // 设置读取回调函数，当客户端准备好就可以读数据
         connSetPrivateData(conn, c);                    // 将客户端数据指针同连接关联在一起
     }
@@ -207,8 +211,11 @@ client *createClient(connection *conn) {
     c->auth_module = NULL;
     listSetFreeMethod(c->pubsub_patterns,decrRefCountVoid);
     listSetMatchMethod(c->pubsub_patterns,listMatchObjects);
+    // 如果不是伪客户端，那么添加到服务器的客户端链表中
     if (conn) linkClient(c);
-    initClientMultiState(c);    // 初始化事务
+    // 初始化事务状态
+    initClientMultiState(c);
+    // 返回客户端
     return c;
 }
 
@@ -263,8 +270,7 @@ void clientInstallWriteHandler(client *c) {
 int prepareClientToWrite(client *c) {
     /* If it's the Lua client we always return ok without installing any
      * handler since there is no socket at all. */
-    /* 如果是 Lua 客户端，我们总是返回 OK 而不安装任何
-     *处理程序，因为根本没有套接字。*/
+    /* 如果是 Lua 客户端，我们总是返回 OK 而不安装任何处理程序，因为根本没有套接字。*/
     if (c->flags & (CLIENT_LUA|CLIENT_MODULE)) return C_OK;
 
     /* If CLIENT_CLOSE_ASAP flag is set, we need not write anything. */
@@ -299,7 +305,7 @@ int prepareClientToWrite(client *c) {
 
 /* -----------------------------------------------------------------------------
  * Low level functions to add more data to output buffers.
- * 低层次的函数 添加更多数据到输出缓存
+ * 底层的函数 添加更多数据到输出缓存
  * -------------------------------------------------------------------------- */
 
 /* Attempts to add the reply to the static buffer in the client struct.
@@ -368,7 +374,7 @@ void _addReplyProtoToList(client *c, const char *s, size_t len) {
 /* -----------------------------------------------------------------------------
  * Higher level functions to queue data on the client output buffer.
  * The following functions are the ones that commands implementations will call.
- * 高层次函数  对客户端输出缓存的数据排队
+ * 高层函数，对客户端输出缓存的数据排队
  * -------------------------------------------------------------------------- */
 
 /* Add the object 'obj' string representation to the client output buffer. 
@@ -396,8 +402,7 @@ void addReply(client *c, robj *obj) {
 
 /* Add the SDS 's' string to the client output buffer, as a side effect
  * the SDS string is freed. */ 
-/* 将需要返回的消息加到client的buffer中, 作为一个伴随效应，SDS字符串被释放
- */ 
+/* 将需要返回的消息加到client的buffer中, 作为一个伴随效应，SDS字符串被释放 */
 void addReplySds(client *c, sds s) {
     if (prepareClientToWrite(c) != C_OK) {  // 准备客户端写入
         /* The caller expects the sds to be free'd. */ // 调用者期望sds字符串被释放
@@ -451,6 +456,7 @@ void addReplyErrorLength(client *c, const char *s, size_t len) {
 }
 
 /* Do some actions after an error reply was sent (Log if needed, updates stats, etc.) */
+/* 发送错误回复后执行一些操作（如果需要，请记录日志，更新统计信息等）*/
 void afterErrorReply(client *c, const char *s, size_t len) {
     /* Increment the global error counter */
     server.stat_total_error_replies++;
@@ -1073,6 +1079,7 @@ void clientAcceptHandler(connection *conn) {
 #define MAX_ACCEPTS_PER_CALL 1000
 /* 接收命令请求，里面会创建client */
 static void acceptCommonHandler(connection *conn, int flags, char *ip) {
+    // 创建客户端
     client *c;
     char conninfo[100];
     UNUSED(ip);
@@ -1108,6 +1115,7 @@ static void acceptCommonHandler(connection *conn, int flags, char *ip) {
         if (connWrite(conn,err,strlen(err)) == -1) {
             /* Nothing to do, Just to avoid the warning... */
         }
+        // 更新拒绝连接数
         server.stat_rejected_conn++;
         connClose(conn);
         return;
@@ -1117,6 +1125,7 @@ static void acceptCommonHandler(connection *conn, int flags, char *ip) {
     // 调用createClient
     // 为客户端连接分配一个接收数据的结构体
     // 并将新的连接放入epoll 里面
+    // createClient是核心 负责向eventloop中注册一个文件事件 即调用aeCreateFileEvent
     if ((c = createClient(conn)) == NULL) {
         serverLog(LL_WARNING,
             "Error registering fd event for the new client: %s (conn: %s)",
@@ -1152,14 +1161,15 @@ static void acceptCommonHandler(connection *conn, int flags, char *ip) {
 // 建立tcp连接 
 // 这个是服务端fd注册的读事件响应，它的作用主要用于接收到新的客户端连接，然后将它注册到epoll里面去，后面接收客户端数据的handler
 void acceptTcpHandler(aeEventLoop *el, int fd, void *privdata, int mask) {
-    int cport, cfd, max = MAX_ACCEPTS_PER_CALL;
-    char cip[NET_IP_STR_LEN];
+    int cport, cfd, max = MAX_ACCEPTS_PER_CALL; //max = 1000
+    char cip[NET_IP_STR_LEN];   //记录IP
     UNUSED(el);
     UNUSED(mask);
     UNUSED(privdata);
 
-    while(max--) {
+    while(max--) {  //最多一次接收1000个连接 这里防止一个accept占用太多时间 因为redis是单线程的 需要给后面的事件让出时间
         // 跟客户端建立通道，为客户端分配一个fd.
+        // 内部使用accept接收新连接 然后填充cip和端口 返回fd
         cfd = anetTcpAccept(server.neterr, fd, cip, sizeof(cip), &cport);
         if (cfd == ANET_ERR) {
             if (errno != EWOULDBLOCK)
@@ -1169,9 +1179,11 @@ void acceptTcpHandler(aeEventLoop *el, int fd, void *privdata, int mask) {
         }
         anetCloexec(cfd);
         serverLog(LL_VERBOSE,"Accepted %s:%d", cip, cport);
-        // 处理请求 
-        //connCreateAcceptedSocket 主要用于初始化客户端的连接
-        //acceptCommonHandler 这个方法适用于接收数据的地方
+        // 处理请求
+        // 为客户端创建客户端状态（redisClient）
+        // connCreateAcceptedSocket 主要用于初始化客户端的连接
+        // acceptCommonHandler 这个方法适用于接收数据的地方
+        // 把fd变为一个文件事件 并注册回调 回调为把fd中数据取出 放入到clientData中
         acceptCommonHandler(connCreateAcceptedSocket(cfd),0,cip);
     }
 }
@@ -1337,17 +1349,20 @@ void unlinkClient(client *c) {
     if (c->flags & CLIENT_TRACKING) disableTracking(c);
 }
 
+/* 释放客户端 */
 void freeClient(client *c) {
     listNode *ln;
 
     /* If a client is protected, yet we need to free it right now, make sure
      * to at least use asynchronous freeing. */
+    /* 如果客户端受到保护，但我们现在需要释放它，使用异步释放。 */
     if (c->flags & CLIENT_PROTECTED) {
         freeClientAsync(c);
         return;
     }
 
     /* For connected clients, call the disconnection event of modules hooks. */
+    /* 对于连接的客户端，调用模块挂钩的断开连接事件。*/
     if (c->conn) {
         moduleFireServerEvent(REDISMODULE_EVENT_CLIENT_CHANGE,
                               REDISMODULE_SUBEVENT_CLIENT_CHANGE_DISCONNECTED,
@@ -1355,6 +1370,7 @@ void freeClient(client *c) {
     }
 
     /* Notify module system that this client auth status changed. */
+    /* 通知模块系统此客户端身份验证状态已更改。*/
     moduleNotifyUserChanged(c);
 
     /* If this client was scheduled for async freeing we need to remove it
@@ -1602,6 +1618,7 @@ int writeToClient(client *c, int handler_installed) {
             !(c->flags & CLIENT_SLAVE)) break;
     }
     atomicIncr(server.stat_net_output_bytes, totwritten);
+    // 写入出错检查
     if (nwritten == -1) {
         if (connGetState(c->conn) == CONN_STATE_CONNECTED) {
             nwritten = 0;
@@ -2247,6 +2264,7 @@ void readQueryFromClient(connection *conn) {
     // 将读取事件总数加1
     atomicIncr(server.stat_total_reads_processed, 1);
 
+    // 读入长度（默认为 16 MB）
     readlen = PROTO_IOBUF_LEN;  // 正常IO缓存大小
     /* If this is a multi bulk request, and we are processing a bulk reply
      * that is large enough, try to maximize the probability that the query
@@ -2269,11 +2287,16 @@ void readQueryFromClient(connection *conn) {
         if (remaining > 0 && remaining < readlen) readlen = remaining;
     }
 
+    // 获取查询缓冲区当前内容的长度
+    // 如果读取出现 short read ，那么可能会有内容滞留在读取缓冲区里面
+    // 这些滞留内容也许不能完整构成一个符合协议的命令，
     qblen = sdslen(c->querybuf);
+    // 如果有需要，更新缓冲区内容长度的峰值（peak）
     if (c->querybuf_peak < qblen) c->querybuf_peak = qblen; // 修改最近读的最大值
     c->querybuf = sdsMakeRoomFor(c->querybuf, readlen); // 开辟空间
     // 从已连接的套接字中读取客户端的请求数据到输入缓冲区
     nread = connRead(c->conn, c->querybuf+qblen, readlen);  // 读取字节
+    // 读入出错
     if (nread == -1) {  // 读不到数据
         if (connGetState(conn) == CONN_STATE_CONNECTED) {   // 确认连接是否正常
             return;
@@ -2282,9 +2305,10 @@ void readQueryFromClient(connection *conn) {
             freeClientAsync(c);
             return;
         }
+    // 遇到 EOF
     } else if (nread == 0) {    // 连接已关闭
         serverLog(LL_VERBOSE, "Client closed connection");
-        freeClientAsync(c);
+        freeClientAsync(c);     // 正常的客户端断开连接
         return;
     } else if (c->flags & CLIENT_MASTER) {  // 是主机
         /* Append the query buffer to the pending (not applied) buffer
@@ -2298,9 +2322,11 @@ void readQueryFromClient(connection *conn) {
 
     sdsIncrLen(c->querybuf,nread);  // 修改已读长度
     c->lastinteraction = server.unixtime;   // 修改最后交互时间
+    // 如果客户端是 master 的话,更新它的复制偏移量,便于进行部分重同步,增加从服务器重启的效率
     if (c->flags & CLIENT_MASTER) c->read_reploff += nread; // 主机修改复制偏移位置
     atomicIncr(server.stat_net_input_bytes, nread);
-    if (sdslen(c->querybuf) > server.client_max_querybuf_len) { // 如果读取的缓存长度超过了定义的最大长度
+    // 如果读取的缓存长度超过了定义的最大长度，会关闭客户端
+    if (sdslen(c->querybuf) > server.client_max_querybuf_len) {
         sds ci = catClientInfoString(sdsempty(),c), bytes = sdsempty();
 
         bytes = sdscatrepr(bytes,c->querybuf,64);
@@ -2313,8 +2339,8 @@ void readQueryFromClient(connection *conn) {
 
     /* There is more data in the client input buffer, continue parsing it
      * in case to check if there is a full command to execute. */
-    // 客户端输入缓冲区中有更多数据，请继续分析它，以防检查是否有完整的命令要执行
-    // 处理数据执行命令
+    // 从查询缓存重读取内容，创建参数，并执行命令 转换失败的话会在下次事件循环中再次读取 成功的话执行processCommand
+    // 函数会执行到缓存中的所有内容都被处理完为止
      processInputBuffer(c);
 }
 

@@ -63,9 +63,11 @@ struct __attribute__((__packed__)) sdshdr5
 };
 struct __attribute__((__packed__)) sdshdr8
 {
-    uint8_t len;         /* 已使用空间大小 */
-    uint8_t alloc;       /* 总共可用的字符空间大小，应该是实际buf的大小减1(因为c字符串末尾必须是\0,不计算在内) */
-    unsigned char flags; /* 标志位，主要是识别这是sdshdr几，目前只用了3位，还有5位空余 */
+    uint8_t len;         /* used */ /* 已使用空间大小 */
+    uint8_t alloc;       /* excluding the header and null terminator */
+                         /* 总共可用的字符空间大小，应该是实际buf的大小减1(因为c字符串末尾必须是\0,不计算在内) */
+    unsigned char flags; /* 3 lsb of type, 5 unused bits */
+                         /* 标志位，主要是识别这是sdshdr几，目前只用了3位，还有5位空余 */
     char buf[];          /* 真正存储字符串的地方 */
 };
 struct __attribute__((__packed__)) sdshdr16

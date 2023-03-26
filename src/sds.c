@@ -124,7 +124,9 @@ static inline size_t sdsTypeMaxSize(char type) {
  * and 'initlen'.
  *  
  * If NULL is used for 'init' the string is initialized with zero bytes.
+ * 如果 NULL 用于“init”，则字符串初始化为零字节。
  * If SDS_NOINIT is used, the buffer is left uninitialized;
+ * 如果使用SDS_NOINIT，则缓冲区保持未初始化状态;
  *
  * The string is always null-termined (all the sds strings are, always) so
  * even if you create an sds string with:
@@ -159,12 +161,12 @@ sds _sdsnewlen(const void *init, size_t initlen, int trymalloc) {
          s_trymalloc_usable(hdrlen + initlen + 1, &usable) :
          s_malloc_usable(hdrlen + initlen + 1, &usable);
     if (sh == NULL) return NULL;
+    // 如果init等于SDS_NOINIT
     if (init == SDS_NOINIT)
         init = NULL;
     else if (!init)
         memset(sh, 0, hdrlen + initlen + 1);
-    /* 注意：返回的s并不是直接指向sds的指针，而是指向sds中字符串的指针，sds的指针还需要
-     * 根据s和hdrlen计算出来 */
+    /* 注意：返回的s并不是直接指向sds的指针，而是指向sds中字符串的指针，sds的指针还需要根据s和hdrlen计算出来 */
     // s 此时指向buf
     s = (char *) sh + hdrlen;
     // fp指向flags
@@ -213,10 +215,11 @@ sds _sdsnewlen(const void *init, size_t initlen, int trymalloc) {
     return s;                       // 返回创建的sds字符串指针
 }
 
+/* 新建一个容量为initlen的sds */
 sds sdsnewlen(const void *init, size_t initlen) {
     return _sdsnewlen(init, initlen, 0);
 }
-
+/* 尝试新建一个容量为initlen的sds */
 sds sdstrynewlen(const void *init, size_t initlen) {
     return _sdsnewlen(init, initlen, 1);
 }

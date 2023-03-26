@@ -5,12 +5,10 @@ typedef struct dictEntry {
     struct dictEntry *next; //8字节
 } dictEntry;
 
-
 typedef struct redisObject {
     unsigned type:4; //4位
     unsigned encoding:4; //4位
-    // 24位
-    unsigned lru:24;
+    unsigned lru:24;  // 24位
     int refcount; //4字节
     void *ptr; // 8字节
 } robj;//一个robj 16直接

@@ -97,7 +97,7 @@ void zfree(void *ptr);                      // 释放内存
 void *zmalloc_usable(size_t size, size_t *usable);
 void *zcalloc_usable(size_t size, size_t *usable);
 void *zrealloc_usable(void *ptr, size_t size, size_t *usable);
-void *ztrymalloc_usable(size_t size, size_t *usable);
+void *ztrymalloc_usable(size_t size, size_t *usable);   // 尝试分配内存，分配不了则返回NULL
 void *ztrycalloc_usable(size_t size, size_t *usable);
 void *ztryrealloc_usable(void *ptr, size_t size, size_t *usable);
 void zfree_usable(void *ptr, size_t *usable);

@@ -167,6 +167,7 @@ extern int configOOMScoreAdjValuesDefaults[CONFIG_OOM_COUNT];
 
 /* Command flags. Please check the command table defined in the server.c file
  * for more information about the meaning of every flag. */
+// 命令标志。请检查 server.c 文件中定义的命令表，了解有关每个标志含义的更多信息。
 #define CMD_WRITE (1ULL << 0)           /* "write" flag */
 #define CMD_READONLY (1ULL << 1)        /* "read-only" flag */
 #define CMD_DENYOOM (1ULL << 2)         /* "use-memory" flag */
@@ -1791,7 +1792,8 @@ typedef void redisCommandProc(client *c);
 typedef int redisGetKeysProc(struct redisCommand *cmd, robj **argv, int argc, getKeysResult *result);
 
 /*
- * redis将所有的命令都封装为一个redisCommand结构体，并用函数指针redisCommandProc指向该命令的具体逻辑
+ * redis将所有的命令都封装为一个redisCommand结构体，
+ * 并用函数指针redisCommandProc指向该命令的具体逻辑
 */
 struct redisCommand
 {
@@ -1800,8 +1802,10 @@ struct redisCommand
     int arity;              // 命令参数数目，用于校验命令请求格式是否正确；当arity小于0时，表示命令参数数目大于等于arity；
                             // 当arity大于0时，表示命令参数数目必须为arity；注意命令请求中，命令的名称本身也是一个参数，
                             // 如get命令的参数数目为2，命令请求格式为get key。
-    char *sflags;   /* Flags as string representation, one char per flag. */    //命令标志，例如标识命令时读命令还是写命令
-    uint64_t flags; /* The actual flags, obtained from the 'sflags' field. */   //命令的二进制标志，服务器启动时解析sflags字段生成。
+    char *sflags;   /* Flags as string representation, one char per flag. */
+                    //命令标志，例如标识命令时读命令还是写命令
+    uint64_t flags; /* The actual flags, obtained from the 'sflags' field. */
+                    //命令的二进制标志，服务器启动时解析sflags字段生成。
     /* Use a function to determine keys arguments in a command line.
      * Used for Redis Cluster redirect. */
     redisGetKeysProc *getkeys_proc;

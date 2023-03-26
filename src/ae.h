@@ -105,16 +105,16 @@ typedef void aeEventFinalizerProc(struct aeEventLoop *eventLoop, void *clientDat
 // 一个对eventLoop处理的函数原型，后面此函数类型具体的对象有beforeSleep和afterSleep
 typedef void aeBeforeSleepProc(struct aeEventLoop *eventLoop);
 
-/* File event structure */  // IO事件结构体
+/* File event structure */  // 文件事件结构
 typedef struct aeFileEvent {
     /* 文件事件类型：是AE_READABLE,AE_WRITABLE和AE_BARRIER中的一个 */
     int mask; /* one of AE_(READABLE|WRITABLE|BARRIER) */
-    aeFileProc *rfileProc;              /* 有可读IO事件时的处理函数 */
-    aeFileProc *wfileProc;              /* 有可写IO事件时的处理函数 */
-    void *clientData;                   /* 客户端传入的数据 */
+    aeFileProc *rfileProc;              /* 有可读IO事件时的处理函数 一般设置为readQueryFromClient*/
+    aeFileProc *wfileProc;              /* 有可写IO事件时的处理函数 一般设置为sendReplyToClient*/
+    void *clientData;                   /* 客户端传入的数据 多路复用库的私有数据 一般为redisClient(redis.h) 为客户端维护一个状态*/
 } aeFileEvent;
 
-/* Time event structure */      //(时间事件)结构体的定义
+/* Time event structure */      // 时间事件结构
 typedef struct aeTimeEvent {
     /* 时间事件的唯一id */
     long long id; /* time event identifier. */         
@@ -124,7 +124,7 @@ typedef struct aeTimeEvent {
     aeTimeProc *timeProc;
     /* 时间事件终结函数 */
     aeEventFinalizerProc *finalizerProc;
-    /* 客户端传入的数据 */
+    /* 客户端传入的数据 多路复用库的私有数据*/
     void *clientData;
     /* 指向上一个时间事件的指针 */
     struct aeTimeEvent *prev;

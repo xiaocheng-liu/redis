@@ -98,6 +98,7 @@ void *bioProcessBackgroundJobs(void *arg);
 #define REDIS_THREAD_STACK_SIZE (1024*1024*4)
 
 /* Initialize the background system, spawning the thread. */
+/* 初始化后台系统，生成线程。*/
 void bioInit(void) {
     pthread_attr_t attr;
     pthread_t thread;
@@ -105,6 +106,7 @@ void bioInit(void) {
     int j;
 
     /* Initialization of state vars and objects */
+    /* 状态变量和对象的初始化 */
     for (j = 0; j < BIO_NUM_OPS; j++) {
         //  首先初始化互斥锁数组和条件变量数组
         pthread_mutex_init(&bio_mutex[j],NULL);
@@ -134,7 +136,8 @@ void bioInit(void) {
     for (j = 0; j < BIO_NUM_OPS; j++) {
         void *arg = (void*)(unsigned long) j;
         // bioInit 函数让这 3 个线程执行的函数都是 bioProcessBackgroundJobs。
-        // 在这三次线程的创建过程中，传给这个函数的参数分别是 0、1、2，因为三种后台任务类型 BIO_CLOSE_FILE、BIO_AOF_FSYNC 和 BIO_LAZY_FREE 对应的操作码，它们的取值分别为 0、1、2。
+        // 在这三次线程的创建过程中，传给这个函数的参数分别是 0、1、2，
+        // 因为三种后台任务类型 BIO_CLOSE_FILE、BIO_AOF_FSYNC 和 BIO_LAZY_FREE 对应的操作码，它们的取值分别为 0、1、2。
         if (pthread_create(&thread,&attr,bioProcessBackgroundJobs,arg) != 0) {
             serverLog(LL_WARNING,"Fatal: Can't initialize Background Jobs.");
             exit(1);

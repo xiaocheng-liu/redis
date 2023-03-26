@@ -171,7 +171,7 @@ void aeStop(aeEventLoop *eventLoop) {
 int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, int mask,
         aeFileProc *proc, void *clientData)
 {
-    if (fd >= eventLoop->setsize) {
+    if (fd >= eventLoop->setsize) {     // eventLoop->setsize为事件数组的大小
         errno = ERANGE;
         return AE_ERR;
     }
@@ -181,10 +181,13 @@ int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, int mask,
     // 注册要监听的事件，让内核可以监听到当前文件描述符上的IO事件
     if (aeApiAddEvent(eventLoop, fd, mask) == -1)
         return AE_ERR;
+    // 设置文件事件类型，以及事件的处理器
     fe->mask |= mask;
     if (mask & AE_READABLE) fe->rfileProc = proc;   // 设置写事件的回调函数
     if (mask & AE_WRITABLE) fe->wfileProc = proc;   // 设置读事件的回调函数
+    // 私有数据
     fe->clientData = clientData;
+    // 如果有需要，更新事件处理器的最大fd
     if (fd > eventLoop->maxfd)
         eventLoop->maxfd = fd;
     return AE_OK;
@@ -223,22 +226,30 @@ long long aeCreateTimeEvent(aeEventLoop *eventLoop, long long milliseconds,
         aeTimeProc *proc, void *clientData,
         aeEventFinalizerProc *finalizerProc)
 {
+    // 更新ID记录
     long long id = eventLoop->timeEventNextId++;
+    // 创建时间事件结构
     aeTimeEvent *te;
 
     te = zmalloc(sizeof(*te));
     if (te == NULL) return AE_ERR;
+    // 设置 ID
     te->id = id;
+    // 设定处理事件的时间 milliseconds后触发
     te->when = getMonotonicUs() + milliseconds * 1000;
+    // 设置事件处理器
     te->timeProc = proc;
     te->finalizerProc = finalizerProc;
+    // 设置私有数据
     te->clientData = clientData;
     te->prev = NULL;
+    // 将新事件放入表头
     te->next = eventLoop->timeEventHead;
     te->refcount = 0;
     if (te->next)
         te->next->prev = te;
     eventLoop->timeEventHead = te;
+    // 返回此事件的ID
     return id;
 }
 
@@ -387,29 +398,36 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
      * events, in order to sleep until the next time event is ready
      * to fire. */
     /* 如果【有监控文件事件】或者【有要处理定时器事件并且没有设置不阻塞标志】则进入逻辑*/
+    // 不等于-1代表当前存在正在监听的套接字
     if (eventLoop->maxfd != -1 ||
         ((flags & AE_TIME_EVENTS) && !(flags & AE_DONT_WAIT))) {
         int j;
         struct timeval tv, *tvp;
         long msUntilTimer = -1;
 
+        // 获取距离现在时间戳最近的时间事件
         if (flags & AE_TIME_EVENTS && !(flags & AE_DONT_WAIT))
             msUntilTimer = msUntilEarliestTimer(eventLoop);
 
         if (msUntilTimer >= 0) {
+            // 如果时间事件存在的话
+            // 那么根据最近可执行时间事件和现在时间的时间差来决定文件事件的阻塞时间
             tv.tv_sec = msUntilTimer / 1000;
             tv.tv_usec = (msUntilTimer % 1000) * 1000;
             tvp = &tv;
         } else {
+            // 执行到这一步，说明没有时间事件
+            // 那么根据 AE_DONT_WAIT 是否设置来决定是否阻塞，以及阻塞的时间长度
             /* 如果设置了不阻塞标志，则将阻塞时间为0，表示不阻塞 */
             /* If we have to check for events but need to return
              * ASAP because of AE_DONT_WAIT we need to set the timeout
              * to zero */
             if (flags & AE_DONT_WAIT) {
+                // 设置文件事件不阻塞
                 tv.tv_sec = tv.tv_usec = 0;
                 tvp = &tv;
             } else {
-                /* 阻塞直到第一个时间事件的到来 */
+                // 文件事件可以阻塞直到有事件到达为止
                 /* Otherwise we can block */
                 tvp = NULL; /* wait forever */
             }
@@ -435,6 +453,11 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
         /* Call the multiplexing API, will return only on timeout or when
          * some event fires. 
          * 通过aeApiPoll获取当前就绪的事件数量*/
+        // 处理文件事件,执行epoll_wait,就绪链表存在fired中 阻塞时间由 tvp 决定
+        // 这样也可以保证epoll_wait不会阻塞太长时间
+        // 且在一段时间没有来文件事件的话也可以正常进行时间事件,
+        // 这里redis的实现就非常巧妙,以前的见过网络框架的做法是时间事件由定时器驱动 触发epoll去执行
+        // redis的这样实现显然提高了效率  就算是大量的定时事件换个数据结构(时间轮)也完全hold得住
         numevents = aeApiPoll(eventLoop, tvp);
 
         /* 执行阻塞后的处理函数 */
@@ -443,7 +466,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
             eventLoop->aftersleep(eventLoop);
 
         /* 循环处理触发的文件事件 */
-        for (j = 0; j < numevents; j++) {
+        for (j = 0; j < numevents; j++) {   //下面细说 做的事情就是把epoll_wait中就绪事件放到fired中
             /* 获取触发的文件事件 */
             // aeApiPoll中已将就绪的事件放在了fired中,通过fired可以获取到产生事件的文件描述符fd
             // 根据文件描述符fd获取对应的事件aeFileEvent,aeFileEvent中记录了事件的回调函数
@@ -478,6 +501,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
             if (!invert && fe->mask & mask & AE_READABLE) {
                 // 如果是可读事件，调用可读事件的回调函数，参数分别为eventLoop、文件描述符、aeFileEvent的clientData、事件类型掩码
                 fe->rfileProc(eventLoop,fd,fe->clientData,mask);
+                // rfired 确保读/写事件只能执行其中一个
                 fired++;
                 fe = &eventLoop->events[fd]; /* Refresh in case of resize. */
             }

@@ -4293,15 +4293,12 @@ static int cmdHasMovableKeys(struct redisCommand *cmd)
  * other operations can be performed by the caller. Otherwise
  * if C_ERR is returned the client was destroyed (i.e. after QUIT). 
  */
-/* 如果调用此函数，我们已经读取了一个整体
- * 命令，参数位于客户端 argv/argc 字段中。
- * processCommand（） 执行命令或准备
- * 用于从客户端批量读取的服务器。
+/* 如果调用此函数，我们已经读取了一个整体命令，参数位于客户端 argv/argc 字段中。
+ * processCommand（） 执行命令或准备用于从客户端批量读取的服务器。
  *
- * 如果返回C_OK，则客户端仍处于活动状态且有效，并且
- * 其他操作可由调用方执行。否则
- * 如果返回C_ERR，则客户端被销毁（即在 QUIT 之后）
- * */
+ * 如果返回C_OK，则客户端仍处于活动状态且有效，并且其他操作可由调用方执行。
+ * 否则如果返回C_ERR，则客户端被销毁（即在 QUIT 之后）
+ */
 int processCommand(client *c)
 {
     moduleCallCommandFilters(c);
@@ -4323,9 +4320,12 @@ int processCommand(client *c)
     /* Now lookup the command and check ASAP about trivial error conditions
      * such as wrong arity, bad command name and so forth. 
      * 这里是对client的请求解析出对应的redis命令，并校验参数的合法性 */
+    // 根据argv[0]在字典中查找当前命令,并进行命令合法性检查,以及命令参数个数检查 字典名为commands
+    // c->cmd为当前要执行的命令 同时更新lastcmd loopupcommand其实就是在字典中根据键查找值而已
     c->cmd = c->lastcmd = lookupCommand(c->argv[0]->ptr);
     if (!c->cmd)
     {
+        // 没找到指定的命令
         sds args = sdsempty();
         int i;
         for (i = 1; i < c->argc && sdslen(args) < 128; i++)
@@ -4336,7 +4336,7 @@ int processCommand(client *c)
         return C_OK;
     }
     else if ((c->cmd->arity > 0 && c->cmd->arity != c->argc) ||
-             (c->argc < -c->cmd->arity))
+             (c->argc < -c->cmd->arity))    // 检查参数个数是否正确 错误的话进入
     {
         rejectCommandFormat(c, "wrong number of arguments for '%s' command",
                             c->cmd->name);
@@ -4347,8 +4347,7 @@ int processCommand(client *c)
     int i;
     for (i = 1; i < c->argc && sdslen(args) < 128; i++)
         args = sdscatprintf(args, "`%.*s`, ", 128 - (int)sdslen(args), (char *)c->argv[i]->ptr);
-    printf("command `%s`, with args is: %s \n",
-           (char *)c->argv[0]->ptr, args);
+    // printf("command `%s`, with args is: %s \n", (char *)c->argv[0]->ptr, args);
     sdsfree(args);
 
     int is_write_command = (c->cmd->flags & CMD_WRITE) ||
@@ -4365,6 +4364,7 @@ int processCommand(client *c)
     /* Check if the user is authenticated. This check is skipped in case
      * the default user is flagged as "nopass" and is active.  */
     // 是否已经认证
+    // 检查认证信息 默认未开启 在redis.conf中修改requirepass打开
     int auth_required = (!(DefaultUser->flags & USER_FLAG_NOPASS) ||
                          (DefaultUser->flags & USER_FLAG_DISABLED)) &&
                         !c->authenticated;
@@ -4444,6 +4444,7 @@ int processCommand(client *c)
      * 每次执行命令前先检查内存是否充足，如果内存不够就要尝试按配置的淘汰策略淘汰掉一部分内存 */
     if (server.maxmemory && !server.lua_timedout)
     {
+        // 如果内存已超过限制，那么尝试通过删除过期键来释放内存
         int out_of_memory = (performEvictions() == EVICT_FAIL);
         /* performEvictions may flush slave output buffers. This may result
          * in a slave, that may be the active client, to be freed. */
@@ -6580,6 +6581,7 @@ int redisIsSupervised(int mode)
     return ret;
 }
 
+/* 判断我是否是主节点 */
 int iAmMaster(void)
 {
     return ((!server.cluster_enabled && server.masterhost == NULL) ||
