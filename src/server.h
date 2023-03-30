@@ -1427,7 +1427,7 @@ struct redisServer
     int dbnum;                                   /* Total number of configured DBs */
     int supervised;                              /* 1 if supervised, 0 otherwise. */
     int supervised_mode;                         /* See SUPERVISED_* */
-    int daemonize;                               /* True if running as a daemon */
+    int daemonize;                               /* True if running as a daemon */      // 如果作为守护程序运行，则为 True
     int set_proc_title;                          /* True if change proc title */
     char *proc_title_template;                   /* Process title template format */
     clientBufferLimitsConfig client_obuf_limits[CLIENT_TYPE_OBUF_COUNT];
@@ -2757,7 +2757,15 @@ void serverLogRaw(int level, const char *msg);
 
 void serverLogFromHandler(int level, const char *msg);
 
+void createPidFile(void);
+
+void daemonize(void);
+
+void version(void);
+
 void usage(void);
+
+void redisAsciiArt(void);
 
 void updateDictResizePolicy(void);
 
@@ -2919,8 +2927,8 @@ int rewriteConfig(char *path, int force_all);
 
 void initConfigValues();
 
-/* db.c -- Keyspace access API */
-// 键访问API
+/* db.c -- Keyspace access API 键访问API */
+// 删除过期
 int removeExpire(redisDb *db, robj *key);
 
 void propagateExpire(redisDb *db, robj *key, int lazy);
@@ -2929,8 +2937,10 @@ int expireIfNeeded(redisDb *db, robj *key);
 
 long long getExpire(redisDb *db, robj *key);
 
+// 设置过期
 void setExpire(client *c, redisDb *db, robj *key, long long when);
 
+// 检查是否已经过期
 int checkAlreadyExpired(long long when);
 
 robj *lookupKey(redisDb *db, robj *key, int flags);
@@ -3137,6 +3147,7 @@ void updateStatsOnUnblock(client *c, long blocked_us, long reply_us);
 // 阻止的客户端超时和连接超时
 void addClientToTimeoutTable(client *c);
 
+// 当客户端因超时以外的原因而取消阻止时，将其从表中删除。
 void removeClientFromTimeoutTable(client *c);
 
 void handleBlockedClientsTimeout(void);

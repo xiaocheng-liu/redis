@@ -124,6 +124,7 @@ void addClientToTimeoutTable(client *c) {
 
 /* Remove the client from the table when it is unblocked for reasons
  * different than timing out. */
+// 当客户端因超时以外的原因而取消阻止时，将其从表中删除。
 void removeClientFromTimeoutTable(client *c) {
     if (!(c->flags & CLIENT_IN_TO_TABLE)) return;
     c->flags &= ~CLIENT_IN_TO_TABLE;

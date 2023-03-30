@@ -6029,14 +6029,17 @@ exit:
 #endif /* __arm64__ */
 #endif /* __linux__ */
 
+// 创建Pid文件
 void createPidFile(void)
 {
     /* If pidfile requested, but no pidfile defined, use
      * default pidfile path */
+    // 如果需要pidfile，但是没有定义pidfile，使用默认的pidfile路径
     if (!server.pidfile)
         server.pidfile = zstrdup(CONFIG_DEFAULT_PID_FILE);
 
     /* Try to write the pid file in a best-effort way. */
+    // 尝试写入pidfile
     FILE *fp = fopen(server.pidfile, "w");
     if (fp)
     {
@@ -6066,6 +6069,7 @@ void daemonize(void)
     }
 }
 
+// 打印版本
 void version(void)
 {
     printf("Redis server v=%s sha=%s:%d malloc=%s bits=%d build=%llx\n",
@@ -6837,7 +6841,7 @@ int main(int argc, char **argv)
     }
 
     readOOMScoreAdj();
-    //【13】initServer函数初始化Redis运行时数据，createPidFile函数创建pid文件。
+    //【13】initServer函数初始化Redis运行时数据，aeCreateEventLoop函数创建事件循环器，createPidFile函数创建pid文件。
     initServer();
     if (background || server.pidfile)
         createPidFile();

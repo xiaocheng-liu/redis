@@ -32,6 +32,9 @@
 #include <sys/types.h>
 #include <sys/event.h>
 #include <sys/time.h>
+#include "ae.h"
+#include "anet.h"
+#include "zmalloc.h"
 
 typedef struct aeApiState {
     int kqfd;               // 实例文件描述符

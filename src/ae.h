@@ -98,10 +98,13 @@ struct aeEventLoop;
 /* Types and data structures */
 // 有IO事件时处理IO事件的函数原型
 typedef void aeFileProc(struct aeEventLoop *eventLoop, int fd, void *clientData, int mask);
+
 // 有时间事件时处理时间事件的函数原型
 typedef int aeTimeProc(struct aeEventLoop *eventLoop, long long id, void *clientData);
+
 // 一个对eventLoop和clientData处理的函数原型
 typedef void aeEventFinalizerProc(struct aeEventLoop *eventLoop, void *clientData);
+
 // 一个对eventLoop处理的函数原型，后面此函数类型具体的对象有beforeSleep和afterSleep
 typedef void aeBeforeSleepProc(struct aeEventLoop *eventLoop);
 
@@ -117,10 +120,10 @@ typedef struct aeFileEvent {
 /* Time event structure */      // 时间事件结构
 typedef struct aeTimeEvent {
     /* 时间事件的唯一id */
-    long long id; /* time event identifier. */         
+    long long id; /* time event identifier. */
     /* timeEvent下次执行的时间 */
     monotime when;
-    /* 时间事件处理函数 */         
+    /* 时间事件处理函数 */
     aeTimeProc *timeProc;
     /* 时间事件终结函数 */
     aeEventFinalizerProc *finalizerProc;
@@ -149,9 +152,9 @@ typedef struct aeFiredEvent {
 typedef struct aeEventLoop {
     /* 当前已注册的最大的文件描述符 */
     int maxfd;   /* highest file descriptor currently registered */
-    /* 文件描述符监听集合的大小 */
+    /* 最大文件描述符监听集合的大小 */
     /**
-     * 指定事件循环要监听的文件描述符集合的大小。这个值与配置文件中得maxclients有关。
+     * 指定事件循环要监听的文件描述符集合的大小。这个值与配置文件中的maxclients有关。
      *
      * setsize参数表示了eventloop可以监听的网络事件fd的个数（不包含超时事件），
      * 如果当前监听的fd个数超过了setsize，eventloop将不能继续注册。
@@ -185,41 +188,55 @@ typedef struct aeEventLoop {
 /* Prototypes */        // ae.h提供的函数声明
 /* 创建aeEventLoop */
 aeEventLoop *aeCreateEventLoop(int setsize);
+
 /* 删除EventLoop，释放相应的事件所占的空间 */
 void aeDeleteEventLoop(aeEventLoop *eventLoop);
+
 /* 设置eventLoop中的停止属性为1，服务器中似乎没有用到，压测和客户端中有用到这个函数 */
 void aeStop(aeEventLoop *eventLoop);
+
 /* 在eventLoop中创建文件事件 */
 int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, int mask,
-        aeFileProc *proc, void *clientData);
+                      aeFileProc *proc, void *clientData);
+
 /* 删除文件事件 */
 void aeDeleteFileEvent(aeEventLoop *eventLoop, int fd, int mask);
+
 /* 根据文件描述符id，找出文件的属性，是读事件还是写事件 */
 int aeGetFileEvents(aeEventLoop *eventLoop, int fd);
-/* 在eventLoop中添加时间事件，创建的时间为当前时间加上自己传入的时间 */
+
+/* 在eventLoop中创建时间事件，创建的时间为当前时间加上自己传入的时间 */
 long long aeCreateTimeEvent(aeEventLoop *eventLoop, long long milliseconds,
-        aeTimeProc *proc, void *clientData,
-        aeEventFinalizerProc *finalizerProc);
+                            aeTimeProc *proc, void *clientData,
+                            aeEventFinalizerProc *finalizerProc);
+
 /* 根据时间id，删除时间事件，涉及链表的操作 */
 int aeDeleteTimeEvent(aeEventLoop *eventLoop, long long id);
 
 /* 处理eventLoop中的所有类型事件 */
 int aeProcessEvents(aeEventLoop *eventLoop, int flags);
+
 /* 让某事件等待 */
 int aeWait(int fd, int mask, long long milliseconds);
+
 /* ae事件执行主程序 */
 void aeMain(aeEventLoop *eventLoop);
+
 /* 获取接口名 */
 char *aeGetApiName(void);
+
 /* 设置eventLoop->beforeSleep回调函数*/
 void aeSetBeforeSleepProc(aeEventLoop *eventLoop, aeBeforeSleepProc *beforesleep);
+
 /* 设置eventLoop->afterSleep回调函数 */
 void aeSetAfterSleepProc(aeEventLoop *eventLoop, aeBeforeSleepProc *aftersleep);
 
 /* 获取eventLoop的长度*/
 int aeGetSetSize(aeEventLoop *eventLoop);
+
 /* 设置eventLoop的长度*/
 int aeResizeSetSize(aeEventLoop *eventLoop, int setsize);
+
 /* 通知事件的下一个迭代器将超时设置为零，即不等待 */
 void aeSetDontWait(aeEventLoop *eventLoop, int noWait);
 
