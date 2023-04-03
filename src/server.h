@@ -1258,57 +1258,57 @@ struct clusterState;
  */
 struct redisServer
 {
-    /* General */
-    pid_t pid;                /* Main process pid. */
-    pthread_t main_thread_id; /* Main thread id */
+    /* General */   // 常规
+    pid_t pid;                /* Main process pid. */                               // 主进程ID
+    pthread_t main_thread_id; /* Main thread id */                                  // 主线程ID
     char *configfile;         /* Absolute config file path, or NULL */              // 配置文件路径
     char *executable;         /* Absolute executable file path. */                  // redis的可执行文件路径
     char **exec_argv;         /* Executable argv vector (copy). */                  // 记录redis执行的参数
-    int dynamic_hz;           /* Change hz value depending on # of clients. */
+    int dynamic_hz;           /* Change hz value depending on # of clients. */      // 根据客户端更改 hz 值。
     int config_hz;            /* Configured HZ value. May be different than
                                    the actual 'hz' field value if dynamic-hz
-                                   is enabled. */
-    mode_t umask;             /* The umask value of the process on startup */
-    int hz;                   /* serverCron() calls frequency in hertz */                   //redis 定时任务触发的频率
-    int in_fork_child;        /* indication that this is a fork child */
+                                   is enabled. */                                   // 配置的 HZ 值。如果启用了动态 hz，则可能与实际的“hz”字段值不同。
+    mode_t umask;             /* The umask value of the process on startup */       // 进程在启动时的掩码值
+    int hz;                   /* serverCron() calls frequency in hertz */           // redis 定时任务触发的频率
+    int in_fork_child;        /* indication that this is a fork child */            // 表明这是一个分叉子项
     redisDb *db;                                                                            // redisDb 数组，默认 16 个 redisDb
-    dict *commands;                     /* Command table */                                 //redis 支持的命令的字典
-    dict *orig_commands;                /* Command table before command renaming. */        //没有转化的命令
-    aeEventLoop *el;                                                                        //redis 事件循环实例
-    rax *errors;                         /* Errors table */
-    redisAtomic unsigned int lruclock;   /* Clock for LRU eviction */   // LRU驱逐时钟
-    volatile sig_atomic_t shutdown_asap; /* SHUTDOWN needed ASAP */
+    dict *commands;                     /* Command table */                                 // redis 支持的命令的字典
+    dict *orig_commands;                /* Command table before command renaming. */        // 没有转化的命令
+    aeEventLoop *el;                                                                        // redis事件循环实例
+    rax *errors;                         /* Errors table */                                 // 错误表
+    redisAtomic unsigned int lruclock;   /* Clock for LRU eviction */                       // LRU驱逐时钟
+    volatile sig_atomic_t shutdown_asap; /* SHUTDOWN needed ASAP */                         // 需要尽快关闭
     int activerehashing;                 /* Incremental rehash in serverCron() */
     int active_defrag_running;           /* Active defragmentation running (holds current scan aggressiveness) */
-    char *pidfile;                       /* PID file path */
-    int arch_bits;                       /* 32 or 64 depending on sizeof(long) */
-    int cronloops;                       /* Number of times the cron function run */
-    char runid[CONFIG_RUN_ID_SIZE + 1];  /* ID always different at every exec. */ //当前 redis 实例的 runid
-    int sentinel_mode;                   /* True if this instance is a Sentinel. */
-    size_t initial_memory_usage;         /* Bytes used after initialization. */
-    int always_show_logo;                /* Show logo even for non-stdout logging. 始终显示logo*/
-    int in_eval;                         /* Are we inside EVAL? */
-    int in_exec;                         /* Are we inside EXEC? */
-    int propagate_in_transaction;        /* Make sure we don't propagate nested MULTI/EXEC */
-    char *ignore_warnings;               /* Config: warnings that should be ignored. */
-    int client_pause_in_transaction;     /* Was a client pause executed during this Exec? */
-    /* Modules */
-    dict *moduleapi;            /* Exported core APIs dictionary for modules. */
+    char *pidfile;                       /* PID file path */                                // pidfile路径
+    int arch_bits;                       /* 32 or 64 depending on sizeof(long) */           // 32或者64取决于long的大小
+    int cronloops;                       /* Number of times the cron function run */        // cron 函数运行的次数
+    char runid[CONFIG_RUN_ID_SIZE + 1];  /* ID always different at every exec. */           // 当前redis实例的 runid
+    int sentinel_mode;                   /* True if this instance is a Sentinel. */         // 如果此实例是哨兵，则为 true。
+    size_t initial_memory_usage;         /* Bytes used after initialization. */             // 初始化后使用的字节数。
+    int always_show_logo;                /* Show logo even for non-stdout logging. */       // 始终显示logo
+    int in_eval;                         /* Are we inside EVAL? */                          // 我们在EVAL里面吗？
+    int in_exec;                         /* Are we inside EXEC? */                          // 我们在EXEC里面吗？
+    int propagate_in_transaction;        /* Make sure we don't propagate nested MULTI/EXEC */   // 确保我们不会传播嵌套的 MULTIEXEC
+    char *ignore_warnings;               /* Config: warnings that should be ignored. */         // 配置：应忽略的警告。
+    int client_pause_in_transaction;     /* Was a client pause executed during this Exec? */    // 在此执行期间是否执行了客户端暂停？
+    /* Modules */   // 模块
+    dict *moduleapi;            /* Exported core APIs dictionary for modules. */        // 导出模块的核心 API 字典。
     dict *sharedapi;            /* Like moduleapi but containing the APIs that
-                                   modules share with each other. */
+                                   modules share with each other. */                    // 与模块API类似，但包含模块相互共享的API。
     list *loadmodule_queue;     /* List of modules to load at startup. */
     int module_blocked_pipe[2]; /* Pipe used to awake the event loop if a
                                    client blocked on a module command needs
                                    to be processed. */
     pid_t child_pid;            /* PID of current child */
     int child_type;             /* Type of current child */
-    /* Networking */
-    int port;                                 /* TCP listening port */
-    int tls_port;                             /* TLS listening port */
+    /* Networking */    // 网络
+    int port;                                 /* TCP listening port */          // TCP 侦听端口
+    int tls_port;                             /* TLS listening port */          // TLS 侦听端口
     int tcp_backlog;                          /* TCP listen() backlog */
-    char *bindaddr[CONFIG_BINDADDR_MAX];      /* Addresses we should bind to */
-    int bindaddr_count;                       /* Number of addresses in server.bindaddr[] */
-    char *unixsocket;                         /* UNIX socket path */
+    char *bindaddr[CONFIG_BINDADDR_MAX];      /* Addresses we should bind to */ // 我们应该绑定到的地址
+    int bindaddr_count;                       /* Number of addresses in server.bindaddr[] */    // 绑定的地址数
+    char *unixsocket;                         /* UNIX socket path */            // UNIX 套接字路径
     mode_t unixsocketperm;                    /* UNIX socket permission */
     int ipfd[CONFIG_BINDADDR_MAX];            /* TCP socket file descriptors */
     int ipfd_count;                           /* Used slots in ipfd[] */
@@ -1319,12 +1319,10 @@ struct redisServer
     int cfd_count;                            /* Used slots in cfd[] */
     list *clients;                            /* 所有活跃的client */
     list *clients_to_close;                   /* Clients to close asynchronously */
-    list *clients_pending_write;              /* 服务所有需要回复的client列表 */                    //待写回数据的客户端
-    list *clients_pending_read;               /* Client has pending read socket buffers. */     //待读取数据的客户端
-    /* 记录所有的从服务器，是一个链表，链表节点值类型为client */
-    /* 记录所有的监控器，是一个链表，链表节点值类型为monitor */
-    list *slaves, *monitors;                  /* List of slaves and MONITORs */
-    client *current_client;                   /* Current client executing the command. */
+    list *clients_pending_write;              /* 服务所有需要回复的client列表 */                    // 待写回数据的客户端
+    list *clients_pending_read;               /* Client has pending read socket buffers. */     // 待读取数据的客户端
+    list *slaves, *monitors;                  /* List of slaves and MONITORs */                 // 从站和监视器列表
+    client *current_client;                   /* Current client executing the command. */       // 当前正在执行命令的客户端。
     rax *clients_timeout_table;               /* Radix tree for blocked clients timeouts. */
     long fixed_time_expire;                   /* If > 0, expire keys against server.mstime. */
     rax *clients_index;                       /* Active clients dictionary by client ID. */
@@ -1342,29 +1340,29 @@ struct redisServer
     int io_threads_active;                    /* Is IO threads currently active? */
     long long events_processed_while_blocked; /* processEventsWhileBlocked() */
 
-    /* RDB / AOF loading information */
+    /* RDB / AOF loading information */     // RDB AOF 加载信息
     volatile sig_atomic_t loading; /* We are loading data from disk if true */
     off_t loading_total_bytes;
     off_t loading_rdb_used_mem;
     off_t loading_loaded_bytes;
     time_t loading_start_time;
     off_t loading_process_events_interval_bytes;
-    /* Fast pointers to often looked up command */
+    /* Fast pointers to often looked up command */  // 指向经常查找命令的快速指针
     struct redisCommand *delCommand, *multiCommand, *lpushCommand,
         *lpopCommand, *rpopCommand, *zpopminCommand,
         *zpopmaxCommand, *sremCommand, *execCommand,
         *expireCommand, *pexpireCommand, *xclaimCommand,
         *xgroupCommand, *rpoplpushCommand, *lmoveCommand;
-    /* Fields used only for stats */
-    time_t stat_starttime;                                /* Server start time */
-    long long stat_numcommands;                           /* Number of processed commands */
-    long long stat_numconnections;                        /* Number of connections received */
-    long long stat_expiredkeys;                           /* Number of expired keys */
-    double stat_expired_stale_perc;                       /* Percentage of keys probably expired */
+    /* Fields used only for stats */    // 仅用于统计信息的字段
+    time_t stat_starttime;                                /* Server start time */                       // 服务器启动时间
+    long long stat_numcommands;                           /* Number of processed commands */            // 已处理的命令数
+    long long stat_numconnections;                        /* Number of connections received */          // 收到的连接数
+    long long stat_expiredkeys;                           /* Number of expired keys */                  // 过期键的数量
+    double stat_expired_stale_perc;                       /* Percentage of keys probably expired */     // 键可能已过期的百分比
     long long stat_expired_time_cap_reached_count;        /* Early expire cylce stops.*/
     long long stat_expire_cycle_time_used;                /* Cumulative microseconds used. */
     long long stat_evictedkeys;                           /* Number of evicted keys (maxmemory) */
-    long long stat_keyspace_hits;                         /* Number of successful lookups of keys */
+    long long stat_keyspace_hits;                         /* Number of successful lookups of keys */    // 成功查找键的次数
     long long stat_keyspace_misses;                       /* Number of failed lookups of keys */
     long long stat_active_defrag_hits;                    /* number of allocations moved */
     long long stat_active_defrag_misses;                  /* number of allocations scanned but not moved */
@@ -1400,6 +1398,7 @@ struct redisServer
     redisAtomic long long stat_total_writes_processed;    /* Total number of write events processed 已处理的写入事件总数*/
     /* The following two are used to track instantaneous metrics, like
      * number of operations per second, network traffic. */
+    // 以下两个用于跟踪即时指标，例如每秒的操作数、网络流量。
     struct
     {
         long long last_sample_time;  /* Timestamp of last sample in ms */
@@ -1407,9 +1406,9 @@ struct redisServer
         long long samples[STATS_METRIC_SAMPLES];
         int idx;
     } inst_metric[STATS_METRIC_COUNT];
-    /* Configuration */
-    int verbosity;             /* Loglevel in redis.conf */
-    int maxidletime;           /* Client timeout in seconds */
+    /* Configuration */     // 配置
+    int verbosity;             /* Loglevel in redis.conf */             // redis.conf配置的日志级别
+    int maxidletime;           /* Client timeout in seconds */          //
     int tcpkeepalive;          /* Set SO_KEEPALIVE if non-zero. */
     int active_expire_enabled; /* Can be disabled for testing purposes. */
     int active_expire_effort;  /* From 1 (default) to 10, active effort. */
@@ -3268,8 +3267,10 @@ void dbsizeCommand(client *c);
 
 void lastsaveCommand(client *c);
 
+/** save命令 */
 void saveCommand(client *c);
 
+/** bgsave命令 */
 void bgsaveCommand(client *c);
 
 void bgrewriteaofCommand(client *c);

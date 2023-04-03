@@ -1362,6 +1362,7 @@ int rdbSave(char *filename, rdbSaveInfo *rsi) {
     rio rdb; // redis文件IO的封装，有面向对象的意思  
     int error = 0;
 
+    // 创建一个临时文件。
     snprintf(tmpfile,256,"temp-%d.rdb", (int) getpid());
     fp = fopen(tmpfile,"w");
     if (!fp) {  // 打开文件失败 
@@ -1375,7 +1376,7 @@ int rdbSave(char *filename, rdbSaveInfo *rsi) {
         return C_ERR;
     }
 
-    // 初始化rio，
+    // 初始化rio，rio是redis对io的一种抽象，提供了read、write、flush、checksum……等方法。
     rioInitWithFile(&rdb,fp);
     startSaving(RDBFLAGS_NONE);
 
@@ -1396,7 +1397,7 @@ int rdbSave(char *filename, rdbSaveInfo *rsi) {
 
     /* Use RENAME to make sure the DB file is changed atomically only
      * if the generate DB file is ok. */
-    // 文件同步完后把临时文件名改为正式文件名 
+    // 文件同步完后使用 rename 将临时文件改名为 正式的 RDB 文件。
     if (rename(tmpfile,filename) == -1) {
         char *cwdp = getcwd(cwd,MAXPATHLEN);
         serverLog(LL_WARNING,
@@ -1412,6 +1413,7 @@ int rdbSave(char *filename, rdbSaveInfo *rsi) {
     }
 
     serverLog(LL_NOTICE,"DB saved on disk");
+    // 将server.dirty清零，server.dirty是用了记录在上次生成rdb后有多少次数据变更，会在serverCron中用到。
     server.dirty = 0;
     server.lastsave = time(NULL);
     server.lastbgsave_status = C_OK;
@@ -2871,6 +2873,7 @@ void saveCommand(client *c) {
     }
     rdbSaveInfo rsi, *rsiptr;
     rsiptr = rdbPopulateSaveInfo(&rsi);
+    // rdbSave 函数是真正进行 RDB 持久化的函数
     if (rdbSave(server.rdb_filename,rsiptr) == C_OK) {
         addReply(c,shared.ok);
     } else {
@@ -2880,6 +2883,7 @@ void saveCommand(client *c) {
 
 /* BGSAVE [SCHEDULE] */
 /* 后台生成rdb快照 */
+// bgsave提供了后台生成rdb文件的功能，bg含义就是background，具体怎么实现的? 其实就是调用fork() 生成了一个子进程，然后在子进程中完成了save的过程。
 void bgsaveCommand(client *c) {
     int schedule = 0;
 

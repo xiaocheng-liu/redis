@@ -33,6 +33,7 @@
 typedef void lazy_free_fn(void *args[]);
 
 /* Exported API */
+/* 初始化后台系统，生成线程。*/
 void bioInit(void);
 unsigned long long bioPendingJobsOfType(int type);
 unsigned long long bioWaitStepOfType(int type);

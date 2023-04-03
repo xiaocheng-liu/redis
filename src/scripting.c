@@ -1501,8 +1501,10 @@ void evalGenericCommand(client *c, int evalsha) {
     server.in_eval = 1;
 
     /* Get the number of arguments that are keys */
+    // 获取输入键的数量
     if (getLongLongFromObjectOrReply(c,c->argv[2],&numkeys,NULL) != C_OK)
         return;
+    // 对键的正确性做一个快速检查
     if (numkeys > (c->argc - 3)) {
         addReplyError(c,"Number of keys can't be greater than number of args");
         return;
@@ -1513,6 +1515,7 @@ void evalGenericCommand(client *c, int evalsha) {
 
     /* We obtain the script SHA1, then check if this function is already
      * defined into the Lua state */
+    // 组合出函数的名字，例如 f_282297a0228f48cd3fc6a55de6316f31422f5d17
     funcname[0] = 'f';
     funcname[1] = '_';
     if (!evalsha) {
@@ -1537,16 +1540,19 @@ void evalGenericCommand(client *c, int evalsha) {
 
     /* Try to lookup the Lua function */
     lua_getglobal(lua, funcname);
+    // 如果没有找到对应的函数
     if (lua_isnil(lua,-1)) {
         lua_pop(lua,1); /* remove the nil from the stack */
         /* Function not defined... let's define it if we have the
          * body of the function. If this is an EVALSHA call we can just
          * return an error. */
+        // 如果执行的是 EVALSHA ，返回脚本未找到错误
         if (evalsha) {
             lua_pop(lua,1); /* remove the error handler from the stack. */
             addReply(c, shared.noscripterr);
             return;
         }
+        // 如果执行的是 EVAL ，那么创建新函数，然后将代码添加到脚本字典中
         if (luaCreateFunction(c,lua,c->argv[1]) == NULL) {
             lua_pop(lua,1); /* remove the error handler from the stack. */
             /* The error is sent to the client by luaCreateFunction()
