@@ -1479,7 +1479,7 @@ struct redisServer
     int rdb_checksum;              /* Use RDB checksum? */
     int rdb_del_sync_files;        /* Remove RDB files used only for SYNC if
                                        the instance does not use persistence. */
-    time_t lastsave;               /* Unix time of last successful save */
+    time_t lastsave;               /* Unix time of last successful save */  // 上次成功保存的 Unix 时间
     time_t lastbgsave_try;         /* Unix time of last attempted bgsave */
     time_t rdb_save_time_last;     /* Time used by last RDB save run. */    // 记录最后一次RDB保存的时间
     time_t rdb_save_time_start;    /* Current RDB save start time. */       // 记录当前的RDB保存的时间

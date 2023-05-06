@@ -6333,13 +6333,14 @@ void memtest(size_t megabytes, int passes);
 
 /* Returns 1 if there is --sentinel among the arguments or if
  * argv[0] contains "redis-sentinel". */
-// 如果参数中有 --sentinel，或者 argv[0] 包含 “redis-sentinel”，则返回 1。
+// 如果参数中有 --sentinel，或者 argv[0] 包含 "redis-sentinel"，则返回 1。
 int checkForSentinelMode(int argc, char **argv)
 {
     int j;
-
+    // 查看参数中是否有redis-sentinel子串
     if (strstr(argv[0], "redis-sentinel") != NULL)
         return 1;
+    // 逐个比较是否有--sentinel参数
     for (j = 1; j < argc; j++)
         if (!strcmp(argv[j], "--sentinel"))
             return 1;
@@ -6593,12 +6594,13 @@ int iAmMaster(void)
 }
 
 /**
- * @brief server.c/main是Redis启动方法，负责加载配置，初始化数据库，启动网络服务，创建并启动事件循环器。
+ * @brief
  * 
  * @param argc 
  * @param argv 
  * @return int 
  */
+ // server.c/main是Redis启动方法，负责加载配置，初始化数据库，启动网络服务，创建并启动事件循环器。
 int main(int argc, char **argv)
 {
     struct timeval tv;
@@ -6668,18 +6670,23 @@ int main(int argc, char **argv)
     srandom(time(NULL) ^ getpid());
     // 精确时间
     gettimeofday(&tv, NULL);
+    // 使用种子初始化 mt[NN]
     init_genrand64(((long long)tv.tv_sec * 1000000 + tv.tv_usec) ^ getpid());
+    // 初始化 16KB 查找表
     crc64_init();
 
     /* Store umask value. Because umask(2) only offers a set-and-get API we have
      * to reset it and restore it back. We do this early to avoid a potential
      * race condition with threads that could be creating files or directories.
      */
+    // 存储掩码值。因为 umask（2） 只提供了一个设置和获取 API，所以我们必须重置它并恢复它。
+    // 我们尽早执行此操作是为了避免可能正在创建文件或目录的线程出现潜在的争用情况。
     umask(server.umask = umask(0777));
 
     // hash算法种子
     uint8_t hashseed[16];
     getRandomBytes(hashseed, sizeof(hashseed));
+    // 设置哈希种子
     dictSetHashFunctionSeed(hashseed);
     //【1】检查该Redis服务器是否以sentinel模式启动。
     server.sentinel_mode = checkForSentinelMode(argc, argv);
@@ -6707,12 +6714,14 @@ int main(int argc, char **argv)
     /* We need to init sentinel right now as parsing the configuration file
      * in sentinel mode will have the effect of populating the sentinel
      * data structures with master nodes to monitor. 
-     * redis哨兵模式初始化  
      */
+    // 我们现在需要初始化 sentinel，因为在 sentinel 模式下解析配置文件将具有使用要监控的主节点填充 sentinel 数据结构的效果。
     // 【4】如果以Sentinel模式启动，则初始化Sentinel机制。
     if (server.sentinel_mode)
     {
+        // 哨兵模式配置初始化。
         initSentinelConfig();
+        // 哨兵模式初始化。
         initSentinel();
     }
 

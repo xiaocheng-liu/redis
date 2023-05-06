@@ -496,7 +496,8 @@ const char *preMonitorCfgName[] = {
 };
 
 /* This function overwrites a few normal Redis config default with Sentinel
- * specific defaults.覆盖哨兵模式的默认配置 */
+ * specific defaults. */
+// 覆盖哨兵模式的默认配置
 void initSentinelConfig(void) {
     server.port = REDIS_SENTINEL_PORT;
     server.protected_mode = 0; /* Sentinel must be exposed. */
@@ -505,6 +506,7 @@ void initSentinelConfig(void) {
 void freeSentinelLoadQueueEntry(void *item);
 
 /* Perform the Sentinel mode initialization. */
+// 执行哨兵模式初始化。
 void initSentinel(void) {
     unsigned int j;
 

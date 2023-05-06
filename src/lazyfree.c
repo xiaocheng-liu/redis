@@ -143,6 +143,9 @@ size_t lazyfreeGetFreeEffort(robj *key, robj *obj) {
  * If there are enough allocations to free the value object may be put into
  * a lazy free list instead of being freed synchronously. The lazy free list
  * will be reclaimed in a different bio.c thread. */
+// 从数据库中删除键、值和关联的过期条目（如果有）。
+// 如果有足够的分配来释放值对象，则可以将其放入惰性空闲列表中，而不是同步释放。
+// 懒惰的免费列表将在不同的 bio.c 线程中回收。
 #define LAZYFREE_THRESHOLD 64
 int dbAsyncDelete(redisDb *db, robj *key) {
     /* 从db->expires中删除key，只是删除其指针而已，并没有删除实际值 */

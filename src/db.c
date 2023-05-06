@@ -313,6 +313,7 @@ robj *dbRandomKey(redisDb *db) {
 }
 
 /* Delete a key, value, and associated expiration entry if any, from the DB */
+// 从数据库中删除键、值和关联的过期条目（如果有）
 int dbSyncDelete(redisDb *db, robj *key) {
     /* Deleting an entry from the expires dict will not free the sds of
      * the key, because it is shared with the main dictionary. */
@@ -655,6 +656,7 @@ void flushAllDataAndResetRDB(int flags) {
 /* FLUSHDB [ASYNC]
  *
  * Flushes the currently SELECTed Redis DB. */
+// 刷新当前选定的 Redis 数据库
 void flushdbCommand(client *c) {
     int flags;
 
@@ -672,7 +674,8 @@ void flushdbCommand(client *c) {
 
 /* FLUSHALL [ASYNC]
  *
- * Flushes the whole server data set. 清空redis所有数据*/
+ * Flushes the whole server data set. */
+// 刷新整个服务器数据集。
 void flushallCommand(client *c) {
     int flags;
     if (getFlushCommandFlags(c,&flags) == C_ERR) return;
@@ -681,11 +684,13 @@ void flushallCommand(client *c) {
 }
 
 /* This command implements DEL and LAZYDEL. */
+// 此命令实现 DEL 和 LAZYDEL。
 void delGenericCommand(client *c, int lazy) {
     int numdel = 0, j;
 
     for (j = 1; j < c->argc; j++) {
         expireIfNeeded(c->db,c->argv[j]);
+        // dbAsyncDelete 异步删除  dbSyncDelete 同步删除
         int deleted  = lazy ? dbAsyncDelete(c->db,c->argv[j]) :
                               dbSyncDelete(c->db,c->argv[j]);
         if (deleted) {
@@ -711,6 +716,7 @@ void unlinkCommand(client *c) {
 
 /* EXISTS key1 key2 ... key_N.
  * Return value is the number of keys existing. */
+// 存在键 1 键 2 ...key_N. 返回值是存在的键数。
 void existsCommand(client *c) {
     long long count = 0;
     int j;
@@ -721,6 +727,7 @@ void existsCommand(client *c) {
     addReplyLongLong(c,count);
 }
 
+// select命令
 void selectCommand(client *c) {
     int id;
 
@@ -1073,6 +1080,7 @@ void typeCommand(client *c) {
     addReplyStatus(c, getObjectTypeName(o));
 }
 
+// shutdown命令
 void shutdownCommand(client *c) {
     int flags = 0;
 

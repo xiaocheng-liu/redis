@@ -113,6 +113,7 @@ uint64_t _crc64(uint_fast64_t crc, const void *in_data, const uint64_t len) {
 /******************** END GENERATED PYCRC FUNCTIONS ********************/
 
 /* Initializes the 16KB lookup tables. */
+// 初始化 16KB 查找表
 void crc64_init(void) {
     crcspeed64native_init(_crc64, crc64_table);
 }
