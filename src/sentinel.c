@@ -54,6 +54,7 @@ extern SSL_CTX *redis_tls_client_ctx;
 /* ======================== Sentinel global state =========================== */
 
 /* Address object, used to describe an ip:port pair. */
+// 地址对象，用于描述 ip：port 对。
 typedef struct sentinelAddr {
     char *hostname;         /* Hostname OR address, as specified */
     char *ip;               /* Always a resolved address */

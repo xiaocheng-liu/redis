@@ -2682,6 +2682,7 @@ void replicationSetMaster(char *ip, int port) {
 }
 
 /* Cancel replication, setting the instance as a master itself. */
+// 取消复制，设置自己为主实例
 void replicationUnsetMaster(void) {
     if (server.masterhost == NULL) return; /* Nothing to do. */
 
@@ -2779,6 +2780,7 @@ void replicaofCommand(client *c) {
         return;
     }
 
+    // 故障转移时不允许复制。
     if (server.failover_state != NO_FAILOVER) {
         addReplyError(c,"REPLICAOF not allowed while failing over.");
         return;
@@ -2815,7 +2817,7 @@ void replicaofCommand(client *c) {
             return;
         }
 
-        /* 获取端口号 */
+        /* 获取masterhost端口号 */
         if ((getLongFromObjectOrReply(c, c->argv[2], &port, NULL) != C_OK))
             return;
 
