@@ -5435,7 +5435,7 @@ void moduleHandleBlockedClients(void) {
          * replies to send to the client in a thread safe context.
          * We need to glue such replies to the client output buffer and
          * free the temporary client we just used for the replies. */
-        if (c) AddReplyFromClient(c, bc->reply_client);
+        if (c) addReplyFromClient(c, bc->reply_client);
         freeClient(bc->reply_client);
 
         if (c != NULL) {
@@ -7682,7 +7682,7 @@ int RM_ExitFromChild(int retcode) {
 /* Kill the active module forked child, if there is one active and the
  * pid matches, and returns C_OK. Otherwise if there is no active module
  * child or the pid does not match, return C_ERR without doing anything. */
-int TerminateModuleForkChild(int child_pid, int wait) {
+int terminateModuleForkChild(int child_pid, int wait) {
     /* Module child should be active and pid should match. */
     if (server.child_type != CHILD_TYPE_MODULE ||
         server.child_pid != child_pid) return C_ERR;
@@ -7705,13 +7705,13 @@ int TerminateModuleForkChild(int child_pid, int wait) {
  * child_pid would be the return value of RedisModule_Fork. */
 int RM_KillForkChild(int child_pid) {
     /* Kill module child, wait for child exit. */
-    if (TerminateModuleForkChild(child_pid,1) == C_OK)
+    if (terminateModuleForkChild(child_pid, 1) == C_OK)
         return REDISMODULE_OK;
     else
         return REDISMODULE_ERR;
 }
 
-void ModuleForkDoneHandler(int exitcode, int bysignal) {
+void moduleForkDoneHandler(int exitcode, int bysignal) {
     serverLog(LL_NOTICE,
         "Module fork exited pid: %ld, retcode: %d, bysignal: %d",
         (long) server.child_pid, exitcode, bysignal);

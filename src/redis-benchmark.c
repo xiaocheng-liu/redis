@@ -1,4 +1,5 @@
 /* Redis benchmark utility.
+ * Redis 基准测试实用程序。
  *
  * Copyright (c) 2009-2012, Salvatore Sanfilippo <antirez at gmail dot com>
  * All rights reserved.

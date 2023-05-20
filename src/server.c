@@ -2085,7 +2085,7 @@ void checkChildrenDone(void)
             }
             else if (server.child_type == CHILD_TYPE_MODULE)
             {
-                ModuleForkDoneHandler(exitcode, bysignal);
+                moduleForkDoneHandler(exitcode, bysignal);
             }
             else
             {
@@ -4698,7 +4698,7 @@ int prepareForShutdown(int flags)
     if (server.child_type == CHILD_TYPE_MODULE)
     {
         serverLog(LL_WARNING, "There is a module fork child. Killing it!");
-        TerminateModuleForkChild(server.child_pid, 0);
+        terminateModuleForkChild(server.child_pid, 0);
     }
 
     if (server.aof_state != AOF_OFF)

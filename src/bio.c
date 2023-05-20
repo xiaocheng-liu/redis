@@ -201,15 +201,17 @@ void *bioProcessBackgroundJobs(void *arg) {
     }
 
     switch (type) {
-    case BIO_CLOSE_FILE:
-        redis_set_thread_title("bio_close_file");
-        break;
-    case BIO_AOF_FSYNC:
-        redis_set_thread_title("bio_aof_fsync");
-        break;
-    case BIO_LAZY_FREE:
-        redis_set_thread_title("bio_lazy_free");
-        break;
+        case BIO_CLOSE_FILE:
+            redis_set_thread_title("bio_close_file");
+            break;
+        case BIO_AOF_FSYNC:
+            redis_set_thread_title("bio_aof_fsync");
+            break;
+        case BIO_LAZY_FREE:
+            redis_set_thread_title("bio_lazy_free");
+            break;
+        default:
+                break;
     }
 
     redisSetCpuAffinity(server.bio_cpulist);
