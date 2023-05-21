@@ -96,17 +96,15 @@ struct aeEventLoop;
 /* Types and data structures */
 // 有IO事件时处理IO事件的函数原型
 typedef void aeFileProc(struct aeEventLoop *eventLoop, int fd, void *clientData, int mask);
-
 // 有时间事件时处理时间事件的函数原型
 typedef int aeTimeProc(struct aeEventLoop *eventLoop, long long id, void *clientData);
-
 // 一个对eventLoop和clientData处理的函数原型
 typedef void aeEventFinalizerProc(struct aeEventLoop *eventLoop, void *clientData);
-
 // 一个对eventLoop处理的函数原型，后面此函数类型具体的对象有beforeSleep和afterSleep
 typedef void aeBeforeSleepProc(struct aeEventLoop *eventLoop);
 
-/* File event structure */  // 文件事件结构
+/* File event structure */
+// 文件事件结构
 typedef struct aeFileEvent {
     /* 文件事件类型：是AE_READABLE,AE_WRITABLE和AE_BARRIER中的一个 */
     int mask; /* one of AE_(READABLE|WRITABLE|BARRIER) */
@@ -115,7 +113,8 @@ typedef struct aeFileEvent {
     void *clientData;                   /* 客户端传入的数据 多路复用库的私有数据 一般为redisClient(redis.h) 为客户端维护一个状态*/
 } aeFileEvent;
 
-/* Time event structure */      // 时间事件结构
+/* Time event structure */
+// 时间事件结构
 typedef struct aeTimeEvent {
     /* 时间事件的唯一id */
     long long id; /* time event identifier. */
@@ -136,7 +135,8 @@ typedef struct aeTimeEvent {
   		   * freed in recursive time event calls. */
 } aeTimeEvent;
 
-/* A fired event */             // 管理就绪时间结构体
+/* A fired event */
+// 触发的事件
 /* 就绪事件 */
 typedef struct aeFiredEvent {
     /* 就绪事件的文件描述符 */
@@ -157,7 +157,7 @@ typedef struct aeEventLoop {
      * setsize参数表示了eventloop可以监听的网络事件fd的个数（不包含超时事件），
      * 如果当前监听的fd个数超过了setsize，eventloop将不能继续注册。
      */
-    int setsize; /* max number of file descriptors tracked */
+    int setsize; /* max number of file descriptors tracked */           // 跟踪的最大文件描述符数
     /* 下一个时间事件的ID */
     long long timeEventNextId;
     /* 已注册的事件 */
@@ -174,7 +174,7 @@ typedef struct aeEventLoop {
     /* 事件处理开关 */
     int stop;
     /* 多路复用库的事件状态数据 */
-    void *apidata; /* This is used for polling API specific data */
+    void *apidata; /* This is used for polling API specific data */     // 这用于轮询 API 特定数据
     /* 事件循环在每次迭代前执行处理事件之前的函数 */
     aeBeforeSleepProc *beforesleep;
     /* 执行处理事件之后的函数 */
@@ -183,26 +183,21 @@ typedef struct aeEventLoop {
     int flags;
 } aeEventLoop;
 
-/* Prototypes */        // ae.h提供的函数声明
+/* Prototypes */
+// ae.h提供的函数声明
 /* 创建aeEventLoop */
 aeEventLoop *aeCreateEventLoop(int setsize);
-
 /* 删除EventLoop，释放相应的事件所占的空间 */
 void aeDeleteEventLoop(aeEventLoop *eventLoop);
-
 /* 设置eventLoop中的停止属性为1，服务器中似乎没有用到，压测和客户端中有用到这个函数 */
 void aeStop(aeEventLoop *eventLoop);
-
 /* 在eventLoop中创建文件事件 */
 int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, int mask,
                       aeFileProc *proc, void *clientData);
-
 /* 删除文件事件 */
 void aeDeleteFileEvent(aeEventLoop *eventLoop, int fd, int mask);
-
 /* 根据文件描述符id，找出文件的属性，是读事件还是写事件 */
 int aeGetFileEvents(aeEventLoop *eventLoop, int fd);
-
 /* 在eventLoop中创建时间事件，创建的时间为当前时间加上自己传入的时间 */
 long long aeCreateTimeEvent(aeEventLoop *eventLoop, long long milliseconds,
                             aeTimeProc *proc, void *clientData,
@@ -210,31 +205,22 @@ long long aeCreateTimeEvent(aeEventLoop *eventLoop, long long milliseconds,
 
 /* 根据时间id，删除时间事件，涉及链表的操作 */
 int aeDeleteTimeEvent(aeEventLoop *eventLoop, long long id);
-
 /* 处理eventLoop中的所有类型事件 */
 int aeProcessEvents(aeEventLoop *eventLoop, int flags);
-
 /* 让某事件等待 */
 int aeWait(int fd, int mask, long long milliseconds);
-
 /* ae事件执行主程序 */
 void aeMain(aeEventLoop *eventLoop);
-
 /* 获取接口名 */
 char *aeGetApiName(void);
-
 /* 设置eventLoop->beforeSleep回调函数*/
 void aeSetBeforeSleepProc(aeEventLoop *eventLoop, aeBeforeSleepProc *beforesleep);
-
 /* 设置eventLoop->afterSleep回调函数 */
 void aeSetAfterSleepProc(aeEventLoop *eventLoop, aeBeforeSleepProc *aftersleep);
-
 /* 获取eventLoop的长度*/
 int aeGetSetSize(aeEventLoop *eventLoop);
-
 /* 设置eventLoop的长度*/
 int aeResizeSetSize(aeEventLoop *eventLoop, int setsize);
-
 /* 通知事件的下一个迭代器将超时设置为零，即不等待 */
 void aeSetDontWait(aeEventLoop *eventLoop, int noWait);
 

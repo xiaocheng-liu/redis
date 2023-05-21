@@ -1483,8 +1483,8 @@ struct redisServer
     int supervised;                              /* 1 if supervised, 0 otherwise. */
     int supervised_mode;                         /* See SUPERVISED_* */
     int daemonize;                               /* True if running as a daemon */      // 如果作为守护程序运行，则为 True
-    int set_proc_title;                          /* True if change proc title */
-    char *proc_title_template;                   /* Process title template format */
+    int set_proc_title;                          /* True if change proc title */        // 如果更改进程标题，则为 True
+    char *proc_title_template;                   /* Process title template format */    // 流程标题模板格式
     clientBufferLimitsConfig client_obuf_limits[CLIENT_TYPE_OBUF_COUNT];
 
 

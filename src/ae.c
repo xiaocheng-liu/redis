@@ -59,15 +59,12 @@
 #include "ae_epoll.c"
 #else
 #ifdef HAVE_KQUEUE
-
 #include "ae_kqueue.c"
-
 #else
 #include "ae_select.c"
 #endif
 #endif
 #endif
-
 
 // 创建aeEventLoop
 aeEventLoop *aeCreateEventLoop(int setsize) {
@@ -78,11 +75,17 @@ aeEventLoop *aeCreateEventLoop(int setsize) {
     monotonicInit();    /* just in case the calling app didn't initialize */
 
     // 分配eventLoop内存
-    if ((eventLoop = zmalloc(sizeof(*eventLoop))) == NULL) goto err;
+    if ((eventLoop = zmalloc(sizeof(*eventLoop))) == NULL){
+        aeDeleteEventLoop(eventLoop);
+        return NULL;
+    }
     // 分配IO事件内存
     eventLoop->events = zmalloc(sizeof(aeFileEvent) * setsize);
     eventLoop->fired = zmalloc(sizeof(aeFiredEvent) * setsize);
-    if (eventLoop->events == NULL || eventLoop->fired == NULL) goto err;
+    if (eventLoop->events == NULL || eventLoop->fired == NULL){
+        aeDeleteEventLoop(eventLoop);
+        return NULL;
+    }
     eventLoop->setsize = setsize;
     eventLoop->timeEventHead = NULL;
     eventLoop->timeEventNextId = 0;
@@ -92,21 +95,19 @@ aeEventLoop *aeCreateEventLoop(int setsize) {
     eventLoop->aftersleep = NULL;
     eventLoop->flags = 0;
     // 创建poll实例
-    if (aeApiCreate(eventLoop) == -1) goto err;
+    if (aeApiCreate(eventLoop) == -1){
+        aeDeleteEventLoop(eventLoop);
+        return NULL;
+    }
+
     /* Events with mask == AE_NONE are not set. So let's initialize the
      * vector with it. */
+    // 未设置掩码 == AE_NONE的事件。因此，让我们用它初始化向量。
     for (i = 0; i < setsize; i++)
         eventLoop->events[i].mask = AE_NONE; // 初始化为空事件
     return eventLoop;
-
-    err:
-    if (eventLoop) {
-        zfree(eventLoop->events);
-        zfree(eventLoop->fired);
-        zfree(eventLoop);
-    }
-    return NULL;
 }
+
 
 /* Return the current set size. */
 // 返回当前setsize的值
@@ -268,7 +269,7 @@ int aeDeleteTimeEvent(aeEventLoop *eventLoop, long long id) {
         }
         te = te->next;
     }
-    return AE_ERR; /* NO event with the specified ID found */
+    return AE_ERR; /* NO event with the specified ID found */   // 未找到具有指定 ID 的事件
 }
 
 /* How many milliseconds until the first timer should fire.
@@ -388,26 +389,31 @@ static int processTimeEvents(aeEventLoop *eventLoop) {
  *
  * The function returns the number of events processed. */
 // 核心部分：事件处理逻辑
+// 处理每个挂起的时间事件，然后处理每个挂起的文件事件（可能由刚刚处理的时间事件回调注册）。
+// 如果没有特殊标志，函数将休眠，直到某个文件事件触发，或者下次事件发生（如果有）。
+// 如果标志为 0，则该函数不执行任何操作并返回。
+// 如果设置了AE_ALL_EVENTS标志，则会处理所有类型的事件。
+// 如果设置了AE_FILE_EVENTS标志，则处理文件事件。
+// 如果设置了AE_TIME_EVENTS标志，则处理时间事件。
+// 如果设置了AE_DONT_WAIT标志，则该函数将尽快返回，直到处理所有无需等待即可处理的事件。
+// 如果设置了AE_CALL_AFTER_SLEEP标志，调用aftersleep回调。
+// 如果设置了AE_CALL_BEFORE_SLEEP标志，调用beforesleep回调。
 int aeProcessEvents(aeEventLoop *eventLoop, int flags) {
-    /*
-     1.定义临时变量processed(已经处理好的事件数)并初始化；
-     2.定义临时变量numevents(事件数)
-    */
-    int processed = 0, numevents;
+    int processed = 0, numevents;       //  1.定义临时变量processed(已经处理好的事件数)并初始化；
+                                        //  2.定义临时变量numevents(事件数)
 
     /* 如果没有事件。如果flag位既不是时间事件，又不是文件事件，返回0 */
     if (!(flags & AE_TIME_EVENTS) && !(flags & AE_FILE_EVENTS)) return 0;
 
-    /* 请注意，既然我们要处理时间事件，即使没有要处理的文件事件，我们仍要调用select()，以便在下
-       一次事件准备启动之前进行休眠 */
     /* Note that we want to call select() even if there are no
      * file events to process as long as we want to process time
      * events, in order to sleep until the next time event is ready
      * to fire. */
-    /* 如果【有监控文件事件】或者【有要处理定时器事件并且没有设置不阻塞标志】则进入逻辑*/
-    // 不等于-1代表当前存在正在监听的套接字
-    if (eventLoop->maxfd != -1 ||
-        ((flags & AE_TIME_EVENTS) && !(flags & AE_DONT_WAIT))) {
+    // 注意，既然我们要处理时间事件，即使没有要处理的文件事件，我们仍要调用select()，以便在下一次事件准备启动之前进行休眠。
+    // 如果【有监控文件事件】或者【有要处理定时器事件并且没有设置不阻塞标志】则进入逻辑。
+    // 不等于-1代表当前存在正在监听的套接字。
+    // &&的优先级高于||
+    if (eventLoop->maxfd != -1 || ((flags & AE_TIME_EVENTS) && !(flags & AE_DONT_WAIT))) {
         int j;
         struct timeval tv, *tvp;
         long msUntilTimer = -1;
@@ -425,10 +431,10 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags) {
         } else {
             // 执行到这一步，说明没有时间事件
             // 那么根据 AE_DONT_WAIT 是否设置来决定是否阻塞，以及阻塞的时间长度
-            /* 如果设置了不阻塞标志，则将阻塞时间为0，表示不阻塞 */
             /* If we have to check for events but need to return
              * ASAP because of AE_DONT_WAIT we need to set the timeout
              * to zero */
+            // 如果设置了不阻塞标志，则将阻塞时间为0，表示不阻塞
             if (flags & AE_DONT_WAIT) {
                 // 设置文件事件不阻塞
                 tv.tv_sec = tv.tv_usec = 0;
@@ -436,7 +442,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags) {
             } else {
                 // 文件事件可以阻塞直到有事件到达为止
                 /* Otherwise we can block */
-                tvp = NULL; /* wait forever */
+                tvp = NULL; /* wait forever */      // 永远等待
             }
         }
 
@@ -447,6 +453,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags) {
         }
 
         /* 执行阻塞前的处理函数 */
+        /* Before sleep callback. */
         if (eventLoop->beforesleep != NULL && flags & AE_CALL_BEFORE_SLEEP)
             eventLoop->beforesleep(eventLoop);
 
@@ -464,7 +471,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags) {
         // 这样也可以保证epoll_wait不会阻塞太长时间
         // 且在一段时间没有来文件事件的话也可以正常进行时间事件,
         // 这里redis的实现就非常巧妙,以前的见过网络框架的做法是时间事件由定时器驱动 触发epoll去执行
-        // redis的这样实现显然提高了效率  就算是大量的定时事件换个数据结构(时间轮)也完全hold得住
+        // redis的这样实现显然提高了效率，就算是大量的定时事件换个数据结构(时间轮)也完全hold得住
         numevents = aeApiPoll(eventLoop, tvp);
 
         /* 执行阻塞后的处理函数 */

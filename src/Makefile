@@ -32,7 +32,7 @@ ifneq (,$(findstring FreeBSD,$(uname_S)))
 endif
 endif
 # 输出所有编译警告信息 ，Wno-missing-field-initializers 不输出missing-的警告信息
-WARN=-Wall -W -Wno-missing-field-initializers
+WARN=-Wall -W -Wno-missing-field-initializers -Wno-macro-redefined -Wno-strict-prototypes
 OPT=$(OPTIMIZATION)
 
 # Detect if the compiler supports C11 _Atomic

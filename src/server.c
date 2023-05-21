@@ -192,10 +192,7 @@ struct redisServer server; /* Server global state */
  *    TYPE, EXPIRE*, PEXPIRE*, TTL, PTTL, ...
  */
 
-/**
- * @brief redis的命令表
- * 
- */
+// redis的命令表
 struct redisCommand redisCommandTable[] = {
     {"module", moduleCommand, -2,
      "admin no-script",
@@ -1121,6 +1118,7 @@ void nolocks_localtime(struct tm *tmp, time_t t, time_t tz, int dst);
 
 /* Low level logging. To use only for very big messages, otherwise
  * serverLog() is to prefer. */
+// 低级别日志记录。只用于非常大的消息，否则 serverLog（） 是首选。
 void serverLogRaw(int level, const char *msg)
 {
     const int syslogLevelMap[] = {LOG_DEBUG, LOG_INFO, LOG_NOTICE, LOG_WARNING};
@@ -1180,6 +1178,7 @@ void serverLogRaw(int level, const char *msg)
 /* Like serverLogRaw() but with printf-alike support. This is the function that
  * is used across the code. The raw version is only used in order to dump
  * the INFO output on crash. */
+// 与serverLogRaw（）类似，但具有类似printf的支持。这是跨代码使用的函数。原始版本仅用于在崩溃时转储 INFO 输出。
 void serverLog(int level, const char *fmt, ...)
 {
     va_list ap;
@@ -2836,8 +2835,8 @@ void initServerConfig(void)
     server.hz = CONFIG_DEFAULT_HZ;   /* Initialize it ASAP, even if it may get
                                       updated later after loading the config.
                                       This value may be used before the server
-                                      is initialized. */
-    server.timezone = getTimeZone(); /* Initialized by tzset(). */
+                                      is initialized. */                    // 尽快初始化它，即使它可能会在加载配置后稍后更新。可以在初始化服务器之前使用此值。
+    server.timezone = getTimeZone(); /* Initialized by tzset(). */          // 由 tzset（） 初始化。
     server.configfile = NULL;
     server.executable = NULL;
     server.arch_bits = (sizeof(long) == 8) ? 64 : 32;
@@ -2863,7 +2862,7 @@ void initServerConfig(void)
     server.aof_lastbgrewrite_status = C_OK;
     server.aof_delayed_fsync = 0;
     server.aof_fd = -1;
-    server.aof_selected_db = -1; /* Make sure the first time will not match */
+    server.aof_selected_db = -1; /* Make sure the first time will not match */      // 确保第一次不匹配
     server.aof_flush_postponed_start = 0;
     server.pidfile = NULL;
     server.active_defrag_running = 0;
@@ -2875,7 +2874,7 @@ void initServerConfig(void)
     server.cluster_configfile = zstrdup(CONFIG_DEFAULT_CLUSTER_CONFIG_FILE);
     server.cluster_module_flags = CLUSTER_MODULE_FLAG_NONE;
     server.migrate_cached_sockets = dictCreate(&migrateCacheDictType, NULL);
-    server.next_client_id = 1; /* Client IDs, start from 1 .*/
+    server.next_client_id = 1; /* Client IDs, start from 1 .*/                      // 客户端 ID，从 1 开始
     server.loading_process_events_interval_bytes = (1024 * 1024 * 2);
 
     // 调用getLRUClock函数计算全局LRU时钟值
@@ -2889,6 +2888,7 @@ void initServerConfig(void)
     appendServerSaveParams(60, 10000);  /* save after 1 minute and 10000 changes */
 
     /* Replication related */
+    // 复制相关
     server.masterauth = NULL;
     server.masterhost = NULL;
     server.masterport = 6379;
@@ -2904,6 +2904,7 @@ void initServerConfig(void)
     server.master_repl_offset = 0;
 
     /* Replication partial resync backlog */
+    // 复制部分重新同步积压工作
     server.repl_backlog = NULL;
     server.repl_backlog_histlen = 0;
     server.repl_backlog_idx = 0;
@@ -2911,6 +2912,7 @@ void initServerConfig(void)
     server.repl_no_slaves_since = time(NULL);
 
     /* Failover related */
+    // 故障转移相关
     server.failover_end_time = 0;
     server.force_failover = 0;
     server.target_replica_host = NULL;
@@ -2918,6 +2920,7 @@ void initServerConfig(void)
     server.failover_state = NO_FAILOVER;
 
     /* Client output buffer limits */
+    // 客户端输出缓冲区限制
     for (j = 0; j < CLIENT_TYPE_OBUF_COUNT; j++)
         server.client_obuf_limits[j] = clientBufferLimitsDefaults[j];
 
@@ -2926,6 +2929,7 @@ void initServerConfig(void)
         server.oom_score_adj_values[j] = configOOMScoreAdjValuesDefaults[j];
 
     /* Double constants initialization */
+    // 双精度常量初始化
     R_Zero = 0.0;
     R_PosInf = 1.0 / R_Zero;
     R_NegInf = -1.0 / R_Zero;
@@ -2934,6 +2938,7 @@ void initServerConfig(void)
     /* Command table -- we initialize it here as it is part of the
      * initial configuration, since command names may be changed via
      * redis.conf using the rename-command directive. */
+    // 命令表 - 我们在这里初始化它，因为它是初始配置的一部分，因为命令名称可以通过 redis.conf 使用 rename-command 指令进行更改。
     server.commands = dictCreate(&commandTableDictType, NULL);
     server.orig_commands = dictCreate(&commandTableDictType, NULL);
     //将预定义的命令填充到server.commands
@@ -2955,12 +2960,15 @@ void initServerConfig(void)
     server.lmoveCommand = lookupCommandByCString("lmove");
 
     /* Debugging */
+    // 调试
     server.watchdog_period = 0;
 
     /* By default we want scripts to be always replicated by effects
      * (single commands executed by the script), and not by sending the
      * script to the slave / AOF. This is the new way starting from
      * Redis 5. However it is possible to revert it via redis.conf. */
+    // 默认情况下，我们希望脚本始终通过效果（脚本执行的单个命令）进行复制，而不是通过将脚本发送到从属 AOF。
+    // 这是从 Redis 5 开始的新方式。但是，可以通过redis.conf将其还原。
     server.lua_always_replicate_commands = 1;
 
     initConfigValues();
@@ -3750,6 +3758,7 @@ int populateCommandTableParseFlags(struct redisCommand *c, char *strflags)
 
 /* Populates the Redis Command Table starting from the hard coded list
  * we have on top of server.c file. */
+// 从我们在 server.c 文件顶部的硬编码列表开始填充 Redis 命令表。
 void populateCommandTable(void)
 {
     int j;
@@ -3845,6 +3854,7 @@ struct redisCommand *lookupCommand(sds name)
     return dictFetchValue(server.commands, name);
 }
 
+// 通过C字符串查找命令
 struct redisCommand *lookupCommandByCString(const char *s)
 {
     struct redisCommand *cmd;
@@ -6594,6 +6604,9 @@ int iAmMaster(void)
             (server.cluster_enabled && nodeIsMaster(server.cluster->myself)));
 }
 
+
+
+
 /**
  * @brief
  * 
@@ -6656,8 +6669,8 @@ int main(int argc, char **argv)
     }
 #endif
 
-    /* We need to initialize our libraries, and the server configuration. */
-    // 我们需要初始化我们的库和服务器配置。
+/* We need to initialize our libraries, and the server configuration. */
+// 我们需要初始化我们的库和服务器配置。
 #ifdef INIT_SETPROCTITLE_REPLACEMENT
     spt_init(argc, argv);
 #endif
@@ -6832,6 +6845,7 @@ int main(int argc, char **argv)
         daemonize();
 
     //【12】打印启动日志。
+    serverLog(LL_WARNING, "Redis服务正在启动。。。");
     serverLog(LL_WARNING, "oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo");
     serverLog(LL_WARNING,
               "Redis version=%s, bits=%d, commit=%s, modified=%d, pid=%d, just started",
@@ -6857,7 +6871,7 @@ int main(int argc, char **argv)
         createPidFile();
     if (server.set_proc_title)
         redisSetProcTitle(NULL);
-    redisAsciiArt();            // 打印启动ascii_logo
+    redisAsciiArt();                    // 打印启动ascii_logo
     checkTcpBacklogSettings();
 
     // 如果服务器不是哨兵模式

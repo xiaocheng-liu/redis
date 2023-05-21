@@ -151,8 +151,9 @@
 #define LOG_COLOR_RESET     "0m"
 
 /* cliConnect() flags. */
-#define CC_FORCE (1<<0)         /* Re-connect if already connected. */
-#define CC_QUIET (1<<1)         /* Don't log connecting errors. */
+// cliConnect（） 标志。
+#define CC_FORCE (1<<0)         /* Re-connect if already connected. */      // 如果已连接，请重新连接。
+#define CC_QUIET (1<<1)         /* Don't log connecting errors. */          // 不要记录连接错误。
 
 /* --latency-dist palettes. */
 int spectrum_palette_color_size = 19;
@@ -162,11 +163,12 @@ int spectrum_palette_mono_size = 13;
 int spectrum_palette_mono[] = {0,233,234,235,237,239,241,243,245,247,249,251,253};
 
 /* The actual palette in use. */
+// 正在使用的实际调色板。
 int *spectrum_palette;
 int spectrum_palette_size;
 
 /* Dict Helpers */
-
+// 字典助手
 static uint64_t dictSdsHash(const void *key);
 static int dictSdsKeyCompare(void *privdata, const void *key1,
     const void *key2);
@@ -174,6 +176,7 @@ static void dictSdsDestructor(void *privdata, void *val);
 static void dictListDestructor(void *privdata, void *val);
 
 /* Cluster Manager Command Info */
+// 群集管理器命令信息
 typedef struct clusterManagerCommand {
     char *name;
     int argc;
@@ -258,6 +261,7 @@ static struct config {
 } config;
 
 /* User preferences. */
+// 用户首选项。
 static struct pref {
     int hints;
 } pref;
@@ -273,7 +277,7 @@ static char *getInfoField(char *info, char *field);
 static long getLongInfoField(char *info, char *field);
 
 /*------------------------------------------------------------------------------
- * Utility functions
+ * Utility functions    实用函数
  *--------------------------------------------------------------------------- */
 
 static void cliPushHandler(void *, void *);
@@ -633,6 +637,7 @@ static void cliOutputGenericHelp(void) {
 }
 
 /* Output all command help, filtering by group or command name. */
+// 输出所有命令帮助，按组或命令名称筛选。
 static void cliOutputHelp(int argc, char **argv) {
     int i, j, len;
     int group = -1;
@@ -1291,12 +1296,13 @@ static int cliReadReply(int output_raw_strings) {
     return REDIS_OK;
 }
 
+// cli发送命令
 static int cliSendCommand(int argc, char **argv, long repeat) {
     char *command = argv[0];
     size_t *argvlen;
     int j, output_raw;
 
-    if (!config.eval_ldb && /* In debugging mode, let's pass "help" to Redis. */
+    if (!config.eval_ldb && /* In debugging mode, let's pass "help" to Redis. */        // 在调试模式下，让我们将“help”传递给 Redis。
         (!strcasecmp(command,"help") || !strcasecmp(command,"?"))) {
         cliOutputHelp(--argc, ++argv);
         return REDIS_OK;
@@ -1758,6 +1764,7 @@ static int parseOptions(int argc, char **argv) {
 
 static void parseEnv() {
     /* Set auth from env, but do not overwrite CLI arguments if passed */
+    // 从 env 设置身份验证，但如果传递，则不要覆盖 CLI 参数
     char *auth = getenv(REDIS_CLI_AUTH_ENV);
     if (auth != NULL && config.auth == NULL) {
         config.auth = auth;
@@ -1953,12 +1960,14 @@ static int issueCommandRepeat(int argc, char **argv, long repeat) {
 
             /* If we still cannot send the command print error.
              * We'll try to reconnect the next time. */
+            // 如果我们仍然无法发送命令打印错误。下次我们会尝试重新连接。
             if (cliSendCommand(argc,argv,repeat) != REDIS_OK) {
                 cliPrintContextError();
                 return REDIS_ERR;
             }
         }
         /* Issue the command again if we got redirected in cluster mode */
+        // 如果我们在集群模式下被重定向，请再次发出命令
         if (config.cluster_mode && config.cluster_reissue_command) {
             cliConnect(CC_FORCE);
         } else {
@@ -2218,6 +2227,7 @@ static int evalMode(int argc, char **argv) {
         keys = 0;
 
         /* Load the script from the file, as an sds string. */
+        // 从文件中加载脚本，作为 sds 字符串。
         fp = fopen(config.eval,"r");
         if (!fp) {
             fprintf(stderr,
@@ -2230,6 +2240,7 @@ static int evalMode(int argc, char **argv) {
         fclose(fp);
 
         /* If we are debugging a script, enable the Lua debugger. */
+        // 如果我们正在调试脚本，请启用 Lua 调试器。
         if (config.eval_ldb) {
             redisReply *reply = redisCommand(context,
                     config.eval_ldb_sync ?
@@ -2238,6 +2249,7 @@ static int evalMode(int argc, char **argv) {
         }
 
         /* Create our argument vector */
+        // 创建我们的参数向量
         argv2 = zmalloc(sizeof(sds)*(argc+3));
         argv2[0] = sdsnew("EVAL");
         argv2[1] = script;
@@ -2252,8 +2264,8 @@ static int evalMode(int argc, char **argv) {
         argv2[2] = sdscatprintf(sdsempty(),"%d",keys);
 
         /* Call it */
-        int eval_ldb = config.eval_ldb; /* Save it, may be reverted. */
-        retval = issueCommand(argc+3-got_comma, argv2);
+        int eval_ldb = config.eval_ldb; /* Save it, may be reverted. */         // 保存它，可能会被还原。
+        retval = issueCommand(argc+3-got_comma, argv2);              // 发出命令
         if (eval_ldb) {
             if (!config.eval_ldb) {
                 /* If the debugging session ended immediately, there was an
@@ -8138,9 +8150,8 @@ static sds askPassword(const char *msg) {
 }
 
 /*------------------------------------------------------------------------------
- * Program main()
+ * Program main() 程序main方法
  *--------------------------------------------------------------------------- */
-
 int main(int argc, char **argv) {
     int firstarg;
     struct timeval tv;
@@ -8220,10 +8231,12 @@ int main(int argc, char **argv) {
     config.mb_delim = sdsnew("\n");
     config.cmd_delim = sdsnew("\n");
 
+    // 解析参数
     firstarg = parseOptions(argc,argv);
     argc -= firstarg;
     argv += firstarg;
 
+    // 解析环境
     parseEnv();
 
     if (config.askpass) {
@@ -8245,6 +8258,7 @@ int main(int argc, char **argv) {
     init_genrand64(((long long) tv.tv_sec * 1000000 + tv.tv_usec) ^ getpid());
 
     /* Cluster Manager mode */
+    // 集群管理器模式
     if (CLUSTER_MANAGER_MODE()) {
         clusterManagerCommandProc *proc = validateClusterManagerCommand();
         if (!proc) {
@@ -8254,18 +8268,21 @@ int main(int argc, char **argv) {
     }
 
     /* Latency mode */
+    // 延迟模式
     if (config.latency_mode) {
         if (cliConnect(0) == REDIS_ERR) exit(1);
         latencyMode();
     }
 
     /* Latency distribution mode */
+    // 延迟分配模式
     if (config.latency_dist_mode) {
         if (cliConnect(0) == REDIS_ERR) exit(1);
         latencyDistMode();
     }
 
     /* Slave mode */
+    // 从模式
     if (config.slave_mode) {
         if (cliConnect(0) == REDIS_ERR) exit(1);
         sendCapa();
@@ -8273,6 +8290,7 @@ int main(int argc, char **argv) {
     }
 
     /* Get RDB mode. */
+    // 获取 RDB 模式。
     if (config.getrdb_mode) {
         if (cliConnect(0) == REDIS_ERR) exit(1);
         sendCapa();
@@ -8281,30 +8299,35 @@ int main(int argc, char **argv) {
     }
 
     /* Pipe mode */
+    // 管道模式
     if (config.pipe_mode) {
         if (cliConnect(0) == REDIS_ERR) exit(1);
         pipeMode();
     }
 
     /* Find big keys */
+    // 查找大键
     if (config.bigkeys) {
         if (cliConnect(0) == REDIS_ERR) exit(1);
         findBigKeys(0, 0);
     }
 
     /* Find large keys */
+    // 查找大键
     if (config.memkeys) {
         if (cliConnect(0) == REDIS_ERR) exit(1);
         findBigKeys(1, config.memkeys_samples);
     }
 
     /* Find hot keys */
+    // 查找热键
     if (config.hotkeys) {
         if (cliConnect(0) == REDIS_ERR) exit(1);
         findHotKeys();
     }
 
     /* Stat mode */
+    // 统计模式
     if (config.stat_mode) {
         if (cliConnect(0) == REDIS_ERR) exit(1);
         if (config.interval == 0) config.interval = 1000000;
@@ -8312,21 +8335,25 @@ int main(int argc, char **argv) {
     }
 
     /* Scan mode */
+    // 扫描模式
     if (config.scan_mode) {
         if (cliConnect(0) == REDIS_ERR) exit(1);
         scanMode();
     }
 
     /* LRU test mode */
+    // LRU 测试模式
     if (config.lru_test_mode) {
         if (cliConnect(0) == REDIS_ERR) exit(1);
         LRUTestMode();
     }
 
     /* Intrinsic latency mode */
+    // 固有延迟模式
     if (config.intrinsic_latency_mode) intrinsicLatencyMode();
 
     /* Start interactive mode when no command is provided */
+    // 未提供命令时启动交互模式
     if (argc == 0 && !config.eval) {
         /* Ignore SIGPIPE in interactive mode to force a reconnect */
         signal(SIGPIPE, SIG_IGN);
@@ -8338,6 +8365,7 @@ int main(int argc, char **argv) {
     }
 
     /* Otherwise, we have some arguments to execute */
+    // 否则，我们有一些参数要执行
     if (cliConnect(0) != REDIS_OK) exit(1);
     if (config.eval) {
         return evalMode(argc,argv);

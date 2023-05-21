@@ -1,4 +1,5 @@
 /* SDSLib 2.0 -- A C dynamic strings library
+ * C 动态字符串库
  *
  * Copyright (c) 2006-2015, Salvatore Sanfilippo <antirez at gmail dot com>
  * Copyright (c) 2015, Oran Agra
@@ -28,13 +29,11 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- * 
- * 
- * Redis没有使用C语言的字符串结构，而是自己设计了一个简单的动态字符串结构sds。
- * 它的特点是：可动态扩展内存、二进制安全和与传统的C语言字符串类型兼容。
- * 下面就从源码的角度来分析一下Redis中sds的实现。（sds的源码实现主要在sds.c和sds.h两个文件中）
  */
-
+// Redis没有使用C语言的字符串结构，而是自己设计了一个简单的动态字符串结构sds。
+// 它的特点是：可动态扩展内存、二进制安全和与传统的C语言字符串类型兼容。
+// 下面就从源码的角度来分析一下Redis中sds的实现。
+// （sds的源码实现主要在sds.c和sds.h两个文件中）
 #ifndef __SDS_H
 #define __SDS_H
 
@@ -63,12 +62,10 @@ struct __attribute__((__packed__)) sdshdr5
 };
 struct __attribute__((__packed__)) sdshdr8
 {
-    uint8_t len;         /* used */ /* 已使用空间大小 */
-    uint8_t alloc;       /* excluding the header and null terminator */
-                         /* 总共可用的字符空间大小，应该是实际buf的大小减1(因为c字符串末尾必须是\0,不计算在内) */
-    unsigned char flags; /* 3 lsb of type, 5 unused bits */
-                         /* 标志位，主要是识别这是sdshdr几，目前只用了3位，还有5位空余 */
-    char buf[];          /* 真正存储字符串的地方 */
+    uint8_t len;         /* used */ /*  */                                  // 已使用空间大小
+    uint8_t alloc;       /* excluding the header and null terminator */     // 总共可用的字符空间大小，应该是实际buf的大小减1(因为c字符串末尾必须是\0,不计算在内)
+    unsigned char flags; /* 3 lsb of type, 5 unused bits */                 // 标志位，主要是识别这是sdshdr几，目前只用了3位，还有5位空余
+    char buf[];                                                             // 真正存储字符串的地方
 };
 struct __attribute__((__packed__)) sdshdr16
 {
@@ -104,10 +101,8 @@ struct __attribute__((__packed__)) sdshdr64
 
 // 这里需要注意宏定义中的##是将两个符号连接成一个，如sdshdr和8（T为8）合成sdshdr8
 #define SDS_HDR_VAR(T, s) struct sdshdr##T *sh = (void *)((s) - (sizeof(struct sdshdr##T)));  // 获取header头指针
-
-// 这个宏定义直接推算出sdshdr头部的内存地址
-#define SDS_HDR(T, s) ((struct sdshdr##T *)((s) - (sizeof(struct sdshdr##T))))
-#define SDS_TYPE_5_LEN(f) ((f) >> SDS_TYPE_BITS)    // 获取sdshdr5的长度
+#define SDS_HDR(T, s) ((struct sdshdr##T *)((s) - (sizeof(struct sdshdr##T))))                // 这个宏定义直接推算出sdshdr头部的内存地址
+#define SDS_TYPE_5_LEN(f) ((f) >> SDS_TYPE_BITS)                                              // 获取sdshdr5的长度
 
 // 获取sds支持的长度
 static inline size_t sdslen(const sds s)
@@ -281,8 +276,8 @@ sds sdscat(sds s, const char *t);                       // 把字符串t拼接�
 sds sdscatsds(sds s, const sds t);                      // 把两个sds拼接在一起
 sds sdscpylen(sds s, const char *t, size_t len);        //  把字符串t指定长度的部分拷贝到sds上
 sds sdscpy(sds s, const char *t);                       // 把字符串t拷贝到sds上
-
 sds sdscatvprintf(sds s, const char *fmt, va_list ap);  // 把用printf格式化后的字符拼接到sds上
+
 #ifdef __GNUC__
 sds sdscatprintf(sds s, const char *fmt, ...)
     __attribute__((format(printf, 2, 3)));
@@ -290,17 +285,17 @@ sds sdscatprintf(sds s, const char *fmt, ...)
 sds sdscatprintf(sds s, const char *fmt, ...);
 #endif
 
-sds sdscatfmt(sds s, char const *fmt, ...);             // 将多个参数格式化成一个字符串后拼接到sds上
-sds sdstrim(sds s, const char *cset);                   // 在sds中移除开头或者末尾在cset中的字符
-void sdsrange(sds s, ssize_t start, ssize_t end);       // 截取sds的子串
-void sdsupdatelen(sds s);                               // 更新sds字符串的长度
-void sdsclear(sds s);                                   // 清空sds中的内容，但不释放空间
-int sdscmp(const sds s1, const sds s2);                 // sds字符串比较大小
+sds sdscatfmt(sds s, char const *fmt, ...);                         // 将多个参数格式化成一个字符串后拼接到sds上
+sds sdstrim(sds s, const char *cset);                               // 在sds中移除开头或者末尾在cset中的字符
+void sdsrange(sds s, ssize_t start, ssize_t end);                   // 截取sds的子串
+void sdsupdatelen(sds s);                                           // 更新sds字符串的长度
+void sdsclear(sds s);                                               // 清空sds中的内容，但不释放空间
+int sdscmp(const sds s1, const sds s2);                             // sds字符串比较大小
 sds *sdssplitlen(const char *s, ssize_t len, const char *sep, int seplen, int *count);
-void sdsfreesplitres(sds *tokens, int count);           //释放sds，长度为count
-void sdstolower(sds s);                                 // 字符串转小写
-void sdstoupper(sds s);                                 // 字符串转大写
-sds sdsfromlonglong(long long value);                   // 把一个long long型的数转成sds
+void sdsfreesplitres(sds *tokens, int count);                       //释放sds，长度为count
+void sdstolower(sds s);                                             // 字符串转小写
+void sdstoupper(sds s);                                             // 字符串转大写
+sds sdsfromlonglong(long long value);                               // 把一个long long型的数转成sds
 sds sdscatrepr(sds s, const char *p, size_t len);   
 sds *sdssplitargs(const char *line, int *argc);
 sds sdsmapchars(sds s, const char *from, const char *to, size_t setlen);
@@ -312,6 +307,7 @@ sds sdsjoinsds(sds *argv, int argc, const char *sep, size_t seplen); // 把sds�
  * provided as variable, and the callback is expected to return a
  * substitution value. Returning a NULL indicates an error.
  */
+// sds模板的回调。每次需要扩展变量时，sdstemplate 都会调用该函数。变量名称作为变量提供，回调应返回替换值。返回 NULL 表示错误。
 typedef sds (*sdstemplate_callback_t)(const sds variable, void *arg);
 sds sdstemplate(const char *template, sdstemplate_callback_t cb_func, void *cb_arg);
 
@@ -326,6 +322,7 @@ void *sdsAllocPtr(sds s);                       // 返回sds实际的起始位�
  * Sometimes the program SDS is linked to, may use a different set of
  * allocators, but may want to allocate or free things that SDS will
  * respectively free or allocate. */
+// 使用 SDS 将 SDS 使用的分配器导出到程序。有时，SDS链接到的程序可能使用一组不同的分配器，但可能希望分配或释放SDS将分别释放或分配的内容。
 void *sds_malloc(size_t size);                  // 为sds分配空间
 void *sds_realloc(void *ptr, size_t size);      // 重新分配空间
 void sds_free(void *ptr);                       // 释放sds空间
