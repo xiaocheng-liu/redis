@@ -1,4 +1,5 @@
 /* Implementation of EXPIRE (keys with fixed time to live).
+ * 实现 EXPIRE（具有固定生存时间的密钥）。
  *
  * ----------------------------------------------------------------------------
  *

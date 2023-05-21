@@ -1,4 +1,5 @@
 /* Maxmemory directive handling (LRU eviction and other policies).
+ * 最大内存指令处理（LRU 逐出和其他策略）
  *
  * ----------------------------------------------------------------------------
  *
