@@ -142,6 +142,7 @@ void setGenericCommand(client *c, int flags, robj *key, robj *val, robj *expire,
     }
 
     /* Propagate without the GET argument (Isn't needed if we had expire since in that case we completely re-written the command argv) */
+    // 在没有 GET 参数的情况下传播（如果我们过期了，则不需要，因为在这种情况下我们完全重写了命令 argv）
     if ((flags & OBJ_SET_GET) && !expire) {
         int argc = 0;
         int j;
@@ -364,6 +365,7 @@ void getexCommand(client *c) {
     long long milliseconds = 0;
 
     /* Validate the expiration time value first */
+    // 首先验证过期时间值
     if (expire) {
         if (getLongLongFromObjectOrReply(c, expire, &milliseconds, NULL) != C_OK)
             return;

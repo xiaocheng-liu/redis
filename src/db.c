@@ -254,6 +254,10 @@ void dbOverwrite(redisDb *db, robj *key, robj *val) {
  * All the new keys in the database should be created via this interface.
  * The client 'c' argument may be set to NULL if the operation is performed
  * in a context where there is no clear client performing the operation. */
+// 高级集操作。此函数可用于为新对象设置键，无论它是否存在。
+// 1.值对象的引用计数递增。
+// 2.客户端正在监视已通知的目标密钥。
+// 3.密钥的过期时间被重置（密钥是永久性的），除非“keepttl”为真。
 void genericSetKey(client *c, redisDb *db, robj *key, robj *val, int keepttl, int signal) {
     // 查找键是否存在，不存在则添加，存在则覆盖
     if (lookupKeyWrite(db,key) == NULL) {
@@ -263,6 +267,7 @@ void genericSetKey(client *c, redisDb *db, robj *key, robj *val, int keepttl, in
     }
     // 给对象增加引用计数
     incrRefCount(val);
+    // 过期时间设置
     if (!keepttl) removeExpire(db,key);
     if (signal) signalModifiedKey(c,db,key);
 }
@@ -1476,6 +1481,7 @@ void propagateExpire(redisDb *db, robj *key, int lazy) {
 }
 
 /* Check if the key is expired. */
+// 检查Key是否已过期。
 int keyIsExpired(redisDb *db, robj *key) {
     mstime_t when = getExpire(db,key);
     mstime_t now;
@@ -1483,6 +1489,7 @@ int keyIsExpired(redisDb *db, robj *key) {
     if (when < 0) return 0; /* No expire for this key */
 
     /* Don't expire anything while loading. It will be done later. */
+    // 加载时不要使任何内容过期。稍后再做。
     if (server.loading) return 0;
 
     /* If we are in the context of a Lua script, we pretend that time is
@@ -1510,6 +1517,7 @@ int keyIsExpired(redisDb *db, robj *key) {
 
     /* The key expired if the current (virtual or real) time is greater
      * than the expire time of the key. */
+    // 如果当前（虚拟或实时）时间大于key的过期时间，则key过期。
     return now > when;
 }
 

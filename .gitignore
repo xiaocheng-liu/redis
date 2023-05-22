@@ -39,3 +39,4 @@ Makefile.dep
 .DS_store
 compile_commands.json
 redis.code-workspace
+*.tmp

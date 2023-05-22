@@ -1387,7 +1387,7 @@ struct redisServer
 
 
     /* RDB / AOF loading information */     // RDB AOF 加载信息
-    volatile sig_atomic_t loading; /* We are loading data from disk if true */
+    volatile sig_atomic_t loading; /* We are loading data from disk if true */  // 如果为 true，我们正在从磁盘加载数据
     off_t loading_total_bytes;
     off_t loading_rdb_used_mem;
     off_t loading_loaded_bytes;
@@ -2913,8 +2913,8 @@ void authCommand(client *c);    // auth命令
 void pingCommand(client *c);    // ping命令
 void echoCommand(client *c);    // echo命令
 void commandCommand(client *c);
-void setCommand(client *c);
-void setnxCommand(client *c);
+void setCommand(client *c);     // set命令
+void setnxCommand(client *c);   // setnx命令
 void setexCommand(client *c);
 void psetexCommand(client *c);
 void getCommand(client *c);
@@ -2928,119 +2928,63 @@ void getbitCommand(client *c);
 void bitfieldCommand(client *c);
 void bitfieldroCommand(client *c);
 void setrangeCommand(client *c);
-
 void getrangeCommand(client *c);
-
 void incrCommand(client *c);
-
 void decrCommand(client *c);
-
 void incrbyCommand(client *c);
-
 void decrbyCommand(client *c);
-
 void incrbyfloatCommand(client *c);
-
 void selectCommand(client *c);
-
 void swapdbCommand(client *c);
-
 void randomkeyCommand(client *c);
-
 void keysCommand(client *c);
-
 void scanCommand(client *c);
-
 void dbsizeCommand(client *c);
-
 void lastsaveCommand(client *c);
-
 /** save命令 */
 void saveCommand(client *c);
-
 /** bgsave命令 */
 void bgsaveCommand(client *c);
-
 void bgrewriteaofCommand(client *c);
-
 void shutdownCommand(client *c);
-
 void moveCommand(client *c);
-
 void copyCommand(client *c);
-
 void renameCommand(client *c);
-
 void renamenxCommand(client *c);
-
 void lpushCommand(client *c);
-
 void rpushCommand(client *c);
-
 void lpushxCommand(client *c);
-
 void rpushxCommand(client *c);
-
 void linsertCommand(client *c);
-
 void lpopCommand(client *c);
-
 void rpopCommand(client *c);
-
 void llenCommand(client *c);
-
 void lindexCommand(client *c);
-
 void lrangeCommand(client *c);
-
 void ltrimCommand(client *c);
-
 void typeCommand(client *c);
-
 void lsetCommand(client *c);
-
 void saddCommand(client *c);
-
 void sremCommand(client *c);
-
 void smoveCommand(client *c);
-
 void sismemberCommand(client *c);
-
 void smismemberCommand(client *c);
-
 void scardCommand(client *c);
-
 void spopCommand(client *c);
-
 void srandmemberCommand(client *c);
-
 void sinterCommand(client *c);
-
 void sinterstoreCommand(client *c);
-
 void sunionCommand(client *c);
-
 void sunionstoreCommand(client *c);
-
 void sdiffCommand(client *c);
-
 void sdiffstoreCommand(client *c);
-
 void sscanCommand(client *c);
-
 void syncCommand(client *c);
-
 void flushdbCommand(client *c);
-
 void flushallCommand(client *c);
-
 void sortCommand(client *c);
-
 void lremCommand(client *c);
-
 void lposCommand(client *c);
-
 void rpoplpushCommand(client *c);
 
 void lmoveCommand(client *c);
