@@ -1762,7 +1762,7 @@ static int parseOptions(int argc, char **argv) {
     return i;
 }
 
-static void parseEnv() {
+static void parseEnv(void) {
     /* Set auth from env, but do not overwrite CLI arguments if passed */
     // 从 env 设置身份验证，但如果传递，则不要覆盖 CLI 参数
     char *auth = getenv(REDIS_CLI_AUTH_ENV);
@@ -4529,7 +4529,7 @@ static clusterManagerNode * clusterManagerGetNodeWithMostKeysInSlot(list *nodes,
  * in the cluster. If there are multiple masters with the same smaller
  * number of replicas, one at random is returned. */
 
-static clusterManagerNode *clusterManagerNodeWithLeastReplicas() {
+static clusterManagerNode *clusterManagerNodeWithLeastReplicas(void) {
     clusterManagerNode *node = NULL;
     int lowest_count = 0;
     listIter li;
@@ -4548,7 +4548,7 @@ static clusterManagerNode *clusterManagerNodeWithLeastReplicas() {
 
 /* This function returns a random master node, return NULL if none */
 
-static clusterManagerNode *clusterManagerNodeMasterRandom() {
+static clusterManagerNode *clusterManagerNodeMasterRandom(void) {
     int master_count = 0;
     int idx;
     listIter li;
@@ -6962,7 +6962,7 @@ void sendReplconf(const char* arg1, const char* arg2) {
     freeReplyObject(reply);
 }
 
-void sendCapa() {
+void sendCapa(void) {
     sendReplconf("capa", "eof");
 }
 
