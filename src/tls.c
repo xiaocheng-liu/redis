@@ -964,11 +964,11 @@ connection *connCreateAcceptedTLS(int fd, int require_auth) {
     return NULL;
 }
 
-int tlsHasPendingData() {
+int tlsHasPendingData(void) {
     return 0;
 }
 
-int tlsProcessPendingData() {
+int tlsProcessPendingData(void) {
     return 0;
 }
 

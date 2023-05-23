@@ -1786,7 +1786,7 @@ const char *sentinelCheckCreateInstanceErrors(int role) {
 }
 
 /* init function for server.sentinel_config */
-void initializeSentinelConfig() {
+void initializeSentinelConfig(void) {
     server.sentinel_config = zmalloc(sizeof(struct sentinelConfig));
     server.sentinel_config->monitor_cfg = listCreate();
     server.sentinel_config->pre_monitor_cfg = listCreate();
@@ -1797,7 +1797,7 @@ void initializeSentinelConfig() {
 }
 
 /* destroy function for server.sentinel_config */
-void freeSentinelConfig() {
+void freeSentinelConfig(void) {
     /* release these three config queues since we will not use it anymore */
     listRelease(server.sentinel_config->pre_monitor_cfg);
     listRelease(server.sentinel_config->monitor_cfg);
@@ -1855,6 +1855,7 @@ void queueSentinelConfig(sds *argv, int argc, int linenum, sds line) {
 
 /* This function is used for loading the sentinel configuration from
  * pre_monitor_cfg, monitor_cfg and post_monitor_cfg list */
+// 此功能用于从pre_monitor_cfg、monitor_cfg和post_monitor_cfg列表中加载哨兵配置
 void loadSentinelConfigFromQueue(void) {
     const char *err = NULL;
     listIter li;

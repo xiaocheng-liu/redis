@@ -197,8 +197,8 @@ int hashTypeExists(robj *o, sds field) {
  * semantics of copying the values if needed.
  *
  */
-#define HASH_SET_TAKE_FIELD (1<<0)
-#define HASH_SET_TAKE_VALUE (1<<1)
+//#define HASH_SET_TAKE_FIELD (1<<0)
+//#define HASH_SET_TAKE_VALUE (1<<1)
 #define HASH_SET_COPY 0
 
 /*

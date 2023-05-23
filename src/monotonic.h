@@ -29,7 +29,7 @@ extern monotime (*getMonotonicUs)(void);
  * needs to be called once, it may be called additional times without impact.
  * Returns a printable string indicating the type of clock initialized.
  * (The returned string is static and doesn't need to be freed.)  */
-const char * monotonicInit();
+const char * monotonicInit(void);
 
 
 /* Functions to measure elapsed time.  Example:

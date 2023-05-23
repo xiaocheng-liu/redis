@@ -95,10 +95,11 @@ void *bioProcessBackgroundJobs(void *arg);
 
 /* Make sure we have enough stack to perform all the things we do in the
  * main thread. */
+// 确保我们有足够的堆栈来执行我们在主线程中执行的所有操作。
 #define REDIS_THREAD_STACK_SIZE (1024*1024*4)
 
 /* Initialize the background system, spawning the thread. */
-/* 初始化后台系统，生成线程。*/
+// 初始化后台系统，生成线程。
 void bioInit(void) {
     pthread_attr_t attr;
     pthread_t thread;
@@ -108,17 +109,18 @@ void bioInit(void) {
     /* Initialization of state vars and objects */
     /* 状态变量和对象的初始化 */
     for (j = 0; j < BIO_NUM_OPS; j++) {
-        //  首先初始化互斥锁数组和条件变量数组
+        // 首先初始化互斥锁数组和条件变量数组
         pthread_mutex_init(&bio_mutex[j],NULL);
         pthread_cond_init(&bio_newjob_cond[j],NULL);
         pthread_cond_init(&bio_step_cond[j],NULL);
-        //调用 listCreate 函数，给 bio_jobs 这个数组的每个元素创建一个列表
+        // 调用 listCreate 函数，给 bio_jobs 这个数组的每个元素创建一个列表
         bio_jobs[j] = listCreate();
         //将 bio_pending 数组的每个元素赋值为 0
         bio_pending[j] = 0;
     }
 
     /* Set the stack size as by default it may be small in some system */
+    // 将堆栈大小设置为默认情况下在某些系统中可能很小
     // 初始化线程属性
     pthread_attr_init(&attr);
     // 获取线程的栈大小这一属性的当前值，并根据当前栈大小和 REDIS_THREAD_STACK_SIZE 宏定义的大小（默认值为 4MB），来计算最终的栈大小属性值。

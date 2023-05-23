@@ -1683,12 +1683,12 @@ const char *strChildType(int type)
 
 /* Return true if there are active children processes doing RDB saving,
  * AOF rewriting, or some side process spawned by a loaded module. */
-int hasActiveChildProcess()
+int hasActiveChildProcess(void)
 {
     return server.child_pid != -1;
 }
 
-void resetChildState()
+void resetChildState(void)
 {
     server.child_type = CHILD_TYPE_NONE;
     server.child_pid = -1;
@@ -2111,7 +2111,7 @@ void checkChildrenDone(void)
 }
 
 /* Called from serverCron and loadingCron to update cached memory metrics. */
-void cronUpdateMemoryStats()
+void cronUpdateMemoryStats(void)
 {
     /* Record the max memory used since the server was started. */
     if (zmalloc_used_memory() > server.stat_peak_memory)
@@ -2439,7 +2439,7 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData)
     return 1000 / server.hz;
 }
 
-void blockingOperationStarts()
+void blockingOperationStarts(void)
 {
     if (!server.blocking_op_nesting++)
     {
@@ -2448,7 +2448,7 @@ void blockingOperationStarts()
     }
 }
 
-void blockingOperationEnds()
+void blockingOperationEnds(void)
 {
     if (!(--server.blocking_op_nesting))
     {
@@ -2461,7 +2461,7 @@ void blockingOperationEnds()
  * It attempts to do its duties at a similar rate as the configured server.hz,
  * and updates cronloops variable so that similarly to serverCron, the
  * run_with_period can be used. */
-void whileBlockedCron()
+void whileBlockedCron(void)
 {
     /* Here we may want to perform some cron jobs (normally done server.hz times
      * per second). */
@@ -2971,6 +2971,7 @@ void initServerConfig(void)
     // 这是从 Redis 5 开始的新方式。但是，可以通过redis.conf将其还原。
     server.lua_always_replicate_commands = 1;
 
+    // 初始化配置默认值
     initConfigValues();
 }
 
@@ -3636,13 +3637,12 @@ void initServer(void)
  * Specifically, creation of threads due to a race bug in ld.so, in which
  * Thread Local Storage initialization collides with dlopen call.
  * see: https://sourceware.org/bugzilla/show_bug.cgi?id=19329 */
- /* 服务器初始化中的某些步骤需要最后完成（在模块之后）已加载）。
- *  具体来说，由于 ld.so 中的比赛错误而创建线程，其中
- * 线程本地存储初始化与 dlopen 调用冲突。
- * 请参阅： https://sourceware.org/bugzilla/show_bug.cgi?id=19329 */
-void InitServerLast()
+// 服务器初始化中的某些步骤需要最后完成（在模块之后）已加载）。
+// 具体来说，由于 ld.so 中的比赛错误而创建线程，其中线程本地存储初始化与 dlopen 调用冲突。
+// 请参阅： https://sourceware.org/bugzilla/show_bug.cgi?id=19329
+void InitServerLast(void)
 {
-    // 启动后台线程，目前是3个后台线程 bio_close_file  bio_aof_fsync bio_lazy_free
+    // 启动后台线程，目前是3个后台线程 bio_close_file  bio_aof_fsync  bio_lazy_free
     bioInit();
     // 调用initThreadedIO函数初始化IO线程
     initThreadedIO();
@@ -6045,7 +6045,7 @@ void createPidFile(void)
 {
     /* If pidfile requested, but no pidfile defined, use
      * default pidfile path */
-    // 如果需要pidfile，但是没有定义pidfile，使用默认的pidfile路径
+    // 如果需要pidfile，但是没有定义pidfile，使用默认的pidfile路径/var/run/redis.pid
     if (!server.pidfile)
         server.pidfile = zstrdup(CONFIG_DEFAULT_PID_FILE);
 
@@ -6080,6 +6080,28 @@ void daemonize(void)
     }
 }
 
+// 打印启动日志
+void printStartLog(int argc, char **argv)
+{
+    serverLog(LL_WARNING, "Redis服务正在启动。。。");
+    serverLog(LL_WARNING, "oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo");
+    serverLog(LL_WARNING,
+              "Redis version=%s, bits=%d, commit=%s, modified=%d, pid=%d, just started",
+              REDIS_VERSION,
+              (sizeof(long) == 8) ? 64 : 32,
+              redisGitSHA1(),
+              strtol(redisGitDirty(), NULL, 10) > 0,
+              (int)getpid());
+
+    if (argc == 1)
+    {
+        serverLog(LL_WARNING, "Warning: no config file specified, using the default config. In order to specify a config file use %s /path/to/%s.conf", argv[0], server.sentinel_mode ? "sentinel" : "redis");
+    }
+    else
+    {
+        serverLog(LL_WARNING, "Configuration loaded");
+    }
+}
 // 打印版本
 void version(void)
 {
@@ -6257,7 +6279,7 @@ void setupChildSignalHandlers(void)
  * of the parent process, e.g. fd(socket or flock) etc.
  * should close the resources not used by the child process, so that if the
  * parent restarts it can bind/lock despite the child possibly still running. */
-void closeChildUnusedResourceAfterFork()
+void closeChildUnusedResourceAfterFork(void)
 {
     closeListeningSockets(0);
     if (server.cluster_enabled && server.cluster_config_file_lock_fd != -1)
@@ -6359,29 +6381,28 @@ int checkForSentinelMode(int argc, char **argv)
 }
 
 /* Function called at startup to load RDB or AOF file in memory. */
+// 启动时调用的函数以在内存中加载 RDB 或 AOF 文件。
 void loadDataFromDisk(void)
 {
     long long start = ustime();
-    if (server.aof_state == AOF_ON)
-    {
-        if (loadAppendOnlyFile(server.aof_filename) == C_OK)
+    //  如果AOF开启
+    if (server.aof_state == AOF_ON){
+        // 加载AOF文件
+        if (loadAppendOnlyFile(server.aof_filename) == C_OK){
             serverLog(LL_NOTICE, "DB loaded from append only file: %.3f seconds", (float)(ustime() - start) / 1000000);
-    }
-    else
-    {
+        }
+    }else{
         rdbSaveInfo rsi = RDB_SAVE_INFO_INIT;
         errno = 0; /* Prevent a stale value from affecting error checking */
-        if (rdbLoad(server.rdb_filename, &rsi, RDBFLAGS_NONE) == C_OK)
-        {
-            serverLog(LL_NOTICE, "DB loaded from disk: %.3f seconds",
-                      (float)(ustime() - start) / 1000000);
+        // 加载RDB文件
+        if (rdbLoad(server.rdb_filename, &rsi, RDBFLAGS_NONE) == C_OK){
+            serverLog(LL_NOTICE, "DB loaded from disk: %.3f seconds", (float)(ustime() - start) / 1000000);
 
             /* Restore the replication ID / offset from the RDB file. */
-            if ((server.masterhost ||
-                 (server.cluster_enabled &&
-                  nodeIsSlave(server.cluster->myself))) &&
-                rsi.repl_id_is_set &&
-                rsi.repl_offset != -1 &&
+            // 从 RDB 文件还原复制 ID 偏移量。
+            // nodeIsSlave 判断是否是从节点
+            if ((server.masterhost || (server.cluster_enabled && nodeIsSlave(server.cluster->myself))) &&
+                rsi.repl_id_is_set && rsi.repl_offset != -1 &&
                 /* Note that older implementations may save a repl_stream_db
                  * of -1 inside the RDB file in a wrong way, see more
                  * information in function rdbPopulateSaveInfo. */
@@ -6392,12 +6413,11 @@ void loadDataFromDisk(void)
                 /* If we are a slave, create a cached master from this
                  * information, in order to allow partial resynchronizations
                  * with masters. */
+                // 如果我们是从属服务器，请根据此信息创建一个缓存的主节点，以允许与主服务器进行部分重新同步。
                 replicationCacheMasterUsingMyself();
                 selectDb(server.cached_master, rsi.repl_stream_db);
             }
-        }
-        else if (errno != ENOENT)
-        {
+        }else if (errno != ENOENT){
             serverLog(LL_WARNING, "Fatal error loading the DB: %s. Exiting.", strerror(errno));
             exit(1);
         }
@@ -6708,9 +6728,8 @@ int main(int argc, char **argv)
     //【2】initServerConfig函数将redisServer中记录配置项的属性初始化为默认值。
     initServerConfig();
     // ACLInit函数初始化ACL机制，moduleInitModulesSystem函数初始化Module机制。
-    // ACL 子系统必须尽快初始化，因为基本网络代码和客户端创建依赖于它。
     ACLInit();          /* The ACL subsystem must be initialized ASAP because the
-                  basic networking code and client creation depends on it. */
+                            basic networking code and client creation depends on it. */     // ACL 子系统必须尽快初始化，因为基本网络代码和客户端创建依赖于它。
     moduleInitModulesSystem();
     tlsInit();
 
@@ -6718,12 +6737,14 @@ int main(int argc, char **argv)
      * to be able to restart the server later. */
     //【3】记录Redis程序可执行路径及启动参数，以便后续重启服务器。
     server.executable = getAbsolutePath(argv[0]);
-    serverLog(LL_WARNING, "运行参数个数：argc: %d", argc);
+    serverLog(LL_WARNING, "参数个数：argc: %d", argc);
     serverLog(LL_WARNING, "程序绝对路径：%s", argv[0]);
     server.exec_argv = zmalloc(sizeof(char *) * (argc + 1));
     server.exec_argv[argc] = NULL;
-    for (j = 0; j < argc; j++)
+    for (j = 0; j < argc; j++){
+        serverLog(LL_WARNING, "argv[%d]：%s", j, argv[j]);
         server.exec_argv[j] = zstrdup(argv[j]);
+    }
 
     /* We need to init sentinel right now as parsing the configuration file
      * in sentinel mode will have the effect of populating the sentinel
@@ -6740,7 +6761,7 @@ int main(int argc, char **argv)
     }
 
     /* Check if we need to start in redis-check-rdb/aof mode. We just execute
-     * the program main. However the program is part of the Redis executable
+     * the program main. However, the program is part of the Redis executable
      * so that we can easily execute an RDB check on loading errors. */
     // 【5】如果启动程序是redis-check-rdb或redis-check-aof，则执行redis_check_rdb_main或redis_check_aof_main函数，
     // 它们尝试检验并修复RDB、AOF文件后便退出程序。
@@ -6756,33 +6777,30 @@ int main(int argc, char **argv)
 
         /* Handle special options --help and --version */
         // 【6】对-v、--version、--help、-h、--test-memory等命令进行优先处理。
-        // strcmp函数比较两个字符串str1、str2，若str1=str2，则返回零；若str1str2，则返回正数。
-        if (strcmp(argv[1], "-v") == 0 ||
-            strcmp(argv[1], "--version") == 0)
+        // strcmp函数比较两个字符串str1、str2，若str1=str2，则返回零；若str1 != str2，则返回正数。
+        if (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0){
             version();
-        if (strcmp(argv[1], "--help") == 0 ||
-            strcmp(argv[1], "-h") == 0)
+        }
+        if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0){
             usage();
-        if (strcmp(argv[1], "--test-memory") == 0)
-        {
-            if (argc == 3)  // 如果参数个数为3个
-            {
+        }
+        if (strcmp(argv[1], "--test-memory") == 0){
+            if (argc == 3){  // 如果参数个数为3个
                 // 进行内存测试
                 memtest(atoi(argv[2]), 50);
                 exit(0);
-            }
-            else    // 参数不是3个，给错误提示
-            {
+            }else{      // 参数不是3个，给错误提示
                 fprintf(stderr, "Please specify the amount of memory to test in megabytes.\n");
                 fprintf(stderr, "Example: ./redis-server --test-memory 4096\n\n");
                 exit(1);
             }
         }
+
         /* Parse command line options
          * Precedence wise, File, stdin, explicit options -- last config is the one that matters.
          *
          * First argument is the config file name? */
-        // 【7】如果启动命令的第二个参数不是以“--”开始的，则是配置文件参数，将配置文件路径转化为绝对路径，存入server.configfile中
+        // 【7】如果启动命令的第二个参数不是以“-”开头的，则是配置文件参数，将配置文件路径转化为绝对路径，存入server.configfile中
         if (argv[1][0] != '-')
         {
             /* Replace the config file in server.exec_argv with its absolute path. */
@@ -6796,6 +6814,7 @@ int main(int argc, char **argv)
         while (j < argc)
         {
             /* Either first or last argument - Should we read config from stdin? */
+            // 第一个或最后一个参数 - 我们应该从标准输入中读取配置吗？
             if (argv[j][0] == '-' && argv[j][1] == '\0' && (j == 1 || j == argc - 1))
             {
                 config_from_stdin = 1;
@@ -6831,8 +6850,11 @@ int main(int argc, char **argv)
         // 【10】config.c/resetServerSaveParams函数重置server.saveparams属性（该属性存放RDB SAVE配置）。
         // config.c/loadServerConfig函数从配置文件中加载所有配置项，并使用启动命令配置项覆盖配置文件中的配置项。
         loadServerConfig(server.configfile, config_from_stdin, options);
-        if (server.sentinel_mode)
+
+        // 如果是哨兵模式，加载哨兵配置
+        if (server.sentinel_mode){
             loadSentinelConfigFromQueue();
+        }
         sdsfree(options);
     }
 
@@ -6845,24 +6867,8 @@ int main(int argc, char **argv)
         daemonize();
 
     //【12】打印启动日志。
-    serverLog(LL_WARNING, "Redis服务正在启动。。。");
-    serverLog(LL_WARNING, "oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo");
-    serverLog(LL_WARNING,
-              "Redis version=%s, bits=%d, commit=%s, modified=%d, pid=%d, just started",
-              REDIS_VERSION,
-              (sizeof(long) == 8) ? 64 : 32,
-              redisGitSHA1(),
-              strtol(redisGitDirty(), NULL, 10) > 0,
-              (int)getpid());
-
-    if (argc == 1)
-    {
-        serverLog(LL_WARNING, "Warning: no config file specified, using the default config. In order to specify a config file use %s /path/to/%s.conf", argv[0], server.sentinel_mode ? "sentinel" : "redis");
-    }
-    else
-    {
-        serverLog(LL_WARNING, "Configuration loaded");
-    }
+    printStartLog(argc, argv);
+    redisAsciiArt();             // 打印启动ascii_logo
 
     readOOMScoreAdj();
     //【13】initServer函数初始化Redis运行时数据，aeCreateEventLoop函数创建事件循环器，createPidFile函数创建pid文件。
@@ -6871,10 +6877,10 @@ int main(int argc, char **argv)
         createPidFile();
     if (server.set_proc_title)
         redisSetProcTitle(NULL);
-    redisAsciiArt();                    // 打印启动ascii_logo
+
     checkTcpBacklogSettings();
 
-    // 如果服务器不是哨兵模式
+    // 如果不是哨兵模式
     if (!server.sentinel_mode)
     {
         /* Things not needed when running in Sentinel mode. */

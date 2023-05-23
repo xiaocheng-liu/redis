@@ -578,8 +578,8 @@ typedef enum
 #define REDISMODULE_TYPE_SIGN(id) ((id & ~((uint64_t)REDISMODULE_TYPE_ENCVER_MASK)) >> REDISMODULE_TYPE_ENCVER_BITS)
 
 /* Bit flags for moduleTypeAuxSaveFunc */
-#define REDISMODULE_AUX_BEFORE_RDB (1 << 0)
-#define REDISMODULE_AUX_AFTER_RDB (1 << 1)
+// #define REDISMODULE_AUX_BEFORE_RDB (1 << 0)
+// #define REDISMODULE_AUX_AFTER_RDB (1 << 1)
 
 struct RedisModule;
 struct RedisModuleIO;
@@ -2049,7 +2049,7 @@ void moduleCallCommandFilters(client *c);
 void moduleForkDoneHandler(int exitcode, int bysignal);
 int terminateModuleForkChild(int child_pid, int wait);
 ssize_t rdbSaveModulesAux(rio *rdb, int when);
-int moduleAllDatatypesHandleErrors();
+int moduleAllDatatypesHandleErrors(void);
 sds modulesCollectInfo(sds info, const char *section, int for_crash_report, int sections);
 void moduleFireServerEvent(uint64_t eid, int subid, void *data);
 void processModuleLoadingProgressEvent(int is_aof);
@@ -2192,11 +2192,11 @@ void processEventsWhileBlocked(void);
 
 void loadingCron(void);
 
-void whileBlockedCron();
+void whileBlockedCron(void);
 
-void blockingOperationStarts();
+void blockingOperationStarts(void);
 
-void blockingOperationEnds();
+void blockingOperationEnds(void);
 
 int handleClientsWithPendingWrites(void);
 
@@ -2380,7 +2380,7 @@ void rdbPipeWriteHandlerConnRemoved(struct connection *conn);
 void clearFailoverState(void);
 void updateFailoverStatus(void);
 void abortFailover(const char *err);
-const char *getFailoverStateString();
+const char *getFailoverStateString(void);
 
 /* Generic persistence functions */
 // 通用持久性函数
@@ -2418,7 +2418,7 @@ void aofRewriteBufferReset(void);
 unsigned long aofRewriteBufferSize(void);
 ssize_t aofReadDiffFromParent(void);
 void killAppendOnlyChild(void);
-void restartAOFAfterSYNC();
+void restartAOFAfterSYNC(void);
 
 /* Child info */
 // child信息
@@ -2430,8 +2430,8 @@ void receiveChildInfo(void);
 /* Fork helpers */
 // fork助手
 int redisFork(int type);
-int hasActiveChildProcess();
-void resetChildState();
+int hasActiveChildProcess(void);
+void resetChildState(void);
 int isMutuallyExclusiveChildType(int type);
 void sendChildCOWInfo(int ptype, int on_exit, char *pname);
 
@@ -2464,7 +2464,7 @@ int ACLLoadConfiguredUsers(void);
 sds ACLDescribeUser(user *u);
 void ACLLoadUsersAtStartup(void);
 void addReplyCommandCategories(client *c, struct redisCommand *cmd);
-user *ACLCreateUnlinkedUser();
+user *ACLCreateUnlinkedUser(void);
 void ACLFreeUserAndKillClients(user *u);
 void addACLLogEntry(client *c, int reason, int keypos, sds username);
 
@@ -2577,7 +2577,7 @@ int zslLexValueLteMax(sds value, zlexrangespec *spec);
 /* Core functions */
 // 核心函数
 int getMaxmemoryState(size_t *total, size_t *logical, size_t *tofree, float *level);
-size_t freeMemoryGetNotCountedMemory();
+size_t freeMemoryGetNotCountedMemory(void);
 int overMaxmemoryAfterAlloc(size_t moremem);
 int processCommand(client *c);
 int processPendingCommandsAndResetClient(client *c);
@@ -2610,6 +2610,7 @@ void serverLogRaw(int level, const char *msg);
 void serverLogFromHandler(int level, const char *msg);
 void createPidFile(void);
 void daemonize(void);
+void printStartLog(int argc, char **argv);
 void version(void);
 void usage(void);
 void redisAsciiArt(void);
@@ -2732,7 +2733,7 @@ void rewriteConfigMarkAsProcessed(struct rewriteConfigState *state, const char *
 
 int rewriteConfig(char *path, int force_all);
 
-void initConfigValues();
+void initConfigValues(void);
 
 /* db.c -- Keyspace access API 键访问API */
 // 删除过期
@@ -2774,7 +2775,7 @@ robj *dbUnshareStringValue(redisDb *db, robj *key, robj *o);
 long long emptyDb(int dbnum, int flags, void(callback)(void *));
 long long emptyDbStructure(redisDb *dbarray, int dbnum, int async, void(callback)(void *));
 void flushAllDataAndResetRDB(int flags);
-long long dbTotalServerKeyCount();
+long long dbTotalServerKeyCount(void);
 dbBackup *backupDb(void);
 void restoreDbBackup(dbBackup *buckup);
 void discardDbBackup(dbBackup *buckup, int flags, void(callback)(void *));

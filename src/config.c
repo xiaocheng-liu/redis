@@ -378,12 +378,13 @@ static int updateOOMScoreAdjValues(sds *args, const char **err, int apply) {
     return C_OK;
 }
 
-void initConfigValues() {
+void initConfigValues(void) {
     for (standardConfig *config = configs; config->name != NULL; config++) {
         config->interface.init(config->data);
     }
 }
 
+// 从字符串加载Server配置
 void loadServerConfigFromString(char *config) {
     const char *err = NULL;
     int linenum = 0, totlines, i;
@@ -401,16 +402,19 @@ void loadServerConfigFromString(char *config) {
         lines[i] = sdstrim(lines[i]," \t\r\n");
 
         /* Skip comments and blank lines */
+        // 跳过注释和空行
         if (lines[i][0] == '#' || lines[i][0] == '\0') continue;
 
         /* Split into arguments */
-        argv = sdssplitargs(lines[i],&argc);
+        // 拆分为参数
+        argv = sdssplitargs(lines[i], &argc);
         if (argv == NULL) {
             err = "Unbalanced quotes in configuration line";
             goto loaderr;
         }
 
         /* Skip this line if the resulting command vector is empty. */
+        // 如果生成的命令向量为空，请跳过此行。
         if (argc == 0) {
             sdsfreesplitres(argv,argc);
             continue;
@@ -442,6 +446,7 @@ void loadServerConfigFromString(char *config) {
         }
 
         /* Execute config directives */
+        // 执行配置指令
         if (!strcasecmp(argv[0],"bind") && argc >= 2) {
             int j, addresses = argc-1;
 
@@ -503,6 +508,7 @@ void loadServerConfigFromString(char *config) {
                 fclose(logfp);
             }
         } else if (!strcasecmp(argv[0],"include") && argc == 2) {
+            // 加载include配置文件
             loadServerConfig(argv[1], 0, NULL);
         } else if ((!strcasecmp(argv[0],"client-query-buffer-limit")) && argc == 2) {
              server.client_max_querybuf_len = memtoll(argv[1],NULL);
@@ -660,6 +666,8 @@ loaderr:
  * empty. This way loadServerConfig can be used to just load a file or
  * just load a string. */
 // 从指定的文件名加载服务配置
+// 该函数在加载之前将存储在“选项”字符串中的其他配置指令附加到配置文件中。
+// 文件名和选项都可以为 NULL，在这种情况下被视为空。这样，loadServerConfig 可以只用于加载文件或只加载字符串。
 void loadServerConfig(char *filename, char config_from_stdin, char *options) {
     sds config = sdsempty();
     char buf[CONFIG_MAX_LINE+1];

@@ -565,7 +565,7 @@ void set_jemalloc_bg_thread(int enable) {
     ((void)(enable));
 }
 
-int jemalloc_purge() {
+int jemalloc_purge(void) {
     return 0;
 }
 

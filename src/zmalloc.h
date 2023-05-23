@@ -107,7 +107,7 @@ void zmalloc_set_oom_handler(void (*oom_handler)(size_t)); // 可自定义设置
 size_t zmalloc_get_rss(void);               // 获取RSS信息(Resident Set Size) 常驻内存集
 int zmalloc_get_allocator_info(size_t *allocated, size_t *active, size_t *resident);
 void set_jemalloc_bg_thread(int enable);
-int jemalloc_purge();
+int jemalloc_purge(void);
 size_t zmalloc_get_private_dirty(long pid); // 获得实际内存大小
 size_t zmalloc_get_smap_bytes_by_field(char *field, long pid); // 获取/proc/self/smaps字段的字节数
 size_t zmalloc_get_memory_size(void);       // 获取物理内存大小

@@ -74,7 +74,7 @@ ConnectionType CT_Socket;
  * be embedded in different structs, not just client.
  */
 /* 创建一个非加密的客户端连接 */
-connection *connCreateSocket() {
+connection *connCreateSocket(void) {
     //分配空间
     connection *conn = zcalloc(sizeof(connection));
     //CT_Socket 是一个结构体

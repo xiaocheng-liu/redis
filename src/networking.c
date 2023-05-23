@@ -3621,18 +3621,16 @@ void *IOThreadMain(void *myid) {
 }
 
 /* Initialize the data structures needed for threaded I/O. */
-/* 初始化IO线程的数据结构 */
+// 初始化IO线程的数据结构
 void initThreadedIO(void) {
-
-    /* 我们从不活跃的线程开始。*/
-    server.io_threads_active = 0; /* We start with threads not active. */
+    server.io_threads_active = 0; /* We start with threads not active. */   // 我们从不活跃的线程开始。
 
     /* Don't spawn any thread if the user selected a single thread:
      * we'll handle I/O directly from the main thread. */
      /*如果用户选择了单个线程，则不要生成任何线程，我们将直接从主线程处理 I/O。*/
     if (server.io_threads_num == 1) return;
 
-    // 如果IO线程数大于IO_THREADS_MAX_NUM最大的线程数， 直接退出
+    // 如果IO线程数大于IO_THREADS_MAX_NUM最大的线程数(128)， 直接退出
     if (server.io_threads_num > IO_THREADS_MAX_NUM) {
         serverLog(LL_WARNING,"Fatal: too many I/O threads configured. "
                              "The maximum number is %d.", IO_THREADS_MAX_NUM);
@@ -3641,7 +3639,7 @@ void initThreadedIO(void) {
 
     /* Spawn and initialize the I/O threads. */
     /* 创建并初始化IO线程 */
-    for (int i = 0; i < server.io_threads_num; i++) { // redis6引入的多线程机制，但目前线程数默认是1 
+    for (int i = 0; i < server.io_threads_num; i++) {       // redis6引入的多线程机制，但目前线程数默认是1
         /* Things we do for all the threads including the main thread. */
         /* 我们为所有线程（包括主线程）执行的操作。*/
         io_threads_list[i] = listCreate();
