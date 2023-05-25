@@ -54,6 +54,7 @@ extern SSL_CTX *redis_tls_client_ctx;
 /* ======================== Sentinel global state =========================== */
 
 /* Address object, used to describe an ip:port pair. */
+// 记录实例的地址对象
 // 地址对象，用于描述 ip：port 对。
 typedef struct sentinelAddr {
     char *hostname;         /* Hostname OR address, as specified */
@@ -182,10 +183,10 @@ typedef struct instanceLink {
 
 typedef struct sentinelRedisInstance {
     int flags;      /* See SRI_... defines */
-    char *name;     /* Master name from the point of view of this sentinel. */
+    char *name;     /* Master name from the point of view of this sentinel. */          // 哨兵记录的master名字，从服务器的话是用的是IP+Port
     char *runid;    /* Run ID of this instance, or unique ID if is a Sentinel.*/
-    uint64_t config_epoch;  /* Configuration epoch. */
-    sentinelAddr *addr; /* Master host. */
+    uint64_t config_epoch;  /* Configuration epoch. */                                  // 用于实现故障转移.
+    sentinelAddr *addr; /* Master host. */                                              // 实例地址
     instanceLink *link; /* Link to the instance, may be shared for Sentinels. */
     mstime_t last_pub_time;   /* Last time we sent hello via Pub/Sub. */
     mstime_t last_hello_time; /* Only used if SRI_SENTINEL is set. Last time
@@ -193,9 +194,9 @@ typedef struct sentinelRedisInstance {
                                  via Pub/Sub. */
     mstime_t last_master_down_reply_time; /* Time of last reply to
                                              SENTINEL is-master-down command. */
-    mstime_t s_down_since_time; /* Subjectively down since time. */
-    mstime_t o_down_since_time; /* Objectively down since time. */
-    mstime_t down_after_period; /* Consider it down after that period. */
+    mstime_t s_down_since_time; /* Subjectively down since time. */                     // 主观宕机时间
+    mstime_t o_down_since_time; /* Objectively down since time. */                      // 客观宕机时间
+    mstime_t down_after_period; /* Consider it down after that period. */               // 实例无响应多久被认为是主观宕机。
     mstime_t info_refresh;  /* Time at which we received INFO output from it. */
     dict *renamed_commands;     /* Commands renamed in this instance:
                                    Sentinel will use the alternative commands
@@ -212,18 +213,18 @@ typedef struct sentinelRedisInstance {
     mstime_t slave_conf_change_time; /* Last time slave master addr changed. */
 
     /* Master specific. */
-    dict *sentinels;    /* 监控同一master的其他sentinel实例 */
-    dict *slaves;       /* Slaves for this master instance. */
-    unsigned int quorum;/* 确认failure的sentinel实例个数. */
+    dict *sentinels;    /* Other sentinels monitoring the same master. */           // 监控同一master的其他sentinel实例
+    dict *slaves;       /* Slaves for this master instance. */                      // 用于记录该主节点实例的所有从节点实例。该字典以从节点名字为key，以从节点实例sentinelRedisInstance结构为key；
+    unsigned int quorum;/* Number of sentinels that need to agree on failure. */    // 确认failure的sentinel实例个数.
     int parallel_syncs; /* How many slaves to reconfigure at same time. */
     char *auth_pass;    /* Password to use for AUTH against master & replica. */
     char *auth_user;    /* Username for ACLs AUTH against master & replica. */
 
     /* Slave specific. */
-    mstime_t master_link_down_time; /* Slave replication link down time. */
-    int slave_priority; /* Slave priority according to its INFO output. */
-    mstime_t slave_reconf_sent_time; /* Time at which we sent SLAVE OF <new> */
-    struct sentinelRedisInstance *master; /* Master instance if it's slave. */
+    mstime_t master_link_down_time; /* Slave replication link down time. */         // 主从复制超时时间
+    int slave_priority; /* Slave priority according to its INFO output. */          // 从节点级别
+    mstime_t slave_reconf_sent_time; /* Time at which we sent SLAVE OF <new> */     // 从节点配置
+    struct sentinelRedisInstance *master; /* Master instance if it's slave. */      // 所属的master
     char *slave_master_host;    /* Master host as reported by INFO */
     int slave_master_port;      /* Master port as reported by INFO */
     int slave_master_link_status; /* Master link status as reported by INFO */
@@ -235,10 +236,10 @@ typedef struct sentinelRedisInstance {
                            that this Sentinel voted as leader. */
     uint64_t leader_epoch; /* Epoch of the 'leader' field. */
     uint64_t failover_epoch; /* Epoch of the currently started failover. */
-    int failover_state; /* See SENTINEL_FAILOVER_STATE_* defines. */
+    int failover_state; /* See SENTINEL_FAILOVER_STATE_* defines. */                // 故障转移时，状态参数
     mstime_t failover_state_change_time;
     mstime_t failover_start_time;   /* Last failover attempt start time. */
-    mstime_t failover_timeout;      /* Max time to refresh failover state. */
+    mstime_t failover_timeout;      /* Max time to refresh failover state. */       // 故障转移超时时间
     mstime_t failover_delay_logged; /* For what failover_start_time value we
                                        logged the failover delay. */
     struct sentinelRedisInstance *promoted_slave; /* Promoted slave instance. */
@@ -252,14 +253,16 @@ typedef struct sentinelRedisInstance {
 /* Main state. */
 // 主状态。
 struct sentinelState {
-    char myid[CONFIG_RUN_ID_SIZE+1]; /* This sentinel ID. */
-    uint64_t current_epoch;         /* 当前epoch值 */
-    dict *masters;      /* 主哨兵字典。key是实例名，value是sentinelRedisInstance结构指针。 */
-    int tilt;           /* 是否是TILT模式? */
-    int running_scripts;    /* 正在执行的脚本的数量 */
-    mstime_t tilt_start_time;       /* 进入 TILT 模式的时间 */
-    mstime_t previous_time;         /* 上一次运行的时间点 */
-    list *scripts_queue;            /* 等待执行的用户脚本队列 */
+    char myid[CONFIG_RUN_ID_SIZE+1]; /* This sentinel ID. */                        // 此哨兵 ID。
+    uint64_t current_epoch;         /* Current epoch. */                            //记录的当前纪元用于故障转移用
+    dict *masters;      /* Dictionary of master sentinelRedisInstances.
+                           Key is the instance name, value is the
+                           sentinelRedisInstance structure pointer.*/               // 主哨兵字典。key是实例名，value是sentinelRedisInstance结构指针。
+    int tilt;           /* Are we in TILT mode? */                                  // 是否是TILT模式?
+    int running_scripts;    /* Number of scripts in execution right now. */         // 正在执行的脚本的数量
+    mstime_t tilt_start_time;       /* When TITL started. */                        // 进入 TILT 模式的时间
+    mstime_t previous_time;         /* Last time we ran the time handler. */        // 上一次运行的时间点
+    list *scripts_queue;            /* Queue of user scripts to execute. */         // 等待执行的用户脚本队列
     char *announce_ip;  /* IP addr that is gossiped to other sentinels if
                            not NULL. */
     int announce_port;  /* Port that is gossiped to other sentinels if
@@ -508,8 +511,8 @@ const char *preMonitorCfgName[] = {
  * specific defaults. */
 // 覆盖哨兵模式的默认配置
 void initSentinelConfig(void) {
-    server.port = REDIS_SENTINEL_PORT;
-    server.protected_mode = 0; /* Sentinel must be exposed. */  // 哨兵必须暴露在外。
+    server.port = REDIS_SENTINEL_PORT;                          // 哨兵默认端口
+    server.protected_mode = 0; /* Sentinel must be exposed. */  // 关闭保护模式，哨兵必须暴露在外。
 }
 
 void freeSentinelLoadQueueEntry(void *item);

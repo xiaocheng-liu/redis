@@ -743,9 +743,9 @@ typedef struct RedisModuleDigest
 #define OBJ_ENCODING_ZIPLIST 5    /* Encoded as ziplist */                      // ziplist
 #define OBJ_ENCODING_INTSET 6     /* Encoded as intset */                       // intset
 #define OBJ_ENCODING_SKIPLIST 7   /* Encoded as skiplist */                     // skiplist跳表
-#define OBJ_ENCODING_EMBSTR 8     /* Embedded sds string encoding */            //嵌入式的sds
-#define OBJ_ENCODING_QUICKLIST 9  /* Encoded as linked list of ziplists */      //快表 quicklist
-#define OBJ_ENCODING_STREAM 10    /* Encoded as a radix tree of listpacks */    //流 stream
+#define OBJ_ENCODING_EMBSTR 8     /* Embedded sds string encoding */            // 嵌入式的sds
+#define OBJ_ENCODING_QUICKLIST 9  /* Encoded as linked list of ziplists */      // 快表 quicklist
+#define OBJ_ENCODING_STREAM 10    /* Encoded as a radix tree of listpacks */    // 流 stream
 
 #define LRU_BITS 24
 // LRU时钟的最大值
@@ -1466,7 +1466,8 @@ struct redisServer
     } inst_metric[STATS_METRIC_COUNT];
 
 
-    /* Configuration */  // 配置
+    /* Configuration */
+    // 配置
     int verbosity;             /* Loglevel in redis.conf */             // redis.conf配置的日志级别
     int maxidletime;           /* Client timeout in seconds */          //
     int tcpkeepalive;          /* Set SO_KEEPALIVE if non-zero. */
@@ -1758,7 +1759,7 @@ struct redisServer
 
     /* Pubsub */
     // 发布订阅
-    dict *pubsub_channels;      /* Map channels to list of subscribed clients */
+    dict *pubsub_channels;      /* Map channels to list of subscribed clients */        // 将频道映射到已订阅客户端的列表(就是保存客户端和订阅的频道信息)
     list *pubsub_patterns;      /* A list of pubsub_patterns */
     dict *pubsub_patterns_dict; /* A dict of pubsub_patterns */
     int notify_keyspace_events; /* Events to propagate via Pub/Sub. This is an
@@ -3144,20 +3145,17 @@ void hincrbyCommand(client *c);
 
 void hincrbyfloatCommand(client *c);
 
-void subscribeCommand(client *c);
 
-void unsubscribeCommand(client *c);
+// 发布订阅相关
+void subscribeCommand(client *c);   // subscribe命令
+void unsubscribeCommand(client *c); // unsubscribe命令
+void psubscribeCommand(client *c);  // psubscribe命令
+void punsubscribeCommand(client *c);// punsubscribe命令
+void publishCommand(client *c);     // publish命令
+void pubsubCommand(client *c);      // pubsub命令
 
-void psubscribeCommand(client *c);
-
-void punsubscribeCommand(client *c);
-
-void publishCommand(client *c);
-
-void pubsubCommand(client *c);
 
 void watchCommand(client *c);
-
 void unwatchCommand(client *c);
 
 void clusterCommand(client *c);
