@@ -196,7 +196,7 @@ static void writeHandler(aeEventLoop *el, int fd, void *privdata, int mask);
 static void createMissingClients(client c);
 static benchmarkThread *createBenchmarkThread(int index);
 static void freeBenchmarkThread(benchmarkThread *thread);
-static void freeBenchmarkThreads();
+static void freeBenchmarkThreads(void);
 static void *execBenchmarkThread(void *ptr);
 static clusterNode *createClusterNode(char *ip, int port);
 static redisConfig *getRedisConfig(const char *ip, int port,
@@ -205,7 +205,7 @@ static redisContext *getRedisContext(const char *ip, int port,
                                      const char *hostsocket);
 static void freeRedisConfig(redisConfig *cfg);
 static int fetchClusterSlotsConfiguration(client c);
-static void updateClusterSlotsConfiguration();
+static void updateClusterSlotsConfiguration(void);
 int showThroughput(struct aeEventLoop *eventLoop, long long id,
                    void *clientData);
 
@@ -955,7 +955,7 @@ static void showLatencyReport(void) {
     }
 }
 
-static void initBenchmarkThreads() {
+static void initBenchmarkThreads(void) {
     int i;
     if (config.threads) freeBenchmarkThreads();
     config.threads = zmalloc(config.num_threads * sizeof(benchmarkThread*));
@@ -965,7 +965,7 @@ static void initBenchmarkThreads() {
     }
 }
 
-static void startBenchmarkThreads() {
+static void startBenchmarkThreads(void) {
     int i;
     for (i = 0; i < config.num_threads; i++) {
         benchmarkThread *t = config.threads[i];
@@ -1032,7 +1032,7 @@ static void freeBenchmarkThread(benchmarkThread *thread) {
     zfree(thread);
 }
 
-static void freeBenchmarkThreads() {
+static void freeBenchmarkThreads(void) {
     int i = 0;
     for (; i < config.num_threads; i++) {
         benchmarkThread *thread = config.threads[i];
@@ -1093,7 +1093,7 @@ static void freeClusterNode(clusterNode *node) {
     zfree(node);
 }
 
-static void freeClusterNodes() {
+static void freeClusterNodes(void) {
     int i = 0;
     for (; i < config.cluster_node_count; i++) {
         clusterNode *n = config.cluster_nodes[i];
@@ -1112,7 +1112,7 @@ static clusterNode **addClusterNode(clusterNode *node) {
     return config.cluster_nodes;
 }
 
-static int fetchClusterConfiguration() {
+static int fetchClusterConfiguration(void) {
     int success = 1;
     redisContext *ctx = NULL;
     redisReply *reply =  NULL;
@@ -1370,7 +1370,7 @@ cleanup:
 }
 
 /* Atomically update the new slots configuration. */
-static void updateClusterSlotsConfiguration() {
+static void updateClusterSlotsConfiguration(void) {
     pthread_mutex_lock(&config.is_updating_slots_mutex);
     atomicSet(config.is_updating_slots, 1);
     int i;

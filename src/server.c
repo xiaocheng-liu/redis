@@ -3208,6 +3208,7 @@ void adjustOpenFilesLimit(void)
 
 /* Check that server.tcp_backlog can be actually enforced in Linux according
  * to the value of /proc/sys/net/core/somaxconn, or warn about it. */
+// 检查server.tcp_backlog是否可以根据 /proc/sys/net/core/somaxconn 的值在 Linux 中实际执行，或者警告它。
 void checkTcpBacklogSettings(void)
 {
 #ifdef HAVE_PROC_SOMAXCONN
@@ -3352,10 +3353,7 @@ void makeThreadKillable(void)
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 }
 
-/**
- * Redis初始化过程
- * 
- */
+// Redis初始化过程
 void initServer(void)
 {
     int j;
@@ -3364,6 +3362,7 @@ void initServer(void)
     signal(SIGHUP, SIG_IGN);
     signal(SIGPIPE, SIG_IGN);
     setupSignalHandlers();
+
     //【2】设置线程随时响应CANCEL信号，终止线程，以便停止程序。
     makeThreadKillable();
 
@@ -3404,6 +3403,7 @@ void initServer(void)
     server.blocked_last_cron = 0;
     server.blocking_op_nesting = 0;
 
+    // 检查tls配置
     if ((server.tls_port || server.tls_replication || server.tls_cluster)
             && tlsConfigure(&server.tls_ctx_config) == C_ERR)
     {
@@ -3419,9 +3419,10 @@ void initServer(void)
     adjustOpenFilesLimit();
     const char *clk_msg = monotonicInit();
     serverLog(LL_NOTICE, "monotonic clock: %s", clk_msg);
+
     //【6】创建事件循环器。
-    /* 初始化server.el ,注意在这里的aeCreateEventLoop内部调用了epoll_create。
-     * 传入的最大文件描述符个数为客户端最大连接数+宏定义CONFIG_FDSET_INCR的大小*/
+    // 初始化server.el ,注意在这里的aeCreateEventLoop内部调用了epoll_create。
+    // 传入的最大文件描述符个数为客户端最大连接数+宏定义CONFIG_FDSET_INCR的大小
     server.el = aeCreateEventLoop(server.maxclients + CONFIG_FDSET_INCR);
     if (server.el == NULL)
     {
@@ -3430,20 +3431,24 @@ void initServer(void)
                   strerror(errno));
         exit(1);
     }
+
+    // 分配数据库空间
     server.db = zmalloc(sizeof(redisDb) * server.dbnum);
 
 
-    /* 创建侦听 fd */
+    /* 打开用户命令的 TCP 侦听套接字。 */
     /* Open the TCP listening socket for the user commands. */
     //【7】如果配置了server.port，则开启TCP Socket服务，接收用户请求。
     // 如果配置了server.tls_ port，则开启TLS Socket服务，Redis 6.0开始支持TLS连接。
     // 如果配置了server.unixsocket，则开启UNIX Socket服务。如果上面3个选项都没有配置，则报错退出。
     if (server.port != 0 &&
-        listenToPort(server.port, server.ipfd, &server.ipfd_count) == C_ERR)
+        listenToPort(server.port, server.ipfd, &server.ipfd_count) == C_ERR){
         exit(1);
+    }
     if (server.tls_port != 0 &&
-        listenToPort(server.tls_port, server.tlsfd, &server.tlsfd_count) == C_ERR)
+        listenToPort(server.tls_port, server.tlsfd, &server.tlsfd_count) == C_ERR){
         exit(1);
+    }
 
     /* Open the listening Unix domain socket. */
     if (server.unixsocket != NULL)
@@ -3483,14 +3488,18 @@ void initServer(void)
         listSetFreeMethod(server.db[j].defrag_later, (void (*)(void *))sdsfree);
     }
 
-    //【9】evictionPoolAlloc函数初始化LRU/LFU样本池，用于实现LRU/LFU近似算法。继续初始化server中存储运行时数据的相关属性：
+    //【9】evictionPoolAlloc函数初始化LRU/LFU样本池，用于实现LRU/LFU近似算法。
+    // 继续初始化server中存储运行时数据的相关属性：
     // 该数组的大小由宏定义 EVPOOL_SIZE（在 evict.c 文件中）决定，默认是 16 个元素，也就是可以保存 16 个待淘汰的候选键值对。
     evictionPoolAlloc(); /* Initialize the LRU keys pool. */
+
+    // 发布订阅相关
     server.pubsub_channels = dictCreate(&keylistDictType, NULL);
     server.pubsub_patterns = listCreate();
     server.pubsub_patterns_dict = dictCreate(&keylistDictType, NULL);
     listSetFreeMethod(server.pubsub_patterns, freePubsubPattern);
     listSetMatchMethod(server.pubsub_patterns, listMatchPubsubPattern);
+
     server.cronloops = 0;
     server.in_eval = 0;
     server.in_exec = 0;
@@ -3515,16 +3524,19 @@ void initServer(void)
     server.rdb_save_time_last = -1;
     server.rdb_save_time_start = -1;
     server.dirty = 0;
-    resetServerStats();
+    resetServerStats();                 // 重置服务器统计
+
     /* A few stats we don't want to reset: server startup time, and peak mem. */
+    // 我们不想重置的一些统计数据：服务器启动时间和峰值内存。
     server.stat_starttime = time(NULL);
     server.stat_peak_memory = 0;
     server.stat_current_cow_bytes = 0;
     server.stat_rdb_cow_bytes = 0;
     server.stat_aof_cow_bytes = 0;
     server.stat_module_cow_bytes = 0;
-    for (int j = 0; j < CLIENT_TYPE_COUNT; j++)
+    for (j = 0; j < CLIENT_TYPE_COUNT; j++){
         server.stat_clients_type_memory[j] = 0;
+    }
     server.cron_malloc_stats.zmalloc_used = 0;
     server.cron_malloc_stats.process_rss = 0;
     server.cron_malloc_stats.allocator_allocated = 0;
@@ -3550,56 +3562,49 @@ void initServer(void)
     /* TCP新连接是可以读事件，这里指定了处理TCP连接的handler为acceptTcpHandler函数*/
     //【11】分别为TCP Socket、TSL Socks、UNIX Socket注册监听AE_READABLE类型的文件事件，
     // 事件处理函数分别为acceptTcpHandler、acceptTLSHandler、acceptUnixHandler，这些函数负责接收Socket中的新连接，
-    for (j = 0; j < server.ipfd_count; j++)
-    {
+    for (j = 0; j < server.ipfd_count; j++){
         // 注册监听事件，server.ipfd是TCP文件描述符，AE_READABLE可读事件，acceptTcpHandler事件处理回调函数
         if (aeCreateFileEvent(server.el, server.ipfd[j], AE_READABLE,
-                              acceptTcpHandler, NULL) == AE_ERR)
-        {
+                              acceptTcpHandler, NULL) == AE_ERR){
             serverPanic(
                 "Unrecoverable error creating server.ipfd file event.");
         }
     }
-    for (j = 0; j < server.tlsfd_count; j++)
-    {
+    for (j = 0; j < server.tlsfd_count; j++){
         if (aeCreateFileEvent(server.el, server.tlsfd[j], AE_READABLE,
-                              acceptTLSHandler, NULL) == AE_ERR)
-        {
+                              acceptTLSHandler, NULL) == AE_ERR){
             serverPanic(
                 "Unrecoverable error creating server.tlsfd file event.");
         }
     }
     if (server.sofd > 0 && aeCreateFileEvent(server.el, server.sofd, AE_READABLE,
-                                             acceptUnixHandler, NULL) == AE_ERR)
+                                             acceptUnixHandler, NULL) == AE_ERR){
         serverPanic("Unrecoverable error creating server.sofd file event.");
+    }
 
     /* Register a readable event for the pipe used to awake the event loop
      * when a blocked client in a module needs attention. */
     /* 为管道注册一个用于唤醒事件循环的可读事件，需要注意模块中被阻塞的客户端 */
     if (aeCreateFileEvent(server.el, server.module_blocked_pipe[0], AE_READABLE,
-                          moduleBlockedClientPipeReadable, NULL) == AE_ERR)
-    {
+                          moduleBlockedClientPipeReadable, NULL) == AE_ERR){
         serverPanic(
             "Error registering the readable event for the module "
             "blocked clients subsystem.");
     }
 
-    /*  注册before和after睡眠函数(注意要在加载持久化的数据之前进行，因为它会被 
-        processEventsWhileBlocked函数用到 */
     /* Register before and after sleep handlers (note this needs to be done
      * before loading persistence since it is used by processEventsWhileBlocked. */
+    // 注册before和after睡眠函数(注意要在加载持久化的数据之前进行，因为它会被
+    // processEventsWhileBlocked函数用到
     //【12】注册事件循环器的钩子函数，事件循环器在每次阻塞前后都会调用钩子函数。
     aeSetBeforeSleepProc(server.el, beforeSleep);
     aeSetAfterSleepProc(server.el, afterSleep);
 
     /* Open the AOF file if needed. */
     //【13】如果开启了AOF，则预先打开AOF文件。
-    if (server.aof_state == AOF_ON)
-    {
-        server.aof_fd = open(server.aof_filename,
-                             O_WRONLY | O_APPEND | O_CREAT, 0644);
-        if (server.aof_fd == -1)
-        {
+    if (server.aof_state == AOF_ON){
+        server.aof_fd = open(server.aof_filename, O_WRONLY | O_APPEND | O_CREAT, 0644);
+        if (server.aof_fd == -1){
             serverLog(LL_WARNING, "Can't open the append-only file: %s",
                       strerror(errno));
             exit(1);
@@ -3611,17 +3616,17 @@ void initServer(void)
      * at 3 GB using maxmemory with 'noeviction' policy'. This avoids
      * useless crashes of the Redis instance for out of memory. */
     //【14】如果Redis运行在32位操作系统上，由于32位操作系统内存空间限制为4GB，所以将Redis使用内存限制为3GB，避免Redis服务器因内存不足而崩溃。
-    if (server.arch_bits == 32 && server.maxmemory == 0)
-    {
+    if (server.arch_bits == 32 && server.maxmemory == 0){
         serverLog(LL_WARNING, "Warning: 32 bit instance detected but no memory limit set. Setting 3 GB maxmemory limit with 'noeviction' policy now.");
         server.maxmemory = 3072LL * (1024 * 1024); /* 3 GB */
         server.maxmemory_policy = MAXMEMORY_NO_EVICTION;
     }
 
     //【15】如果以Cluster模式启动，则调用clusterInit函数初始化Cluster机制。
-    if (server.cluster_enabled)
+    if (server.cluster_enabled){
         clusterInit();
-    
+    }
+
     //replicationScriptCacheInit函数初始化server.repl_scriptcache_dict属性。
     replicationScriptCacheInit();
     //scriptingInit函数初始化LUA机制。
@@ -6763,16 +6768,18 @@ int main(int argc, char **argv)
     /* Check if we need to start in redis-check-rdb/aof mode. We just execute
      * the program main. However, the program is part of the Redis executable
      * so that we can easily execute an RDB check on loading errors. */
-    // 【5】如果启动程序是redis-check-rdb或redis-check-aof，则执行redis_check_rdb_main或redis_check_aof_main函数，
+    // 【5】如果启动程序是redis-check-rdb或redis-check-aof，
+    // 则执行redis_check_rdb_main或redis_check_aof_main函数，
     // 它们尝试检验并修复RDB、AOF文件后便退出程序。
-    if (strstr(argv[0], "redis-check-rdb") != NULL)
+    if (strstr(argv[0], "redis-check-rdb") != NULL){
         redis_check_rdb_main(argc, argv, NULL);
-    else if (strstr(argv[0], "redis-check-aof") != NULL)
+    }else if (strstr(argv[0], "redis-check-aof") != NULL){
         redis_check_aof_main(argc, argv);
+    }
 
     if (argc >= 2)      // 如果启动参数大于等于2
     {
-        j = 1; /* First option to parse in argv[] */
+        j = 1; /* First option to parse in argv[] */        // 在 argv 中解析的第一个选项
         sds options = sdsempty();
 
         /* Handle special options --help and --version */
@@ -6863,8 +6870,9 @@ int main(int argc, char **argv)
     server.supervised = redisIsSupervised(server.supervised_mode);
     // 守护进程
     int background = server.daemonize && !server.supervised;
-    if (background)
+    if (background){
         daemonize();
+    }
 
     //【12】打印启动日志。
     printStartLog(argc, argv);
@@ -6873,12 +6881,14 @@ int main(int argc, char **argv)
     readOOMScoreAdj();
     //【13】initServer函数初始化Redis运行时数据，aeCreateEventLoop函数创建事件循环器，createPidFile函数创建pid文件。
     initServer();
-    if (background || server.pidfile)
+    if (background || server.pidfile){
         createPidFile();
-    if (server.set_proc_title)
+    }
+    if (server.set_proc_title){
         redisSetProcTitle(NULL);
+    }
 
-    checkTcpBacklogSettings();
+    checkTcpBacklogSettings();      // 检查tcp_backlog
 
     // 如果不是哨兵模式
     if (!server.sentinel_mode)
@@ -6928,10 +6938,12 @@ int main(int argc, char **argv)
                 exit(1);
             }
         }
-        if (server.ipfd_count > 0 || server.tlsfd_count > 0)
+        if (server.ipfd_count > 0 || server.tlsfd_count > 0){
             serverLog(LL_NOTICE, "Ready to accept connections");
-        if (server.sofd > 0)
+        }
+        if (server.sofd > 0){
             serverLog(LL_NOTICE, "The server is now ready to accept connections at %s", server.unixsocket);
+        }
         if (server.supervised_mode == SUPERVISED_SYSTEMD)
         {
             if (!server.masterhost)
@@ -6949,8 +6961,8 @@ int main(int argc, char **argv)
     {
         ACLLoadUsersAtStartup();
         //【15】如果以Sentinel模式启动，则调用sentinelIsRunning函数启动Sentinel机制。
-        InitServerLast();    // 初始化一些后台线程
-        sentinelIsRunning(); // sentinel模式的配置初始化操作
+        InitServerLast();                           // 初始化一些后台线程
+        sentinelIsRunning();                        // sentinel模式的配置初始化操作
         if (server.supervised_mode == SUPERVISED_SYSTEMD)
         {
             redisCommunicateSystemd("STATUS=Ready to accept connections\n");

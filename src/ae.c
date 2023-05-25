@@ -94,6 +94,7 @@ aeEventLoop *aeCreateEventLoop(int setsize) {
     eventLoop->beforesleep = NULL;
     eventLoop->aftersleep = NULL;
     eventLoop->flags = 0;
+
     // 创建poll实例
     if (aeApiCreate(eventLoop) == -1){
         aeDeleteEventLoop(eventLoop);

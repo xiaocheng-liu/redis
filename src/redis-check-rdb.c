@@ -364,6 +364,7 @@ err:
  * status code according to success (RDB is sane) or error (RDB is corrupted).
  * Otherwise if called with a non NULL fp, the function returns C_OK or
  * C_ERR depending on the success or failure. */
+// RDB check main：当 Redis 使用 redis-check-rdb 别名执行时，在 RDB 加载错误期间调用 form server.c。
 int redis_check_rdb_main(int argc, char **argv, FILE *fp) {
     struct timeval tv;
 

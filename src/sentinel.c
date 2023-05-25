@@ -62,23 +62,23 @@ typedef struct sentinelAddr {
 } sentinelAddr;
 
 /* A Sentinel Redis Instance object is monitoring. */
+// Sentinel Redis 实例对象正在监视。
 #define SRI_MASTER  (1<<0)
 #define SRI_SLAVE   (1<<1)
 #define SRI_SENTINEL (1<<2)
-#define SRI_S_DOWN (1<<3)   /* Subjectively down (no quorum). */
-#define SRI_O_DOWN (1<<4)   /* Objectively down (confirmed by others). */
-#define SRI_MASTER_DOWN (1<<5) /* A Sentinel with this flag set thinks that
-                                   its master is down. */
-#define SRI_FAILOVER_IN_PROGRESS (1<<6) /* Failover is in progress for
-                                           this master. */
-#define SRI_PROMOTED (1<<7)            /* Slave selected for promotion. */
+#define SRI_S_DOWN (1<<3)   /* Subjectively down (no quorum). */                                    // 主观下线（无法定人数）。
+#define SRI_O_DOWN (1<<4)   /* Objectively down (confirmed by others). */                           // 客观下线（由其他人证实）。
+#define SRI_MASTER_DOWN (1<<5) /* A Sentinel with this flag set thinks that its master is down. */  // 设置了此标志的哨兵认为它的主人已经下线了。
+#define SRI_FAILOVER_IN_PROGRESS (1<<6) /* Failover is in progress for this master. */              // 此主服务器的故障转移正在进行中。
+#define SRI_PROMOTED (1<<7)            /* Slave selected for promotion. */                          // 被选中进行晋升的奴隶。
 #define SRI_RECONF_SENT (1<<8)     /* SLAVEOF <newmaster> sent. */
-#define SRI_RECONF_INPROG (1<<9)   /* Slave synchronization in progress. */
-#define SRI_RECONF_DONE (1<<10)     /* Slave synchronized with new master. */
-#define SRI_FORCE_FAILOVER (1<<11)  /* Force failover with master up. */
-#define SRI_SCRIPT_KILL_SENT (1<<12) /* SCRIPT KILL already sent on -BUSY */
+#define SRI_RECONF_INPROG (1<<9)   /* Slave synchronization in progress. */                         // 正在进行从属同步。
+#define SRI_RECONF_DONE (1<<10)     /* Slave synchronized with new master. */                       // 从站与新主站同步。
+#define SRI_FORCE_FAILOVER (1<<11)  /* Force failover with master up. */                            // 使用主站强制故障转移。
+#define SRI_SCRIPT_KILL_SENT (1<<12) /* SCRIPT KILL already sent on -BUSY */                        // 脚本终止已在 -BUSY 上发送
 
 /* Note: times are in milliseconds. */
+// 注意：时间以毫秒为单位。
 #define SENTINEL_INFO_PERIOD 10000
 #define SENTINEL_PING_PERIOD 1000
 #define SENTINEL_ASK_PERIOD 1000
@@ -100,7 +100,8 @@ typedef struct sentinelAddr {
 #define SENTINEL_DEFAULT_ANNOUNCE_HOSTNAMES 0
 
 /* Failover machine different states. */
-#define SENTINEL_FAILOVER_STATE_NONE 0  /* No failover in progress. */
+// 故障转移计算机的不同状态。
+#define SENTINEL_FAILOVER_STATE_NONE 0  /* No failover in progress. */              // 没有正在进行的故障转移。
 #define SENTINEL_FAILOVER_STATE_WAIT_START 1  /* Wait for failover_start_time*/
 #define SENTINEL_FAILOVER_STATE_SELECT_SLAVE 2 /* 选择slave晋升 */
 #define SENTINEL_FAILOVER_STATE_SEND_SLAVEOF_NOONE 3 /* Slave -> Master */
@@ -114,21 +115,24 @@ typedef struct sentinelAddr {
 /* Generic flags that can be used with different functions.
  * They use higher bits to avoid colliding with the function specific
  * flags. */
+// 可用于不同函数的泛型标志。它们使用更高的位来避免与特定于函数的标志发生冲突。
 #define SENTINEL_NO_FLAGS 0
 #define SENTINEL_GENERATE_EVENT (1<<16)
 #define SENTINEL_LEADER (1<<17)
 #define SENTINEL_OBSERVER (1<<18)
 
 /* Script execution flags and limits. */
+// 脚本执行标志和限制。
 #define SENTINEL_SCRIPT_NONE 0
 #define SENTINEL_SCRIPT_RUNNING 1
 #define SENTINEL_SCRIPT_MAX_QUEUE 256
 #define SENTINEL_SCRIPT_MAX_RUNNING 16
-#define SENTINEL_SCRIPT_MAX_RUNTIME 60000 /* 60 seconds max exec time. */
+#define SENTINEL_SCRIPT_MAX_RUNTIME 60000 /* 60 seconds max exec time. */   // 60 秒最长执行时间。
 #define SENTINEL_SCRIPT_MAX_RETRY 10
-#define SENTINEL_SCRIPT_RETRY_DELAY 30000 /* 30 seconds between retries. */
+#define SENTINEL_SCRIPT_RETRY_DELAY 30000 /* 30 seconds between retries. */ // 重试间隔 30 秒。
 
 /* SENTINEL SIMULATE-FAILURE command flags. */
+// 哨兵模拟失败命令标志。
 #define SENTINEL_SIMFAILURE_NONE 0
 #define SENTINEL_SIMFAILURE_CRASH_AFTER_ELECTION (1<<0)
 #define SENTINEL_SIMFAILURE_CRASH_AFTER_PROMOTION (1<<1)
@@ -147,7 +151,8 @@ typedef struct sentinelAddr {
  *
  * Links are shared only for Sentinels: master and slave instances have
  * a link with refcount = 1, always. 
- * redis哨兵模式的具体实现，详细可以参考专栏https://blog.csdn.net/xindoo/category_10068113.html */
+ **/
+// redis哨兵模式的具体实现，详细可以参考专栏https://blog.csdn.net/xindoo/category_10068113.html
 typedef struct instanceLink {
     int refcount;          /* Number of sentinelRedisInstance owners. */
     int disconnected;      /* Non-zero if we need to reconnect cc or pc. */
@@ -245,6 +250,7 @@ typedef struct sentinelRedisInstance {
 } sentinelRedisInstance;
 
 /* Main state. */
+// 主状态。
 struct sentinelState {
     char myid[CONFIG_RUN_ID_SIZE+1]; /* This sentinel ID. */
     uint64_t current_epoch;         /* 当前epoch值 */
@@ -268,6 +274,7 @@ struct sentinelState {
 } sentinel;
 
 /* A script execution job. */
+// 脚本执行作业。
 typedef struct sentinelScriptJob {
     int flags;              /* Script job flags: SENTINEL_SCRIPT_* */
     int retry_num;          /* Number of times we tried to execute it. */
@@ -484,6 +491,7 @@ struct redisCommand sentinelcmds[] = {
 
 /* this array is used for sentinel config lookup, which need to be loaded
  * before monitoring masters config to avoid dependency issues */
+// 此数组用于 Sentinel 配置查找，需要在监视主配置之前加载该查找以避免依赖问题
 const char *preMonitorCfgName[] = { 
     "announce-ip",
     "announce-port",
@@ -501,7 +509,7 @@ const char *preMonitorCfgName[] = {
 // 覆盖哨兵模式的默认配置
 void initSentinelConfig(void) {
     server.port = REDIS_SENTINEL_PORT;
-    server.protected_mode = 0; /* Sentinel must be exposed. */
+    server.protected_mode = 0; /* Sentinel must be exposed. */  // 哨兵必须暴露在外。
 }
 
 void freeSentinelLoadQueueEntry(void *item);

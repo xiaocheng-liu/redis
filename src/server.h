@@ -158,6 +158,9 @@ typedef long long ustime_t; /* microsecond time type. */
  * of file descriptors we can handle are server.maxclients + RESERVED_FDS +
  * a few more to stay safe. Since RESERVED_FDS defaults to 32, we add 96
  * in order to make sure of not over provisioning more than 128 fds. */
+// 在配置服务器 eventloop 时，我们对其进行设置，以便我们可以处理的文件描述符总数为
+// server.maxclients + RESERVED_FDS + 更多以保持安全。由于 RESERVED_FDS 默认为 32，
+// 因此我们添加了 96，以确保不会过度配置超过 128 个 fd。
 #define CONFIG_FDSET_INCR (CONFIG_MIN_RESERVED_FDS + 96)
 
 /* OOM Score Adjustment classes. */
@@ -1293,13 +1296,11 @@ struct clusterState;
 #define CHILD_TYPE_LDB 3
 #define CHILD_TYPE_MODULE 4
 
-/**
- * redisServer结构体存储服务端配置项、运行时数据
- * 
- */
+// redisServer结构体存储服务端配置项、运行时数据
 struct redisServer
 {
-    /* General */   // 常规
+    /* General */
+    // 常规
     pid_t pid;                /* Main process pid. */                               // 主进程ID
     pthread_t main_thread_id; /* Main thread id */                                  // 主线程ID
     char *configfile;         /* Absolute config file path, or NULL */              // 配置文件路径
@@ -1335,7 +1336,8 @@ struct redisServer
     int client_pause_in_transaction;     /* Was a client pause executed during this Exec? */    // 在此执行期间是否执行了客户端暂停？
 
 
-    /* Modules */   // 模块
+    /* Modules */
+    // 模块
     dict *moduleapi;            /* Exported core APIs dictionary for modules. */        // 导出模块的核心 API 字典。
     dict *sharedapi;            /* Like moduleapi but containing the APIs that
                                    modules share with each other. */                    // 与模块API类似，但包含模块相互共享的API。
@@ -1347,7 +1349,8 @@ struct redisServer
     int child_type;             /* Type of current child */                     // 当前子项的类型
 
 
-    /* Networking */    // 网络
+    /* Networking */
+    // 网络
     int port;                                 /* TCP listening port */                          // TCP 侦听端口
     int tls_port;                             /* TLS listening port */                          // TLS 侦听端口
     int tcp_backlog;                          /* TCP listen() backlog */                        // TCP 侦听（） 积压工作
@@ -1386,7 +1389,8 @@ struct redisServer
     long long events_processed_while_blocked; /* processEventsWhileBlocked() */
 
 
-    /* RDB / AOF loading information */     // RDB AOF 加载信息
+    /* RDB / AOF loading information */
+    // RDB AOF 加载信息
     volatile sig_atomic_t loading; /* We are loading data from disk if true */  // 如果为 true，我们正在从磁盘加载数据
     off_t loading_total_bytes;
     off_t loading_rdb_used_mem;
@@ -1479,7 +1483,7 @@ struct redisServer
     int active_defrag_cycle_max;                 /* maximal effort for defrag in CPU percentage */
     unsigned long active_defrag_max_scan_fields; /* maximum number of fields of set/hash/zset/list to process from within the main dict scan */
     size_t client_max_querybuf_len;              /* Limit for client query buffer length */
-    int dbnum;                                   /* Total number of configured DBs */
+    int dbnum;                                   /* Total number of configured DBs */   // 数据库数量
     int supervised;                              /* 1 if supervised, 0 otherwise. */
     int supervised_mode;                         /* See SUPERVISED_* */
     int daemonize;                               /* True if running as a daemon */      // 如果作为守护程序运行，则为 True
