@@ -56,12 +56,7 @@
 
 const char *SDS_NOINIT = "SDS_NOINIT";
 
-/**
- * @brief 根据类型获取结构体大小
- * 
- * @param type sds类型
- * @return int 
- */
+ // 根据类型获取结构体大小
 static inline int sdsHdrSize(char type) {
     switch (type & SDS_TYPE_MASK) {
         case SDS_TYPE_5:
@@ -124,9 +119,7 @@ static inline size_t sdsTypeMaxSize(char type) {
  * and 'initlen'.
  *  
  * If NULL is used for 'init' the string is initialized with zero bytes.
- * 如果 NULL 用于“init”，则字符串初始化为零字节。
  * If SDS_NOINIT is used, the buffer is left uninitialized;
- * 如果使用SDS_NOINIT，则缓冲区保持未初始化状态;
  *
  * The string is always null-termined (all the sds strings are, always) so
  * even if you create an sds string with:
@@ -136,17 +129,21 @@ static inline size_t sdsTypeMaxSize(char type) {
  * You can print the string with printf() as there is an implicit \0 at the
  * end of the string. However the string is binary safe and can contain
  * \0 characters in the middle, as the length is stored in the sds header. */
-/*
- *   新建一个sds字符串，包含特殊的初始化指针和初始长度 
- */
+// 新建一个sds字符串，包含特殊的初始化指针和初始长度
+// 如果 NULL 用于“init”，则字符串初始化为零字节。
+// 如果使用SDS_NOINIT，则缓冲区保持未初始化状态;
 sds _sdsnewlen(const void *init, size_t initlen, int trymalloc) {
     void *sh;
     sds s;
+
     // 根据初始化的长度确定用哪种sdshdr
     char type = sdsReqType(initlen);
-    // SDS_TYPE_5 强制转换为 SDS_TYPE_8,这样侧面验证了 sdshdr5 从未被使用
+    // SDS_TYPE_5 强制转换为 SDS_TYPE_8, 这样侧面验证了 sdshdr5 从未被使用
     /* 空字符串大概率之后会append，但sdshdr5不适合用来append，所以直接替换成sdshdr8 */
-    if (type == SDS_TYPE_5 && initlen == 0) type = SDS_TYPE_8;
+    if (type == SDS_TYPE_5 && initlen == 0){
+        type = SDS_TYPE_8;
+    }
+
     // 得到sds的header的大小
     int hdrlen = sdsHdrSize(type);
     // 指向flags的指针
@@ -160,18 +157,24 @@ sds _sdsnewlen(const void *init, size_t initlen, int trymalloc) {
     sh = trymalloc ?
          s_trymalloc_usable(hdrlen + initlen + 1, &usable) :
          s_malloc_usable(hdrlen + initlen + 1, &usable);
-    if (sh == NULL) return NULL;
+    if (sh == NULL){
+        return NULL;
+    }
+
     // 如果init等于SDS_NOINIT
-    if (init == SDS_NOINIT)
+    if (init == SDS_NOINIT){
         init = NULL;
-    else if (!init)
+    }else if (!init){
         memset(sh, 0, hdrlen + initlen + 1);
+    }
+
     /* 注意：返回的s并不是直接指向sds的指针，而是指向sds中字符串的指针，sds的指针还需要根据s和hdrlen计算出来 */
     // s 此时指向buf
     s = (char *) sh + hdrlen;
     // fp指向flags
     fp = ((unsigned char *) s) - 1;
     usable = usable - hdrlen - 1;
+
     // 对不同类型的 SDS 可分配空间进行截断
     if (usable > sdsTypeMaxSize(type))
         usable = sdsTypeMaxSize(type);
@@ -209,8 +212,9 @@ sds _sdsnewlen(const void *init, size_t initlen, int trymalloc) {
             break;
         }
     }
-    if (initlen && init)
+    if (initlen && init){
         memcpy(s, init, initlen);   // 拷贝数据部分
+    }
     s[initlen] = '\0';              // 与C字符串兼容
     return s;                       // 返回创建的sds字符串指针
 }
@@ -906,7 +910,7 @@ void sdstoupper(sds s) {
     for (j = 0; j < len; j++) s[j] = toupper(s[j]);
 }
 
-/* 字符串大小的比较，因为sds兼容了c的字符串，所以可以直接用c的函数memcmp() 
+/*
  *
  * Return value:
  *
@@ -917,6 +921,7 @@ void sdstoupper(sds s) {
  * If two strings share exactly the same prefix, but one of the two has
  * additional characters, the longer string is considered to be greater than
  * the smaller one. */
+// 字符串大小的比较，因为sds兼容了c的字符串，所以可以直接用c的memcmp函数
 int sdscmp(const sds s1, const sds s2) {
     size_t l1, l2, minlen;
     int cmp;

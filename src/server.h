@@ -1450,8 +1450,8 @@ struct redisServer
     long long stat_dump_payload_sanitizations;            /* Number deep dump payloads integrity validations. */
     long long stat_io_reads_processed;                    /* Number of read events processed by IO / Main threads */
     long long stat_io_writes_processed;                   /* Number of write events processed by IO / Main threads */
-    redisAtomic long long stat_total_reads_processed;     /* Total number of read events processed 已处理的读取事件总数*/
-    redisAtomic long long stat_total_writes_processed;    /* Total number of write events processed 已处理的写入事件总数*/
+    redisAtomic long long stat_total_reads_processed;     /* Total number of read events processed */                   // 已处理的读取事件总数
+    redisAtomic long long stat_total_writes_processed;    /* Total number of write events processed */                  // 已处理的写入事件总数
 
 
     /* The following two are used to track instantaneous metrics, like
@@ -2109,7 +2109,7 @@ void acceptTcpHandler(aeEventLoop *el, int fd, void *privdata, int mask);
 void acceptTLSHandler(aeEventLoop *el, int fd, void *privdata, int mask);
 void acceptUnixHandler(aeEventLoop *el, int fd, void *privdata, int mask);
 
-void readQueryFromClient(connection *conn);     // 读取来自客户端的查询
+void readQueryFromClient(connection *conn);                             // 读取来自客户端的查询
 void addReplyNull(client *c);
 void addReplyNullArray(client *c);
 void addReplyBool(client *c, int b);
@@ -2591,7 +2591,7 @@ void removeSignalHandlers(void);
 struct redisCommand *lookupCommand(sds name);
 struct redisCommand *lookupCommandByCString(const char *s);
 struct redisCommand *lookupCommandOrOriginal(sds name);
-void call(client *c, int flags);
+void call(client *c, int flags);            // 执行命令
 void propagate(struct redisCommand *cmd, int dbid, robj **argv, int argc, int flags);
 void alsoPropagate(struct redisCommand *cmd, int dbid, robj **argv, int argc, int target);
 void redisOpArrayInit(redisOpArray *oa);

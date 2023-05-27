@@ -3254,6 +3254,7 @@ int listenToPort(int port, int *fds, int *count)
     char *default_bindaddr[2] = {"*", "-::*"};
 
     /* Force binding of 0.0.0.0 if no bind address is specified. */
+    // 如果未指定绑定地址，则强制绑定 0.0.0.0。
     if (server.bindaddr_count == 0)
     {
         bindaddr_count = 2;
@@ -4037,6 +4038,7 @@ void call(client *c, int flags)
 
     /* Send the command to clients in MONITOR mode if applicable.
      * Administrative commands are considered too dangerous to be shown. */
+    // 将命令发送到处于监视模式的客户端（如果适用）。管理命令被认为太危险而无法显示。
     if (listLength(server.monitors) &&
         !server.loading &&
         !(c->cmd->flags & (CMD_SKIP_MONITOR | CMD_ADMIN)))
@@ -4046,18 +4048,19 @@ void call(client *c, int flags)
 
     /* Initialization: clear the flags that must be set by the command on
      * demand, and initialize the array for additional commands propagation. */
+    // 初始化：清除命令必须按需设置的标志，并初始化数组以进行其他命令传播。
     c->flags &= ~(CLIENT_FORCE_AOF | CLIENT_FORCE_REPL | CLIENT_PREVENT_PROP);
     redisOpArray prev_also_propagate = server.also_propagate;
     redisOpArrayInit(&server.also_propagate);
 
     /* Call the command. */
+    // 调用该命令。
     dirty = server.dirty;
     prev_err_count = server.stat_total_error_replies;
     updateCachedTime(0);
     elapsedStart(&call_timer);
 
     // 会调用客户端命令对应的 redisCommand 的处理方法
-    // 执行命令
     c->cmd->proc(c);
     const long duration = elapsedUs(call_timer);
     c->duration = duration;
@@ -4069,6 +4072,7 @@ void call(client *c, int flags)
      * We leverage a static variable (prev_err_count) to retain
      * the counter across nested function calls and avoid logging
      * the same error twice. */
+    // 如果需要，更新失败的命令调用。我们利用静态变量 （prev_err_count） 在嵌套函数调用中保留计数器，并避免两次记录相同的错误。
     if ((server.stat_total_error_replies - prev_err_count) > 0)
     {
         real_cmd->failed_calls++;
@@ -4076,6 +4080,7 @@ void call(client *c, int flags)
 
     /* After executing command, we will close the client after writing entire
      * reply if it is set 'CLIENT_CLOSE_AFTER_COMMAND' flag. */
+    // 执行命令后，如果设置了“CLIENT_CLOSE_AFTER_COMMAND”标志，我们将在写入整个回复后关闭客户端。
     if (c->flags & CLIENT_CLOSE_AFTER_COMMAND)
     {
         c->flags &= ~CLIENT_CLOSE_AFTER_COMMAND;
@@ -4352,7 +4357,7 @@ int processCommand(client *c)
         return C_OK;
     }
     else if ((c->cmd->arity > 0 && c->cmd->arity != c->argc) ||
-             (c->argc < -c->cmd->arity))    // 检查参数个数是否正确 错误的话进入
+             (c->argc < -c->cmd->arity))            // 检查参数个数是否正确 错误的话进入
     {
         rejectCommandFormat(c, "wrong number of arguments for '%s' command",
                             c->cmd->name);
@@ -4361,9 +4366,10 @@ int processCommand(client *c)
 
     sds args = sdsempty();
     int i;
-    for (i = 1; i < c->argc && sdslen(args) < 128; i++)
+    for (i = 1; i < c->argc && sdslen(args) < 128; i++){
         args = sdscatprintf(args, "`%.*s`, ", 128 - (int)sdslen(args), (char *)c->argv[i]->ptr);
-    // printf("command `%s`, with args is: %s \n", (char *)c->argv[0]->ptr, args);
+        // printf("command `%s`, with args is: %s \n", (char *)c->argv[0]->ptr, args);
+    }
     sdsfree(args);
 
     int is_write_command = (c->cmd->flags & CMD_WRITE) ||
@@ -4384,8 +4390,7 @@ int processCommand(client *c)
     int auth_required = (!(DefaultUser->flags & USER_FLAG_NOPASS) ||
                          (DefaultUser->flags & USER_FLAG_DISABLED)) &&
                         !c->authenticated;
-    if (auth_required)
-    {
+    if (auth_required){
         /* AUTH and HELLO and no auth modules are valid even in
          * non-authenticated state. */
         if (!(c->cmd->flags & CMD_NO_AUTH))
@@ -4503,6 +4508,7 @@ int processCommand(client *c)
 
     /* Don't accept write commands if there are problems persisting on disk
      * and if this is a master instance. */
+    // 如果磁盘上仍然存在问题，并且这是主实例，则不要接受写入命令。
     int deny_write_type = writeCommandsDeniedByDiskError();
     if (deny_write_type != DISK_ERROR_TYPE_NONE &&
         server.masterhost == NULL &&
@@ -4519,6 +4525,7 @@ int processCommand(client *c)
 
     /* Don't accept write commands if there are not enough good slaves and
      * user configured the min-slaves-to-write option. */
+    // 如果没有足够的好从站并且用户配置了最小从站写入选项，则不要接受写入命令。
     if (server.masterhost == NULL &&
         server.repl_min_slaves_to_write &&
         server.repl_min_slaves_max_lag &&
@@ -4531,6 +4538,7 @@ int processCommand(client *c)
 
     /* Don't accept write commands if this is a read only slave. But
      * accept write commands if this is our master. */
+    // 如果这是只读从属服务器，则不要接受写入命令。但是，如果这是我们的主人，请接受写入命令。
     if (server.masterhost && server.repl_slave_ro &&
         !(c->flags & CLIENT_MASTER) &&
         is_write_command)
@@ -4541,6 +4549,7 @@ int processCommand(client *c)
 
     /* Only allow a subset of commands in the context of Pub/Sub if the
      * connection is in RESP2 mode. With RESP3 there are no limits. */
+    // 仅当连接处于 RESP2 模式时，才允许在 PubSub 上下文中执行命令子集。RESP3没有限制。s
     if ((c->flags & CLIENT_PUBSUB && c->resp == 2) &&
         c->cmd->proc != pingCommand &&
         c->cmd->proc != subscribeCommand &&
@@ -4559,6 +4568,7 @@ int processCommand(client *c)
     /* Only allow commands with flag "t", such as INFO, SLAVEOF and so on,
      * when slave-serve-stale-data is no and we are a slave with a broken
      * link with master. */
+    // 只允许带有标志“t”的命令，例如INFO，SLAVEOF等，当slave-serv-stale-data为no并且我们是与master链接断开的从属时。
     if (server.masterhost && server.repl_state != REPL_STATE_CONNECTED &&
         server.repl_serve_stale_data == 0 &&
         is_denystale_command)
@@ -4569,6 +4579,7 @@ int processCommand(client *c)
 
     /* Loading DB? Return an error if the command has not the
      * CMD_LOADING flag. */
+    // 正在加载数据库？如果命令没有 CMD_LOADING 标志，则返回错误。
     if (server.loading && is_denyloading_command)
     {
         rejectCommand(c, shared.loadingerr);
@@ -4602,6 +4613,7 @@ int processCommand(client *c)
 
     /* If the server is paused, block the client until
      * the pause has ended. Replicas are never paused. */
+    // 如果服务器已暂停，请阻止客户端，直到暂停结束。副本永远不会暂停。
     if (!(c->flags & CLIENT_SLAVE) &&
         ((server.client_pause_type == CLIENT_PAUSE_ALL) ||
          (server.client_pause_type == CLIENT_PAUSE_WRITE && is_may_replicate_command)))

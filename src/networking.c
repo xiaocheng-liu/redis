@@ -523,6 +523,7 @@ void afterErrorReply(client *c, const char *s, size_t len) {
 
 /* The 'err' object is expected to start with -ERRORCODE and end with \r\n.
  * Unlike addReplyErrorSds and others alike which rely on addReplyErrorLength. */
+// “err”对象应以 -ERRORCODE 开头，以 \r\n 结尾。与addReplyErrorSds和其他依赖于addReplyErrorLength的类似产品不同。
 void addReplyErrorObject(client *c, robj *err) {
     addReply(c, err);
     afterErrorReply(c, err->ptr, sdslen(err->ptr)-2); /* Ignore trailing \r\n */
@@ -536,6 +537,7 @@ void addReplyError(client *c, const char *err) {
 
 /* See addReplyErrorLength for expectations from the input string. */
 /* As a side effect the SDS string is freed. */
+// 请参阅 addReplyErrorLength 了解输入字符串的期望值。作为副作用，SDS 字符串被释放。
 void addReplyErrorSds(client *c, sds err) {
     addReplyErrorLength(c,err,sdslen(err));
     afterErrorReply(c,err,sdslen(err));
@@ -841,13 +843,15 @@ void addReplyNullArray(client *c) {
 }
 
 /* Create the length prefix of a bulk reply, example: $2234 */
+// 创建批量回复的长度前缀，例如：2234
 void addReplyBulkLen(client *c, robj *obj) {
     size_t len = stringObjectLen(obj);
 
     addReplyLongLongWithPrefix(c,len,'$');
 }
 
-/* Add a Redis Object as a bulk reply */    // 作为批回复
+/* Add a Redis Object as a bulk reply */
+// 作为批回复
 void addReplyBulk(client *c, robj *obj) {
     addReplyBulkLen(c,obj);
     addReply(c,obj);
@@ -855,6 +859,7 @@ void addReplyBulk(client *c, robj *obj) {
 }
 
 /* Add a C buffer as bulk reply */
+// 添加 C 缓冲区作为批量回复
 void addReplyBulkCBuffer(client *c, const void *p, size_t len) {
     addReplyLongLongWithPrefix(c,len,'$');
     addReplyProto(c,p,len);
@@ -862,6 +867,7 @@ void addReplyBulkCBuffer(client *c, const void *p, size_t len) {
 }
 
 /* Add sds to reply (takes ownership of sds and frees it) */
+// 将 sds 添加到回复（获取 sds 的所有权并释放它）
 void addReplyBulkSds(client *c, sds s)  {
     addReplyLongLongWithPrefix(c,sdslen(s),'$');
     addReplySds(c,s);
@@ -877,6 +883,7 @@ void setDeferredReplyBulkSds(client *c, void *node, sds s) {
 }
 
 /* Add a C null term string as bulk reply */
+// 添加 C 空术语字符串作为批量回复
 void addReplyBulkCString(client *c, const char *s) {
     if (s == NULL) {
         addReplyNull(c);
@@ -886,6 +893,7 @@ void addReplyBulkCString(client *c, const char *s) {
 }
 
 /* Add a long long as a bulk reply */
+// 添加长整型作为批量回复
 void addReplyBulkLongLong(client *c, long long ll) {
     char buf[64];
     int len;
@@ -927,6 +935,7 @@ void addReplyVerbatim(client *c, const char *s, size_t len, const char *ext) {
  * This function is typically invoked by from commands that support
  * subcommands in response to the 'help' subcommand. The help array
  * is terminated by NULL sentinel. */
+// 添加 C 字符串数组作为带有标题的状态回复。此函数通常由支持子命令的命令调用，以响应“help”子命令。帮助数组由 NULL 哨兵终止。
 void addReplyHelp(client *c, const char **help) {
     sds cmd = sdsnew((char*) c->argv[0]->ptr);
     void *blenp = addReplyDeferredLen(c);
@@ -2244,19 +2253,15 @@ void processInputBuffer(client *c) {
     }
 }
 
-/**
- * @brief 从客户端读取查询命令
- * 
- * @param conn 
- */
+ // 从客户端读取查询命令
 void readQueryFromClient(connection *conn) {
-    client *c = connGetPrivateData(conn);   // 获取查询客户端数据
+    client *c = connGetPrivateData(conn);           // 获取查询客户端数据
     int nread, readlen;
     size_t qblen;
 
     /* Check if we want to read from the client later when exiting from
      * the event loop. This is the case if threaded I/O is enabled. */
-     /* 判断是否需要推迟客户端的读取操作 */
+     // 判断是否需要推迟客户端的读取操作
      // 检查是否开启多线程，如果是则把 client 加入到异步队列后返回
     if (postponeClientRead(c)) return;
 
@@ -2265,7 +2270,7 @@ void readQueryFromClient(connection *conn) {
     atomicIncr(server.stat_total_reads_processed, 1);
 
     // 读入长度（默认为 16 MB）
-    readlen = PROTO_IOBUF_LEN;  // 正常IO缓存大小
+    readlen = PROTO_IOBUF_LEN;              // 正常IO缓存大小
     /* If this is a multi bulk request, and we are processing a bulk reply
      * that is large enough, try to maximize the probability that the query
      * buffer contains exactly the SDS string representing the object, even
@@ -2292,8 +2297,8 @@ void readQueryFromClient(connection *conn) {
     // 这些滞留内容也许不能完整构成一个符合协议的命令，
     qblen = sdslen(c->querybuf);
     // 如果有需要，更新缓冲区内容长度的峰值（peak）
-    if (c->querybuf_peak < qblen) c->querybuf_peak = qblen; // 修改最近读的最大值
-    c->querybuf = sdsMakeRoomFor(c->querybuf, readlen); // 开辟空间
+    if (c->querybuf_peak < qblen) c->querybuf_peak = qblen;             // 修改最近读的最大值
+    c->querybuf = sdsMakeRoomFor(c->querybuf, readlen);       // 开辟空间
     // 从已连接的套接字中读取客户端的请求数据到输入缓冲区
     nread = connRead(c->conn, c->querybuf+qblen, readlen);  // 读取字节
     // 读入出错

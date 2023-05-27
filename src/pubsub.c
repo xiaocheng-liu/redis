@@ -177,7 +177,7 @@ int pubsubSubscribeChannel(client *c, robj *channel) {
     if (dictAdd(c->pubsub_channels,channel,NULL) == DICT_OK) {
         retval = 1;
         incrRefCount(channel);
-        // 从 pubsub_channels 字典中取出保存着所有订阅了 channel 的客户端的链表
+        // 从 server.pubsub_channels 字典中取出保存着所有订阅了 channel 的客户端的链表
         // 如果 channel 不存在于字典，那么添加进去
         de = dictFind(server.pubsub_channels,channel);
         if (de == NULL) {
@@ -212,6 +212,7 @@ int pubsubUnsubscribeChannel(client *c, robj *channel, int notify) {
         // channel 移除成功，表示客户端订阅了这个频道，执行以下代码
         retval = 1;
         /* Remove the client from the channel -> clients list hash table */
+        // 从通道中删除客户端 -> 客户端列表哈希表
         de = dictFind(server.pubsub_channels,channel);
         serverAssertWithInfo(c,NULL,de != NULL);
         clients = dictGetVal(de);
@@ -264,6 +265,7 @@ int pubsubSubscribePattern(client *c, robj *pattern) {
         listAddNodeTail(clients,c);
     }
     /* Notify the client */
+    // 回复客户端
     addReplyPubsubPatSubscribed(c,pattern);
     return retval;
 }
