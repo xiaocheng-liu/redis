@@ -1574,6 +1574,8 @@ struct redisServer
     int child_info_nread;   /* Num of bytes of the last read from pipe */
     /* Propagation of commands in AOF / replication */
     redisOpArray also_propagate; /* Additional command to propagate. */
+
+
     /* Logging */
     // 日志
     char *logfile;         /* Path of log file 日志文件路径*/
@@ -1636,6 +1638,8 @@ struct redisServer
     int repl_diskless_load;               /* Slave parse RDB directly from the socket.
                                      * see REPL_DISKLESS_LOAD_* enum */                     // 从站直接从套接字解析RDB。参见REPL_DISKLESS_LOAD_枚举
     int repl_diskless_sync_delay;         /* Delay to start a diskless repl BGSAVE. */
+
+
     /* Replication (slave) */
     /* 必须要这个用户才能登录 */
     char *masteruser;                   /* AUTH with this user and masterauth with master */    // 此用户的身份验证和主用户的主身份验证
@@ -1727,6 +1731,7 @@ struct redisServer
 
 
     /* Client side caching. */
+    // 客户端缓存。
     unsigned int tracking_clients;  /* # of clients with tracking enabled.*/
     size_t tracking_table_max_keys; /* Max number of keys in tracking table. */
     /* Sort parameters - qsort_r() is only available under BSD so we
@@ -1735,7 +1740,10 @@ struct redisServer
     int sort_alpha;
     int sort_bypattern;
     int sort_store;
+
+
     /* Zip structure config, see redis.conf for more information  */
+    // zip结构配置，更多信息见redis.conf
     size_t hash_max_ziplist_entries;
     size_t hash_max_ziplist_value;
     size_t set_max_intset_entries;
@@ -1744,9 +1752,13 @@ struct redisServer
     size_t hll_sparse_max_bytes;
     size_t stream_node_max_bytes;
     long long stream_node_max_entries;
+
+
     /* List parameters */
     int list_max_ziplist_size;
     int list_compress_depth;
+
+
     /* time cache */
     redisAtomic time_t unixtime; /* Unix time sampled every cron cycle. */
     time_t timezone;             /* Cached timezone. As set by tzset(). */
@@ -1760,32 +1772,32 @@ struct redisServer
     /* Pubsub */
     // 发布订阅
     dict *pubsub_channels;      /* Map channels to list of subscribed clients */        // 将频道映射到已订阅客户端的列表(就是保存客户端和订阅的频道信息)
-    list *pubsub_patterns;      /* A list of pubsub_patterns */
+    list *pubsub_patterns;      /* A list of pubsub_patterns */                         // pubsub_patterns列表
     dict *pubsub_patterns_dict; /* A dict of pubsub_patterns */
     int notify_keyspace_events; /* Events to propagate via Pub/Sub. This is an
                                    xor of NOTIFY_... flags. */
     /* Cluster */
     // 集群
-    int cluster_enabled;               /* Is cluster enabled? */
-    mstime_t cluster_node_timeout;     /* Cluster node timeout. */
-    char *cluster_configfile;          /* Cluster auto-generated config file name. */
-    struct clusterState *cluster;      /* State of the cluster */
-    int cluster_migration_barrier;     /* Cluster replicas migration barrier. */
-    int cluster_slave_validity_factor; /* Slave max data age for failover. */
+    int cluster_enabled;               /* Is cluster enabled? */                        // 是否启用了群集？
+    mstime_t cluster_node_timeout;     /* Cluster node timeout. */                      // 群集节点超时。
+    char *cluster_configfile;          /* Cluster auto-generated config file name. */   // 群集自动生成的配置文件名。
+    struct clusterState *cluster;      /* State of the cluster */                       // 群集的状态
+    int cluster_migration_barrier;     /* Cluster replicas migration barrier. */        // 群集副本迁移屏障。
+    int cluster_slave_validity_factor; /* Slave max data age for failover. */           // 故障转移的从站最大数据期限。
     int cluster_require_full_coverage; /* If true, put the cluster down if
-                                          there is at least an uncovered slot.*/
+                                          there is at least an uncovered slot.*/        // 如果为 true，则如果至少有一个未覆盖的插槽，请关闭群集。
     int cluster_slave_no_failover;     /* Prevent slave from starting a failover
-                                       if the master is in failure state. */
-    char *cluster_announce_ip;         /* IP address to announce on cluster bus. */
-    int cluster_announce_port;         /* base port to announce on cluster bus. */
-    int cluster_announce_bus_port;     /* bus port to announce on cluster bus. */
+                                       if the master is in failure state. */            // 防止从站启动故障转移，如果主站处于故障状态。
+    char *cluster_announce_ip;         /* IP address to announce on cluster bus. */     // 要在群集总线上宣布的 IP 地址。
+    int cluster_announce_port;         /* base port to announce on cluster bus. */      // 要在群集总线上宣布的基本端口。
+    int cluster_announce_bus_port;     /* bus port to announce on cluster bus. */       // 要在群集总线上公告的总线端口。
     int cluster_module_flags;          /* Set of flags that Redis modules are able
                                       to set in order to suppress certain
                                       native Redis Cluster features. Check the
-                                      REDISMODULE_CLUSTER_FLAG_*. */
+                                      REDISMODULE_CLUSTER_FLAG_*. */                    // Redis 模块能够设置的标志集，用于抑制某些本机 Redis 集群功能。检查REDISMODULE_CLUSTER_FLAG_。
     int cluster_allow_reads_when_down; /* Are reads allowed when the cluster
-                                        is down? */
-    int cluster_config_file_lock_fd;   /* cluster config fd, will be flock */
+                                        is down? */                                     // 集群关闭时是否允许读取？
+    int cluster_config_file_lock_fd;   /* cluster config fd, will be flock */           // 集群配置 FD，将蜂拥而至
 
 
     /* Scripting */
@@ -1819,16 +1831,21 @@ struct redisServer
     int lazyfree_lazy_server_del;
     int lazyfree_lazy_user_del;
     int lazyfree_lazy_user_flush;
+
+
     /* Latency monitor */
+    // 延迟监视器
     long long latency_monitor_threshold;
     dict *latency_events;
+
+
     /* ACLs */
-    char *acl_filename;           /* ACL Users file. NULL if not configured. */
-    unsigned long acllog_max_len; /* Maximum length of the ACL LOG list. */
+    char *acl_filename;           /* ACL Users file. NULL if not configured. */     // ACL 用户文件。空（如果未配置）。
+    unsigned long acllog_max_len; /* Maximum length of the ACL LOG list. */         // ACL 日志列表的最大长度。
     sds requirepass;              /* Remember the cleartext password set with               
                                      the old "requirepass" directive for
-                                     backward compatibility with Redis <= 5. */             
-    int acl_pubusub_default;      /* Default ACL pub/sub channels flag */
+                                     backward compatibility with Redis <= 5. */     // 请记住使用旧的“requirepass”指令设置的明文密码，以便向后兼容Redis <= 5。
+    int acl_pubusub_default;      /* Default ACL pub/sub channels flag */           // 默认 ACL 发布子频道标志
 
 
     /* Assert & bug reporting */

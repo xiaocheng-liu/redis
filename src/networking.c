@@ -1720,6 +1720,7 @@ int handleClientsWithPendingWrites(void) {
 }
 
 /* resetClient prepare the client to process the next command */
+// 重置客户端准备客户端以处理下一个命令
 void resetClient(client *c) {
     redisCommandProc *prevcmd = c->cmd ? c->cmd->proc : NULL;
 
@@ -1905,6 +1906,11 @@ static void setProtocolError(const char *errstr, client *c) {
  * This function is called if processInputBuffer() detects that the next
  * command is in RESP format, so the first byte in the command is found
  * to be '*'. Otherwise for inline commands processInlineBuffer() is called. */
+// 处理客户端“c”的查询缓冲区，为命令执行设置客户端参数向量。
+// 如果运行函数后客户端有一个格式良好的命令可供处理，则返回C_OK，否则C_ERR是否仍有读取更多缓冲区才能获取完整命令。
+// 当出现协议错误时，该函数还会返回C_ERR：在这种情况下，客户端结构设置为回复错误并关闭连接。
+// 如果 processInputBuffer（） 检测到下一个命令是 RESP 格式，则调用此函数，因此发现命令中的第一个字节为 ''。
+// 否则，对于内联命令，将调用processInlineBuffer（）。
 int processMultibulkBuffer(client *c) {
     char *newline = NULL;
     int ok;
@@ -1912,9 +1918,11 @@ int processMultibulkBuffer(client *c) {
 
     if (c->multibulklen == 0) {
         /* The client should have been reset */
+        // 客户端应已重置
         serverAssertWithInfo(c,NULL,c->argc == 0);
 
         /* Multi bulk length cannot be read without a \r\n */
+        // 没有 \r\n 就无法读取多批量长度
         newline = strchr(c->querybuf+c->qb_pos,'\r');
         if (newline == NULL) {
             if (sdslen(c->querybuf)-c->qb_pos > PROTO_INLINE_MAX_SIZE) {
@@ -1925,11 +1933,13 @@ int processMultibulkBuffer(client *c) {
         }
 
         /* Buffer should also contain \n */
+        // 缓冲区还应包含\n
         if (newline-(c->querybuf+c->qb_pos) > (ssize_t)(sdslen(c->querybuf)-c->qb_pos-2))
             return C_ERR;
 
         /* We know for sure there is a whole line since newline != NULL,
          * so go ahead and find out the multi bulk length. */
+        // 我们肯定知道有一整行，因为换行符 ！= NULL，所以继续找出多块长度。
         serverAssertWithInfo(c,NULL,c->querybuf[c->qb_pos] == '*');
         ok = string2ll(c->querybuf+1+c->qb_pos,newline-(c->querybuf+1+c->qb_pos),&ll);
         if (!ok || ll > 1024*1024) {
@@ -2117,7 +2127,7 @@ void commandProcessed(client *c) {
 int processCommandAndResetClient(client *c) {
     int deadclient = 0;
     server.current_client = c;
-    // 准备解析命令
+    // 解析命令
     if (processCommand(c) == C_OK) {
         // 命令处理
         commandProcessed(c);
@@ -2194,7 +2204,9 @@ void processInputBuffer(client *c) {
         }
 
         if (c->reqtype == PROTO_REQ_INLINE) {       // 如果请求类型是内联型
-            if (processInlineBuffer(c) != C_OK) break;
+            if (processInlineBuffer(c) != C_OK) {
+                break;
+            }
             /* If the Gopher mode and we got zero or one argument, process
              * the request in Gopher mode. To avoid data race, Redis won't
              * support Gopher if enable io threads to read queries. */
@@ -2211,7 +2223,9 @@ void processInputBuffer(client *c) {
                 break;
             }
         } else if (c->reqtype == PROTO_REQ_MULTIBULK) {     // 如果是协议型
-            if (processMultibulkBuffer(c) != C_OK) break;
+            if (processMultibulkBuffer(c) != C_OK){         // 解析客户端的命令
+                break;
+            }
         } else {
             serverPanic("Unknown request type");
         }
@@ -2255,7 +2269,7 @@ void processInputBuffer(client *c) {
 
  // 从客户端读取查询命令
 void readQueryFromClient(connection *conn) {
-    client *c = connGetPrivateData(conn);           // 获取查询客户端数据
+    client *c = connGetPrivateData(conn);                       // 获取查询客户端数据
     int nread, readlen;
     size_t qblen;
 
