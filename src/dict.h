@@ -31,13 +31,12 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- * 
- * 
- * 字典是Redis中的一个非常重要的底层数据结构，其应用相当广泛。
- * Redis的数据库就是使用字典作为底层实现的，对数据库的增、删、查、改都是建立在对字典的操作上。
- * 此外，字典还是Redis中哈希键的底层实现，当一个哈希键包含的键值对比较多，或者键值对中的元素都是比较长的字符串时，Redis就会使用字典作为哈希键的底层实现。
+ *
  */
-
+// 哈希表实现。
+// 字典是Redis中的一个非常重要的底层数据结构，其应用相当广泛。
+// Redis的数据库就是使用字典作为底层实现的，对数据库的增、删、查、改都是建立在对字典的操作上。
+// 此外，字典还是Redis中哈希键的底层实现，当一个哈希键包含的键值对比较多，或者键值对中的元素都是比较长的字符串时，Redis就会使用字典作为哈希键的底层实现。
 #ifndef __DICT_H
 #define __DICT_H
 
@@ -52,11 +51,10 @@
 #define DICT_ERR 1
 
 /* Unused arguments generate annoying warnings... */
+// 未使用的参数会生成烦人的警告...
 #define DICT_NOTUSED(V) ((void) V)
 
-/*
- * hash表中的实体，保存KV信息  
- */ 
+// hash表中的实体，保存KV信息
 typedef struct dictEntry {
     void *key;  // 键
 
@@ -72,44 +70,40 @@ typedef struct dictEntry {
 
 // 字典类型函数
 typedef struct dictType {
-    uint64_t (*hashFunction)(const void *key);          // 对key生成hash值 
-    void *(*keyDup)(void *privdata, const void *key);   // 对key进行拷贝 
-    void *(*valDup)(void *privdata, const void *obj);   // 对val进行拷贝
-    int (*keyCompare)(void *privdata, const void *key1, const void *key2); // 两个key的对比函数
-    void (*keyDestructor)(void *privdata, void *key);   // key的销毁
-    void (*valDestructor)(void *privdata, void *obj);   // val的销毁
-    int (*expandAllowed)(size_t moreMem, double usedRatio);  //判断指定字典是否允许哈希表扩展。
+    uint64_t (*hashFunction)(const void *key);                              // 对key生成hash值
+    void *(*keyDup)(void *privdata, const void *key);                       // 对key进行拷贝
+    void *(*valDup)(void *privdata, const void *obj);                       // 对val进行拷贝
+    int (*keyCompare)(void *privdata, const void *key1, const void *key2);  // 两个key的对比函数
+    void (*keyDestructor)(void *privdata, void *key);                       // key的销毁
+    void (*valDestructor)(void *privdata, void *obj);                       // val的销毁
+    int (*expandAllowed)(size_t moreMem, double usedRatio);                 // 判断指定字典是否允许哈希表扩展。
 } dictType;
 
-/*  保存每个hashtable的数据信息，当前大小 hash掩码 使用量 */
+// 保存每个hashtable的数据信息，当前大小 hash掩码 使用量
 typedef struct dictht {
-    dictEntry **table;  // hashtable中的连续空间 
-    unsigned long size; // table的大小 
-    unsigned long sizemask;  // hashtable的掩码,总是等于 size - 1，用于计算索引值
-    unsigned long used; // 哈希表实际存储的 dictEntry 数量
+    dictEntry **table;                  // hashtable中的连续空间
+    unsigned long size;                 // table的大小
+    unsigned long sizemask;             // hashtable的掩码,总是等于 size - 1，用于计算索引值
+    unsigned long used;                 // 哈希表实际存储的 dictEntry 数量
 } dictht;
 
-/**
- * @brief 字典, 每个字典有两个hash表，用于实现渐进式rehash
- * 
- */
+// 字典, 每个字典有两个hash表，用于实现渐进式rehash
 typedef struct dict {
-    dictType *type;         // dictType结构的指针，封装了很多数据操作的函数指针，
-                            // 使得dict能处理任意数据类型（类似面向对象语言的interface，可以重载其方法）
-    void *privdata;         // 一个私有数据指针(privdata),由调用者在创建dict的时候传进来。
-    dictht ht[2];           // 两个hashtable，ht[0]为主，ht[1]在渐进式hash的过程中才会用到。
-    long rehashidx;         /* 增量hash过程过程中记录rehash执行到第几个bucket了，当rehashidx == -1表示没有在做rehash */
-    unsigned long iterators; /* 正在运行的迭代器数量 */
+    dictType *type;                                                                 // dictType结构的指针，封装了很多数据操作的函数指针，使得dict能处理任意数据类型（类似面向对象语言的interface，可以重载其方法）
+    void *privdata;                                                                 // 一个私有数据指针(privdata),由调用者在创建dict的时候传进来。
+    dictht ht[2];                                                                   // 两个hashtable，ht[0]为主，ht[1]在渐进式hash的过程中才会用到。
+    long rehashidx;         /* rehashing not in progress if rehashidx == -1 */      // 增量hash过程过程中记录rehash执行到第几个bucket了，当rehashidx == -1表示没有在做rehash
+    unsigned long iterators; /* number of iterators currently running */            // 正在运行的迭代器数量
 } dict;
 
-/* 字典的迭代器。如果safe为1，说明他是一个安全的迭代器，可以调用dictAdd、dictFind或者其他dict函数。
- * 否则，说明当前迭代器是非安全的，只能调用dictNext()方法 */
+// 字典的迭代器。如果safe为1，说明他是一个安全的迭代器，可以调用dictAdd、dictFind或者其他dict函数。
+// 否则，说明当前迭代器是非安全的，只能调用dictNext()方法
 typedef struct dictIterator { 
-    dict *d;        // 正在迭代的字典
-    long index;     // 正在迭代哈希表的索引
-    int table, safe;// 正在迭代哈希表的的号码（0或者1）；是否安全
-    dictEntry *entry, *nextEntry; // 当前哈希表节点；当前哈希表节点的后继节点
-    /* 不安全迭代器的指纹，用于误用检测 */
+    dict *d;                                                                        // 正在迭代的字典
+    long index;                                                                     // 正在迭代哈希表的索引
+    int table, safe;                                                                // 正在迭代哈希表的的号码（0或者1）；是否安全
+    dictEntry *entry, *nextEntry;                                                   // 当前哈希表节点；当前哈希表节点的后继节点
+    /* unsafe iterator fingerprint for misuse detection.*/                          // 不安全迭代器的指纹，用于误用检测
     long long fingerprint;
 } dictIterator;
 
@@ -190,11 +184,13 @@ typedef void (dictScanBucketFunction)(void *privdata, dictEntry **bucketref);
 #else
 #define randomULong() random()
 #endif
+
+
 /* dict所有的API */
-dict *dictCreate(dictType *type, void *privDataPtr);    // 创建dict 
-int dictExpand(dict *d, unsigned long size);            // 扩缩容
+dict *dictCreate(dictType *type, void *privDataPtr);                // 创建dict
+int dictExpand(dict *d, unsigned long size);                        // 扩缩容
 int dictTryExpand(dict *d, unsigned long size);         
-int dictAdd(dict *d, void *key, void *val);             // 添加k-v
+int dictAdd(dict *d, void *key, void *val);                         // 添加k-v
 dictEntry *dictAddRaw(dict *d, void *key, dictEntry **existing);    // 添加的key对应的dictEntry 
 dictEntry *dictAddOrFind(dict *d, void *key);                       // 添加或者查找 
 int dictReplace(dict *d, void *key, void *val);                     // 替换key对应的value，如果没有就添加新的k-v
@@ -207,14 +203,12 @@ void *dictFetchValue(dict *d, const void *key);                     // 获取key
 int dictResize(dict *d);                                            // 重设dict的大小，主要是缩容用的
 
 /************    迭代器相关     *********** */
-dictIterator *dictGetIterator(dict *d);         // 创建一个不安全的迭代器
-dictIterator *dictGetSafeIterator(dict *d);     // 创建一个安全的迭代器
-dictEntry *dictNext(dictIterator *iter);        // 返回迭代器指向的当前节点，如果迭代完毕返回NULL
-void dictReleaseIterator(dictIterator *iter);   // 释放迭代器
-
-/************    迭代器相关     *********** */
-dictEntry *dictGetRandomKey(dict *d);           // 随机返回一个entry 
-dictEntry *dictGetFairRandomKey(dict *d);       // 随机返回一个entry，但返回每个entry的概率会更均匀 
+dictIterator *dictGetIterator(dict *d);                             // 创建一个不安全的迭代器
+dictIterator *dictGetSafeIterator(dict *d);                         // 创建一个安全的迭代器
+dictEntry *dictNext(dictIterator *iter);                            // 返回迭代器指向的当前节点，如果迭代完毕返回NULL
+void dictReleaseIterator(dictIterator *iter);                       // 释放迭代器
+dictEntry *dictGetRandomKey(dict *d);                               // 随机返回一个entry
+dictEntry *dictGetFairRandomKey(dict *d);                           // 随机返回一个entry，但返回每个entry的概率会更均匀
 unsigned int dictGetSomeKeys(dict *d, dictEntry **des, unsigned int count); // 获取dict中的部分数据 
 void dictGetStats(char *buf, size_t bufsize, dict *d);      
 uint64_t dictGenHashFunction(const void *key, int len);

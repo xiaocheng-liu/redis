@@ -44,7 +44,7 @@ extern const char *SDS_NOINIT;
 #include <stdarg.h>
 #include <stdint.h>
 
-typedef char *sds;
+typedef char *sds;          // Redis 使用 typedef 给 char* 类型定义了一个别名，这个别名就是 sds
 
 /* 针对不同的字符串设置了不同的结构体，主要差别在于len和alloc的数据类型，不同长度使用
  * 不同的数据类型，以达到节省内存的目的。  

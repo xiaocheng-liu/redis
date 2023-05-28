@@ -32,7 +32,19 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-
+/**
+ * 通过对源码的局部解读，可以看到字典的实现基于哈希表，而C语言没有这类型，Redis 自行实现了一套，采用 dict > ht > table > headptr 的结构。
+ * 然而哈希冲突是个很重要的问题（当有两个或以上数量的键被分配到了哈希表数组的同一个索引上面的情况），这里采用了公开链地址法解决该问题，
+ * 由于每个哈希节点都一个 next 指针，所以当多个节点分配到同一个索引上时，可形成单向链表。这也难免在查找采用循环结构。
+ * 不过这也是添加新节点总是加到链表头部的原因，不可能迭代到尾节点追加，太废了。
+ *
+ * 在哈希节点增加或减少时，也会触发 rehash 过程，对哈希表的大小进行相应的调整，ht[1] 就是使用在该情况的。
+ * 在扩展时，ht[1] 的大小总是第一个大于等于 ht[0].used+1的2^n。如果收缩，ht[1].size=ht[0].used*2。
+ * 这样可有效避免对哈希表进行频繁的调整，造成不必要的损耗。rehash 过程就是，重新计算键的哈希值和索引值，
+ * 将键值对放置到 ht[1] 的相应位置，都从 ht[0] 迁移到 ht[1] 后，释放 ht[0]，将 ht[1] 设置为 ht[0]，ht[1] 会创建新的空白哈希表，为下一次准备。
+ * 当然迁移过程并不是一次性完成，而是渐进式完成。主要是键值对过多时，该过程对机器性能影响太大。
+ *
+ */
 #include "fmacros.h"
 
 #include <stdio.h>
@@ -118,8 +130,7 @@ static void _dictReset(dictht *ht)
 }
 
 /* 创建一个新的dict */
-dict *dictCreate(dictType *type,
-        void *privDataPtr)
+dict *dictCreate(dictType *type, void *privDataPtr)
 {
     // 分配内存
     dict *d = zmalloc(sizeof(*d));
@@ -129,8 +140,7 @@ dict *dictCreate(dictType *type,
 }
 
 /* 初始化dict */
-int _dictInit(dict *d, dictType *type,
-        void *privDataPtr)
+int _dictInit(dict *d, dictType *type, void *privDataPtr)
 {
     // 初始化两个哈希表的各项属性值
     _dictReset(&d->ht[0]);
@@ -164,7 +174,7 @@ int dictResize(dict *d)
 /* Expand or create the hash table,
  * when malloc_failed is non-NULL, it'll avoid panic if malloc fails (in which case it'll be set to 1).
  * Returns DICT_OK if expand was performed, and DICT_ERR if skipped. */
-/* dict的创建和扩容 */ 
+// dict的创建和扩容
 // 当 malloc_failed 为 non-NULL 时，分配内存失败时不会出现终止程序（在这种情况下，它就是1）。
 int _dictExpand(dict *d, unsigned long size, int* malloc_failed)
 {
@@ -234,10 +244,9 @@ int dictTryExpand(dict *d, unsigned long size) {
  * guaranteed that this function will rehash even a single bucket, since it
  * will visit at max N*10 empty buckets in total, otherwise the amount of
  * work it does would be unbound and the function may block for a long time. 
- * redis渐进式hash，采用分批的方式，逐渐将ht[0]依下标转移到ht[2],避免了hashtable扩容时大量
- * 数据迁移导致的性能问题
- * 参数n是指这次rehash只做n个bucket */
-
+ */
+// redis渐进式hash，采用分批的方式，逐渐将ht[0]依下标转移到ht[2],避免了hashtable扩容时大量数据迁移导致的性能问题
+// 参数n是指这次rehash只做n个bucket
 // 执行n个步骤的增量rehash过程（渐进式）。如果仍有键要从旧哈希表移动到新哈希表，则返回1，否则返回0。
 int dictRehash(dict *d, int n) {
     /* 最大空bucket数量，如果遇到empty_visits个空bucket，直接结束当前rehash的过程 */
@@ -284,13 +293,11 @@ int dictRehash(dict *d, int n) {
     /* 检测是否已对全表做完了rehash */
     // 检测是否完全转移
     if (d->ht[0].used == 0) {
-        zfree(d->ht[0].table);  // 释放旧ht所占用的内存空间  
-        d->ht[0] = d->ht[1];  // ht[0]始终是在用ht，ht[1]始终是新ht，ht0全迁移到ht1后会交换下  
-        // // 重置 ht[1]
-        _dictReset(&d->ht[1]);
-        // 标识 rehash 结束
-        d->rehashidx = -1;   
-        return 0;  // 如果全表hash完，返回0
+        zfree(d->ht[0].table);      // 释放旧ht所占用的内存空间
+        d->ht[0] = d->ht[1];            // ht[0]始终是在用ht，ht[1]始终是新ht，ht0全迁移到ht1后会交换下
+        _dictReset(&d->ht[1]);       // 重置 ht[1]
+        d->rehashidx = -1;              // 标识 rehash 结束
+        return 0;                       // 如果全表hash完，返回0
     }
 
     /* 还需要继续做hash返回1 */
@@ -305,10 +312,11 @@ long long timeInMilliseconds(void) {
     return (((long long)tv.tv_sec)*1000)+(tv.tv_usec/1000);
 }
 
-/* 在空闲之余分部分cpu时间执行渐进式hash  
+/*
  * Rehash in ms+"delta" milliseconds. The value of "delta" is larger 
  * than 0, and is smaller than 1 in most cases. The exact upper bound 
  * depends on the running time of dictRehash(d,100).*/
+// 在空闲之余分部分cpu时间执行渐进式hash
 int dictRehashMilliseconds(dict *d, int ms) {
     if (d->iterators > 0) return 0;
 
@@ -330,7 +338,8 @@ int dictRehashMilliseconds(dict *d, int ms) {
  * This function is called by common lookup or update operations in the
  * dictionary so that the hash table automatically migrates from H1 to H2
  * while it is actively used. 
- * 调用一次此函数，可以执行一步渐进式hash */
+ */
+// 调用一次此函数，可以执行一步渐进式hash
 // 单节点 rehash。如果 pauserehash==0。
 static void _dictRehashStep(dict *d) {
     if (d->iterators == 0) dictRehash(d,1);
@@ -340,8 +349,7 @@ static void _dictRehashStep(dict *d) {
 int dictAdd(dict *d, void *key, void *val)
 {
     dictEntry *entry = dictAddRaw(d,key,NULL);  
-    // 
-    if (!entry) return DICT_ERR;  
+    if (!entry) return DICT_ERR;
     dictSetVal(d, entry, val);
     return DICT_OK;
 }
@@ -734,7 +742,7 @@ dictEntry *dictGetRandomKey(dict *d)
         listlen++;
     }
     listele = random() % listlen;   // 随机节点位置
-    he = orighe;    // 归还
+    he = orighe;                    // 归还
     while(listele--) he = he->next; // 循环到目标节点为止
     return he;
 }
@@ -761,7 +769,8 @@ dictEntry *dictGetRandomKey(dict *d)
  * of continuous elements to run some kind of algorithm or to produce
  * statistics. However the function is much faster than dictGetRandomKey()
  * at producing N elements.
- * 随机返回dict中的部分key，返回值是返回key的数量 */
+ */
+// 随机返回dict中的部分key，返回值是返回key的数量
 // 对字典进行采样，随机返回几个键。
 unsigned int dictGetSomeKeys(dict *d, dictEntry **des, unsigned int count) {
     unsigned long j; /* internal hash table id, 0 or 1. */
@@ -1387,17 +1396,3 @@ int main(int argc, char **argv) {
     end_benchmark("Removing and adding");
 }
 #endif
-
-/**
- * 通过对源码的局部解读，可以看到字典的实现基于哈希表，而C语言没有这类型，Redis 自行实现了一套，采用 dict > ht > table > headptr 的结构。
- * 然而哈希冲突是个很重要的问题（当有两个或以上数量的键被分配到了哈希表数组的同一个索引上面的情况），这里采用了公开链地址法解决该问题，
- * 由于每个哈希节点都一个 next 指针，所以当多个节点分配到同一个索引上时，可形成单向链表。这也难免在查找采用循环结构。
- * 不过这也是添加新节点总是加到链表头部的原因，不可能迭代到尾节点追加，太废了。
- *
- * 在哈希节点增加或减少时，也会触发 rehash 过程，对哈希表的大小进行相应的调整，ht[1] 就是使用在该情况的。
- * 在扩展时，ht[1] 的大小总是第一个大于等于 ht[0].used+1的2^n。如果收缩，ht[1].size=ht[0].used*2。
- * 这样可有效避免对哈希表进行频繁的调整，造成不必要的损耗。rehash 过程就是，重新计算键的哈希值和索引值，
- * 将键值对放置到 ht[1] 的相应位置，都从 ht[0] 迁移到 ht[1] 后，释放 ht[0]，将 ht[1] 设置为 ht[0]，ht[1] 会创建新的空白哈希表，为下一次准备。
- * 当然迁移过程并不是一次性完成，而是渐进式完成。主要是键值对过多时，该过程对机器性能影响太大。
- * 
- */

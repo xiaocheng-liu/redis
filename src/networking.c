@@ -383,9 +383,10 @@ void addReply(client *c, robj *obj) {
     // 判断是否推迟执行客户端写操作
     if (prepareClientToWrite(c) != C_OK) return;
 
-    if (sdsEncodedObject(obj)) {                                                // 是否字符串编码
-        if (_addReplyToBuffer(c,obj->ptr,sdslen(obj->ptr)) != C_OK)  // 添加字符串到缓存不成功
-            _addReplyProtoToList(c,obj->ptr,sdslen(obj->ptr));       // 添加原型数据到列表
+    if (sdsEncodedObject(obj)) {                                                        // 是否字符串编码
+        if (_addReplyToBuffer(c,obj->ptr,sdslen(obj->ptr)) != C_OK){          // 添加字符串到缓存不成功
+            _addReplyProtoToList(c,obj->ptr,sdslen(obj->ptr));                // 添加原型数据到列表
+        }
     } else if (obj->encoding == OBJ_ENCODING_INT) {                             // 整型编码
         /* For integer encoded strings we just convert it into a string
          * using our optimized function, and attach the resulting string
@@ -393,8 +394,9 @@ void addReply(client *c, robj *obj) {
         // 对整型编码的字符串，我们值需要使用我们的优化函数转化为字符串，添加结果字符串到输出缓存。
         char buf[32];
         size_t len = ll2string(buf,sizeof(buf),(long)obj->ptr);      // 转字符串
-        if (_addReplyToBuffer(c,buf,len) != C_OK)                               // 添加字符串到缓存不成功
+        if (_addReplyToBuffer(c,buf,len) != C_OK){                              // 添加字符串到缓存不成功
             _addReplyProtoToList(c,buf,len);                                    // 添加到输出列表
+        }
     } else {
         serverPanic("Wrong obj->encoding in addReply()");   // 编码错误
     }
@@ -3711,10 +3713,12 @@ void startThreadedIO(void) {
 void stopThreadedIO(void) {
     /* We may have still clients with pending reads when this function
      * is called: handle them before stopping the threads. */
+    // 调用此函数时，我们可能仍有客户端具有挂起的读取：在停止线程之前处理它们。
     handleClientsWithPendingReadsUsingThreads();
     serverAssert(server.io_threads_active == 1);
-    for (int j = 1; j < server.io_threads_num; j++)
+    for (int j = 1; j < server.io_threads_num; j++){
         pthread_mutex_lock(&io_threads_mutex[j]);
+    }
     server.io_threads_active = 0;
 }
 
@@ -3753,7 +3757,10 @@ int handleClientsWithPendingWritesUsingThreads(void) {
     }
 
     /* Start threads if needed. */
-    if (!server.io_threads_active) startThreadedIO();
+    // 根据需要启动线程。
+    if (!server.io_threads_active) {
+        startThreadedIO();
+    }
 
     /* Distribute the clients across N different lists. */
     listIter li;

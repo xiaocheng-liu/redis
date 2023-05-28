@@ -1383,9 +1383,9 @@ struct redisServer
     int protected_mode;                       /* Don't accept external connections. */
     int gopher_enabled;                       /* If true the server will reply to gopher
                                                     queries. Will still serve RESP2 queries. */
-    int io_threads_num;                       /* Number of IO threads to use. */
-    int io_threads_do_reads;                  /* Read and parse from IO threads? */
-    int io_threads_active;                    /* Is IO threads currently active? */
+    int io_threads_num;                       /* Number of IO threads to use. */                // 要使用的 IO 线程数。
+    int io_threads_do_reads;                  /* Read and parse from IO threads? */             // 从 IO 线程读取和解析？
+    int io_threads_active;                    /* Is IO threads currently active? */             // IO 线程当前是否处于活动状态？
     long long events_processed_while_blocked; /* processEventsWhileBlocked() */
 
 
