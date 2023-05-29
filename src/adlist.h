@@ -39,25 +39,25 @@ typedef struct listNode {
     void *value;           // 值，可以是任意类型
 } listNode;
 
-// Redis为adlist定义了一个迭代器结构，其能正序和逆序的访问list结构
+// Redis为list定义了一个迭代器结构，其能正序和逆序的访问list结构
 typedef struct listIter {
     listNode *next;             // 指向下一个节点
     int direction;              // 方向参数，正序和逆序
 } listIter;
 
 // 双端链表本身
+// list就是一个双向链表
 typedef struct list {
-    listNode *head;           // 指向链表头节点
-    listNode *tail;           // 指向链表尾节点
-    void *(*dup)(void *ptr);  // 用来复制节点的函数，主要用于深拷贝 
-    void (*free)(void *ptr);  // 释放节点的函数
+    listNode *head;             // 指向链表头节点
+    listNode *tail;             // 指向链表尾节点
+    void *(*dup)(void *ptr);    // 用来复制节点的函数，主要用于深拷贝
+    void (*free)(void *ptr);    // 释放节点的函数
     int (*match)(void *ptr, void *key); // 校验给定的key是否和节点中的node匹配，用于查找
     unsigned long len; //长度
-} list; // list就是一个双向链表 
+} list;
 
-/* Functions implemented as macros 
-    Redis对其结构体提供了一系列的宏定义函数，方便操作其结构体参数
-*/
+/* Functions implemented as macros */
+// Redis对其结构体提供了一系列的宏定义函数，方便操作其结构体参数
 #define listLength(l) ((l)->len)                    // 获取list的长度
 #define listFirst(l) ((l)->head)                    // 获取list的头节点
 #define listLast(l) ((l)->tail)                     // 获取list的尾节点
@@ -73,7 +73,8 @@ typedef struct list {
 #define listGetFreeMethod(l) ((l)->free)            // 获取节点值释放函数
 #define listGetMatchMethod(l) ((l)->match)          // 获取节点值匹配函数
 
-/* Prototypes 原型*/
+/* Prototypes */
+// 函数原型
 list *listCreate(void);                             // 创建
 void listRelease(list *list);                       // 释放
 void listEmpty(list *list);                         // 判断是否为空

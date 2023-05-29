@@ -2275,19 +2275,20 @@ int checkPrefixCollisionsOrReply(client *c, robj **prefix, size_t numprefix);
 /* List data type */
 // 列表数据类型
 void listTypeTryConversion(robj *subject, robj *value);
-void listTypePush(robj *subject, robj *value, int where);
-robj *listTypePop(robj *subject, int where);
-unsigned long listTypeLength(const robj *subject);
-listTypeIterator *listTypeInitIterator(robj *subject, long index, unsigned char direction);
-void listTypeReleaseIterator(listTypeIterator *li);
-int listTypeNext(listTypeIterator *li, listTypeEntry *entry);
+void listTypePush(robj *subject, robj *value, int where);           // push
+robj *listTypePop(robj *subject, int where);                        // pop
+unsigned long listTypeLength(const robj *subject);                  // 获取list长度
+listTypeIterator *listTypeInitIterator(robj *subject, long index, unsigned char direction); // 获取list迭代器
+void listTypeReleaseIterator(listTypeIterator *li);                 // 释放list迭代器内存
+int listTypeNext(listTypeIterator *li, listTypeEntry *entry);       // 当前节点是否有下一个节点
 robj *listTypeGet(listTypeEntry *entry);
-void listTypeInsert(listTypeEntry *entry, robj *value, int where);
-int listTypeEqual(listTypeEntry *entry, robj *o);
-void listTypeDelete(listTypeIterator *iter, listTypeEntry *entry);
+void listTypeInsert(listTypeEntry *entry, robj *value, int where);  // list插入
+int listTypeEqual(listTypeEntry *entry, robj *o);                   // 判断给定的对象是否是当前节点
+void listTypeDelete(listTypeIterator *iter, listTypeEntry *entry);  // list删除
 void listTypeConvert(robj *subject, int enc);
-robj *listTypeDup(robj *o);
+robj *listTypeDup(robj *o);                                         // 复制
 void unblockClientWaitingData(client *c);
+void pushGenericCommand(client *c, int where, int xx);
 void popGenericCommand(client *c, int where);
 void listElementsRemoved(client *c, robj *key, int where, robj *o, long count);
 
@@ -2930,12 +2931,14 @@ char *redisGitDirty(void);
 uint64_t redisBuildId(void);
 char *redisBuildIdString(void);
 
+
+
 /* Commands prototypes */
 //命令原型
 void authCommand(client *c);    // auth命令
 void pingCommand(client *c);    // ping命令
 void echoCommand(client *c);    // echo命令
-void commandCommand(client *c);
+void commandCommand(client *c); // command命令
 void setCommand(client *c);     // set命令
 void setnxCommand(client *c);   // setnx命令
 void setexCommand(client *c);
@@ -3009,157 +3012,81 @@ void sortCommand(client *c);
 void lremCommand(client *c);
 void lposCommand(client *c);
 void rpoplpushCommand(client *c);
-
 void lmoveCommand(client *c);
-
 void infoCommand(client *c);
-
 void mgetCommand(client *c);
-
 void monitorCommand(client *c);
-
 void expireCommand(client *c);
-
 void expireatCommand(client *c);
-
 void pexpireCommand(client *c);
-
 void pexpireatCommand(client *c);
-
 void getsetCommand(client *c);
-
 void ttlCommand(client *c);
-
 void touchCommand(client *c);
-
 void pttlCommand(client *c);
-
 void persistCommand(client *c);
-
 void replicaofCommand(client *c);
-
 void roleCommand(client *c);
-
 void debugCommand(client *c);
-
 void msetCommand(client *c);
-
 void msetnxCommand(client *c);
-
 void zaddCommand(client *c);
-
 void zincrbyCommand(client *c);
-
 void zrangeCommand(client *c);
-
 void zrangebyscoreCommand(client *c);
-
 void zrevrangebyscoreCommand(client *c);
-
 void zrangebylexCommand(client *c);
-
 void zrevrangebylexCommand(client *c);
-
 void zcountCommand(client *c);
-
 void zlexcountCommand(client *c);
-
 void zrevrangeCommand(client *c);
-
 void zcardCommand(client *c);
-
 void zremCommand(client *c);
-
 void zscoreCommand(client *c);
-
 void zmscoreCommand(client *c);
-
 void zremrangebyscoreCommand(client *c);
-
 void zremrangebylexCommand(client *c);
-
 void zpopminCommand(client *c);
-
 void zpopmaxCommand(client *c);
-
 void bzpopminCommand(client *c);
-
 void bzpopmaxCommand(client *c);
-
 void zrandmemberCommand(client *c);
-
 void multiCommand(client *c);
-
 void execCommand(client *c);
-
 void discardCommand(client *c);
-
 void blpopCommand(client *c);
-
 void brpopCommand(client *c);
-
 void brpoplpushCommand(client *c);
-
 void blmoveCommand(client *c);
-
 void appendCommand(client *c);
-
 void strlenCommand(client *c);
-
 void zrankCommand(client *c);
-
 void zrevrankCommand(client *c);
-
 void hsetCommand(client *c);
-
 void hsetnxCommand(client *c);
-
 void hgetCommand(client *c);
-
 void hmsetCommand(client *c);
-
 void hmgetCommand(client *c);
-
 void hdelCommand(client *c);
-
 void hlenCommand(client *c);
-
 void hstrlenCommand(client *c);
-
 void zremrangebyrankCommand(client *c);
-
 void zunionstoreCommand(client *c);
-
 void zinterstoreCommand(client *c);
-
 void zdiffstoreCommand(client *c);
-
 void zunionCommand(client *c);
-
 void zinterCommand(client *c);
-
 void zrangestoreCommand(client *c);
-
 void zdiffCommand(client *c);
-
 void zscanCommand(client *c);
-
 void hkeysCommand(client *c);
-
 void hvalsCommand(client *c);
-
 void hgetallCommand(client *c);
-
 void hexistsCommand(client *c);
-
 void hscanCommand(client *c);
-
 void hrandfieldCommand(client *c);
-
 void configCommand(client *c);
-
 void hincrbyCommand(client *c);
-
 void hincrbyfloatCommand(client *c);
 
 

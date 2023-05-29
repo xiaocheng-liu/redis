@@ -2267,7 +2267,7 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData)
     /* 每5秒输出客户端连接信息 */
     if (!server.sentinel_mode)
     {
-        run_with_period(5000)
+        run_with_period(10000)
         {
             serverLog(LL_DEBUG,
                       "%lu clients connected (%lu replicas), %zu bytes in use",
@@ -4061,6 +4061,7 @@ void call(client *c, int flags)
     elapsedStart(&call_timer);
 
     // 会调用客户端命令对应的 redisCommand 的处理方法
+    serverLog(LL_DEBUG,"命令名称：%s", c->cmd->name);
     c->cmd->proc(c);
     const long duration = elapsedUs(call_timer);
     c->duration = duration;

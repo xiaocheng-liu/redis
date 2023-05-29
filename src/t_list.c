@@ -38,6 +38,7 @@
  *
  * There is no need for the caller to increment the refcount of 'value' as
  * the function takes care of it if needed. */
+// 在指定的list加入一个元素
 void listTypePush(robj *subject, robj *value, int where) {
     if (subject->encoding == OBJ_ENCODING_QUICKLIST) {
         int pos = (where == LIST_HEAD) ? QUICKLIST_HEAD : QUICKLIST_TAIL;
@@ -54,6 +55,7 @@ void *listPopSaver(unsigned char *data, unsigned int sz) {
     return createStringObject((char*)data,sz);
 }
 
+// 推出一个元素
 robj *listTypePop(robj *subject, int where) {
     long long vlong;
     robj *value = NULL;
@@ -71,6 +73,7 @@ robj *listTypePop(robj *subject, int where) {
     return value;
 }
 
+// list长度
 unsigned long listTypeLength(const robj *subject) {
     if (subject->encoding == OBJ_ENCODING_QUICKLIST) {
         return quicklistCount(subject->ptr);
@@ -80,6 +83,7 @@ unsigned long listTypeLength(const robj *subject) {
 }
 
 /* Initialize an iterator at the specified index. */
+// 在指定的索引处初始化迭代器。
 listTypeIterator *listTypeInitIterator(robj *subject, long index,
                                        unsigned char direction) {
     listTypeIterator *li = zmalloc(sizeof(listTypeIterator));
@@ -101,6 +105,7 @@ listTypeIterator *listTypeInitIterator(robj *subject, long index,
 }
 
 /* Clean up the iterator. */
+// 清理迭代器。
 void listTypeReleaseIterator(listTypeIterator *li) {
     zfree(li->iter);
     zfree(li);
@@ -109,6 +114,7 @@ void listTypeReleaseIterator(listTypeIterator *li) {
 /* Stores pointer to current the entry in the provided entry structure
  * and advances the position of the iterator. Returns 1 when the current
  * entry is in fact an entry, 0 otherwise. */
+// 在提供的条目结构中存储指向当前条目的指针，并推进迭代器的位置。当当前条目实际上是条目时返回 1，否则返回 0。
 int listTypeNext(listTypeIterator *li, listTypeEntry *entry) {
     /* Protect from converting when iterating */
     serverAssert(li->subject->encoding == li->encoding);
@@ -123,6 +129,7 @@ int listTypeNext(listTypeIterator *li, listTypeEntry *entry) {
 }
 
 /* Return entry or NULL at the current position of the iterator. */
+// 在迭代器的当前位置返回条目或 NULL。
 robj *listTypeGet(listTypeEntry *entry) {
     robj *value = NULL;
     if (entry->li->encoding == OBJ_ENCODING_QUICKLIST) {
@@ -195,6 +202,7 @@ void listTypeConvert(robj *subject, int enc) {
  * has the same encoding as the original one.
  *
  * The resulting object always has refcount set to 1 */
+// 复制list
 robj *listTypeDup(robj *o) {
     robj *lobj;
 
@@ -221,8 +229,11 @@ robj *listTypeDup(robj *o) {
 void pushGenericCommand(client *c, int where, int xx) {
     int j;
 
+    // 查询list是否已经存在数据库中
     robj *lobj = lookupKeyWrite(c->db, c->argv[1]);
+    // 检查是否是list类型
     if (checkType(c,lobj,OBJ_LIST)) return;
+    // 如果对象不存在，则创建一个quicklist
     if (!lobj) {
         if (xx) {
             addReply(c, shared.czero);
@@ -235,11 +246,14 @@ void pushGenericCommand(client *c, int where, int xx) {
         dbAdd(c->db,c->argv[1],lobj);
     }
 
+    // 从第二个参数开始
     for (j = 2; j < c->argc; j++) {
+        // list的push操作
         listTypePush(lobj,c->argv[j],where);
         server.dirty++;
     }
 
+    // 获取list的长度
     addReplyLongLong(c, listTypeLength(lobj));
 
     char *event = (where == LIST_HEAD) ? "lpush" : "rpush";
@@ -436,6 +450,7 @@ void listElementsRemoved(client *c, robj *key, int where, robj *o, long count) {
  * The where argument specifies which end of the list is operated on. An
  * optional count may be provided as the third argument of the client's
  * command. */
+// 实现 LPOP/RPOP 的泛型列表弹出操作。where 参数指定对列表的哪一端进行操作。可以选择的计数作为客户端命令的第三个参数提供。
 void popGenericCommand(client *c, int where) {
     long count = 0;
     robj *value;
@@ -446,6 +461,7 @@ void popGenericCommand(client *c, int where) {
         return;
     } else if (c->argc == 3) {
         /* Parse the optional count argument. */
+        // 分析可选的计数参数。
         if (getPositiveLongFromObjectOrReply(c,c->argv[2],&count,NULL) != C_OK) 
             return;
         if (count == 0) {

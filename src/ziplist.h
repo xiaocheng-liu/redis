@@ -37,12 +37,10 @@
 /* Each entry in the ziplist is either a string or an integer. */
 /*ziplist中的每个条目都是字符串或整数*/
 typedef struct {
-    /* When string is used, it is provided with the length (slen). */
-    /*使用字符串时，将为其提供长度（slen）*/
+    /* When string is used, it is provided with the length (slen). */   /*使用字符串时，将为其提供长度（slen）*/
     unsigned char *sval;
     unsigned int slen;
-    /* When integer is used, 'sval' is NULL, and lval holds the value. */
-    /*使用整数时，"sval"为NULL，lval保留该值*/
+    /* When integer is used, 'sval' is NULL, and lval holds the value. */   /*使用整数时，"sval"为NULL，lval保留该值*/
     long long lval;
 } ziplistEntry;
 

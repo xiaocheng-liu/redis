@@ -172,7 +172,7 @@ quicklistIter *quicklistGetIteratorAtIdx(const quicklist *quicklist,
                                          int direction, const long long idx);   // 从指定位置开始的迭代器  
 int quicklistNext(quicklistIter *iter, quicklistEntry *node);                   // 迭代器下一个位置  
 void quicklistReleaseIterator(quicklistIter *iter);                             // 释放迭代器  
-quicklist *quicklistDup(quicklist *orig);                                       // 去重  
+quicklist *quicklistDup(quicklist *orig);                                       // 复制
 int quicklistIndex(const quicklist *quicklist, const long long index,
                    quicklistEntry *entry);                                      // 找到entry的下标索引 
 void quicklistRewind(quicklist *quicklist, quicklistIter *li);

@@ -390,8 +390,10 @@ void decrRefCountVoid(void *o) {
     decrRefCount(o);
 }
 
+// 检查对象是否是指定的类型
 int checkType(client *c, robj *o, int type) {
     /* A NULL is considered an empty key */
+    // NULL 被视为空键
     if (o && o->type != type) {
         addReplyErrorObject(c,shared.wrongtypeerr);
         return 1;
