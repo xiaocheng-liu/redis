@@ -51,41 +51,43 @@ typedef char *sds;          // Redis 使用 typedef 给 char* 类型定义了一
  *  
  * 注意:sdshdr5从未被使用过，我们只是直接访问flag。但是，这里记录下sdshdr5的结构。 
  * 
- * 在这里解释一下attribute((packed))的用意：加上此字段是为了让编译器以紧凑模式来分配内存。
+ * 解释一下__attribute__((__packed__))的用意：加上此字段是为了让编译器以紧凑模式来分配内存。
  * 如果没有这个字段，编译器会按照struct中的字段进行内存对齐，这样的话就不能保证header和sds的数据部分紧紧的相邻了，
  * 也不能按照固定的偏移来获取flags字段。
  * */
+
+// 注意：sdshdr5从未被使用，Redis中只是访问flags。
 struct __attribute__((__packed__)) sdshdr5
 {
-    unsigned char flags; /* 3 lsb of type, and 5 msb of string length */
+    unsigned char flags; /* 3 lsb of type, and 5 msb of string length */    // 低3位存储类型, 高5位存储长度
     char buf[];
 };
 struct __attribute__((__packed__)) sdshdr8
 {
-    uint8_t len;         /* used */ /*  */                                  // 已使用空间大小
+    uint8_t len;         /* used */                                         // 已使用空间大小
     uint8_t alloc;       /* excluding the header and null terminator */     // 总共可用的字符空间大小，应该是实际buf的大小减1(因为c字符串末尾必须是\0,不计算在内)
     unsigned char flags; /* 3 lsb of type, 5 unused bits */                 // 标志位，主要是识别这是sdshdr几，目前只用了3位，还有5位空余
     char buf[];                                                             // 真正存储字符串的地方
 };
 struct __attribute__((__packed__)) sdshdr16
 {
-    uint16_t len;        /* used */
-    uint16_t alloc;      /* excluding the header and null terminator */
-    unsigned char flags; /* 3 lsb of type, 5 unused bits */
+    uint16_t len;        /* used */     // 已使用
+    uint16_t alloc;      /* excluding the header and null terminator */ // 总长度，用2个字节存储
+    unsigned char flags; /* 3 lsb of type, 5 unused bits */     // 低3位存储类型, 高5位预留
     char buf[];
 };
 struct __attribute__((__packed__)) sdshdr32
 {
-    uint32_t len;        /* used */
-    uint32_t alloc;      /* excluding the header and null terminator */
-    unsigned char flags; /* 3 lsb of type, 5 unused bits */
+    uint32_t len;        /* used */     // 已使用
+    uint32_t alloc;      /* excluding the header and null terminator */ // 总长度，用4个字节存储
+    unsigned char flags; /* 3 lsb of type, 5 unused bits */ // 低3位存储类型, 高5位预留
     char buf[];
 };
 struct __attribute__((__packed__)) sdshdr64
 {
-    uint64_t len;        /* used */
-    uint64_t alloc;      /* excluding the header and null terminator */
-    unsigned char flags; /* 3 lsb of type, 5 unused bits */
+    uint64_t len;        /* used */     // 已使用
+    uint64_t alloc;      /* excluding the header and null terminator */ // 总长度，用8个字节存储
+    unsigned char flags; /* 3 lsb of type, 5 unused bits */ // 低3位存储类型, 高5位预留
     char buf[];
 };
 
@@ -185,9 +187,7 @@ static inline void sdssetlen(sds s, size_t newlen)
     }
 }
 
-/* 
- * 把sds的长度增加inc 
- */
+// 把sds的长度增加inc
 static inline void sdsinclen(sds s, size_t inc)
 {
     unsigned char flags = s[-1];
@@ -274,7 +274,7 @@ sds sdsgrowzero(sds s, size_t len);                     // 把sds增长到指定
 sds sdscatlen(sds s, const void *t, size_t len);        // 在sds上拼接字符串t的指定长度部分
 sds sdscat(sds s, const char *t);                       // 把字符串t拼接到sds上
 sds sdscatsds(sds s, const sds t);                      // 把两个sds拼接在一起
-sds sdscpylen(sds s, const char *t, size_t len);        //  把字符串t指定长度的部分拷贝到sds上
+sds sdscpylen(sds s, const char *t, size_t len);        // 把字符串t指定长度的部分拷贝到sds上
 sds sdscpy(sds s, const char *t);                       // 把字符串t拷贝到sds上
 sds sdscatvprintf(sds s, const char *fmt, va_list ap);  // 把用printf格式化后的字符拼接到sds上
 

@@ -1683,6 +1683,7 @@ const char *strChildType(int type)
 
 /* Return true if there are active children processes doing RDB saving,
  * AOF rewriting, or some side process spawned by a loaded module. */
+// 如果有活动的子进程执行 RDB 保存、AOF 重写或加载模块生成的某些支进程，则返回 true。
 int hasActiveChildProcess(void)
 {
     return server.child_pid != -1;
@@ -1946,15 +1947,12 @@ void databasesCron(void)
 {
     /* Expire keys by random sampling. Not required for slaves
      * as master will synthesize DELs for us. */
-    if (server.active_expire_enabled)
-    {
-        if (iAmMaster())
-        {
+    // 通过随机采样使密钥过期。从站不需要，因为主将为我们合成 DEL。
+    if (server.active_expire_enabled){
+        if (iAmMaster()) {
             // 启动expired循环，key过期处理的逻辑都在这里，包含LRU和LFU
             activeExpireCycle(ACTIVE_EXPIRE_CYCLE_SLOW);
-        }
-        else
-        {
+        }else{
             expireSlaveKeys();
         }
     }
@@ -1965,8 +1963,8 @@ void databasesCron(void)
     /* Perform hash tables rehashing if needed, but only if there are no
      * other processes saving the DB on disk. Otherwise rehashing is bad
      * as will cause a lot of copy-on-write of memory pages. */
-    if (!hasActiveChildProcess())
-    {
+    // 如果需要，执行哈希表重新哈希，但前提是没有其他进程将数据库保存在磁盘上。否则，重新散列是不好的，因为会导致大量内存页的写入复制。
+    if (!hasActiveChildProcess()){
         /* We use global counters so if we stop the computation at a given
          * DB we'll be able to start from the successive in the next
          * cron loop iteration. */
@@ -2280,9 +2278,11 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData)
     }
 
     /* We need to do a few operations on clients asynchronously. */
+    // 我们需要异步对客户端执行一些操作。
     clientsCron();
 
     /* Handle background operations on Redis databases. */
+    // 处理 Redis 数据库上的后台操作。
     databasesCron();
 
     /* Start a scheduled AOF rewrite if this was requested by the user while

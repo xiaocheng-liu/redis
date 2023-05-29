@@ -170,8 +170,7 @@ int spectrum_palette_size;
 /* Dict Helpers */
 // 字典助手
 static uint64_t dictSdsHash(const void *key);
-static int dictSdsKeyCompare(void *privdata, const void *key1,
-    const void *key2);
+static int dictSdsKeyCompare(void *privdata, const void *key1, const void *key2);
 static void dictSdsDestructor(void *privdata, void *val);
 static void dictListDestructor(void *privdata, void *val);
 
@@ -2073,8 +2072,13 @@ static void repl(void) {
     }
 
     cliRefreshPrompt();
+    // 循环接收用户输入
     while((line = linenoise(context ? config.prompt : "not connected> ")) != NULL) {
         if (line[0] != '\0') {
+
+            linenoiseHistoryAdd(line); /* Add to the history. */
+            linenoiseHistorySave("redis_cli_history.txt"); /* Save the history on disk. */
+
             long repeat = 1;
             int skipargs = 0;
             char *endptr = NULL;

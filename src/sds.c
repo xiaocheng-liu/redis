@@ -53,7 +53,6 @@
  * 另外，sds为了兼容c的字符串，redis中所有sds指针都是指向buf的，而并不是sdshdr的开头，这点要
  * 额外注意。 
  */
-
 const char *SDS_NOINIT = "SDS_NOINIT";
 
 // 根据类型获取结构体大小
@@ -73,12 +72,8 @@ static inline int sdsHdrSize(char type) {
     return 0;
 }
 
-/**
- * @brief 根据字符串的长度计算所需要的类型
- * 
- * @param string_size  字符串长度
- * @return char 
- */
+ // 根据字符串的长度计算所需要的类型
+ // string_size: 字符串大小
 static inline char sdsReqType(size_t string_size) {
     if (string_size < 1 << 5)
         return SDS_TYPE_5;
@@ -95,12 +90,7 @@ static inline char sdsReqType(size_t string_size) {
 #endif
 }
 
-/**
- * @brief 根据类型获取最大的存储大小
- * 
- * @param type 
- * @return size_t 
- */
+// 根据类型获取最大的存储大小
 static inline size_t sdsTypeMaxSize(char type) {
     if (type == SDS_TYPE_5)
         return (1 << 5) - 1;
@@ -280,7 +270,8 @@ void sdsclear(sds s) {
     s[0] = '\0';
 }
 
-/* 扩大sds的实际可用空间，以便后续能拼接更多字符串。 
+/*
+ * 扩大sds的实际可用空间，以便后续能拼接更多字符串。
  * 注意：这里实际不会改变sds的长度，只是增加了更多可用的空间(buf)
  * s: 源字符串
  * addlen: 新增长度
@@ -404,7 +395,8 @@ sds sdsRemoveFreeSpace(sds s) {
     return s;
 }
 
-/* 返回sds总共占用的内存大小 包含：
+/*
+ * 返回sds总共占用的内存大小 包含：
  * 1) sds标记
  * 2) 字符串长度
  * 3) 剩余未使用的空间 
@@ -492,9 +484,7 @@ void sdsIncrLen(sds s, ssize_t incr) {
  *  
  * if the specified length is smaller than the current length, no operation
  * is performed. */
-/**
- * 把sds增长到指定的长度，增长出来的新的空间用0填充
- */
+// 把sds增长到指定的长度，增长出来的新的空间用0填充
 sds sdsgrowzero(sds s, size_t len) {
     size_t curlen = sdslen(s);
 
@@ -510,10 +500,12 @@ sds sdsgrowzero(sds s, size_t len) {
 
 /* Append the specified binary-safe string pointed by 't' of 'len' bytes to the
  * end of the specified sds string 's'.
- * 在sds上拼接字符串t的指定长度的部分  
+ *
  * After the call, the passed sds string is no longer valid and all the
  * references must be substituted with the new pointer returned by the call. */
-/* s: 源字符串
+// 在sds上拼接字符串t的指定长度的部分
+/*
+ * s: 源字符串
  * t: 待拼接字符串
  * len: 待拼接字符串长度
  */
@@ -534,17 +526,19 @@ sds sdscatlen(sds s, const void *t, size_t len) {
 }
 
 /* Append the specified null terminated C string to the sds string 's'.
- * 把字符串t拼接到sds上面 
+ *
  * After the call, the passed sds string is no longer valid and all the
  * references must be substituted with the new pointer returned by the call. */
+// 把字符串t拼接到sds上面
 sds sdscat(sds s, const char *t) {
     return sdscatlen(s, t, strlen(t));
 }
 
 /* Append the specified sds 't' to the existing sds 's'.
- * 把两个sds拼接到一起 
+ *
  * After the call, the modified sds string is no longer valid and all the
  * references must be substituted with the new pointer returned by the call. */
+// 把两个sds拼接到一起
 sds sdscatsds(sds s, const sds t) {
     return sdscatlen(s, t, sdslen(t));
 }
@@ -634,8 +628,7 @@ int sdsull2str(char *s, unsigned long long v) {
     return l;
 }
 
-/* 把long long数转为sds
- */
+// 把long long数转为sds
 sds sdsfromlonglong(long long value) {
     char buf[SDS_LLSTR_SIZE];
     int len = sdsll2str(buf, value);
@@ -1011,11 +1004,8 @@ void sdsfreesplitres(sds *tokens, int count) {
  *
  * After the call, the modified sds string is no longer valid and all the
  * references must be substituted with the new pointer returned by the call. */
-/*
- * 将长度为 len 的字符串 p 以带引号（quoted）的格式
- * 追加到给定 sds 的末尾
- *
- */
+// 将长度为 len 的字符串 p 以带引号（quoted）的格式
+// 追加到给定 sds 的末尾
 sds sdscatrepr(sds s, const char *p, size_t len) {
     s = sdscatlen(s, "\"", 1);
     while (len--) {
