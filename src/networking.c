@@ -2285,7 +2285,7 @@ void readQueryFromClient(connection *conn) {
     // 将读取事件总数加1
     atomicIncr(server.stat_total_reads_processed, 1);
 
-    // 读入长度（默认为 16 MB）
+    // 读入长度（默认为 16k）
     readlen = PROTO_IOBUF_LEN;              // 正常IO缓存大小
     /* If this is a multi bulk request, and we are processing a bulk reply
      * that is large enough, try to maximize the probability that the query

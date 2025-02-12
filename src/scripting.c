@@ -1099,6 +1099,7 @@ void scriptingEnableGlobalsProtection(lua_State *lua) {
  * in order to reset the Lua scripting environment.
  *
  * However it is simpler to just call scriptingReset() that does just that. */
+// 初始化脚本环境。
 void scriptingInit(int setup) {
     lua_State *lua = lua_open();
 
@@ -1111,6 +1112,7 @@ void scriptingInit(int setup) {
     }
 
     luaLoadLibraries(lua);
+    // 删除我们不想暴露给Redis脚本环境的函数。
     luaRemoveUnsupportedFunctions(lua);
 
     /* Initialize a dictionary we use to map SHAs to scripts.
@@ -1264,11 +1266,13 @@ void scriptingInit(int setup) {
      * inside the Lua interpreter.
      * Note: there is no need to create it again when this function is called
      * by scriptingReset(). */
+    // 创建（未连接的）客户端，用于在Lua解释器中执行Redis命令。注意：当scriptingReset（）调用这个函数时，不需要再次创建它。
     if (server.lua_client == NULL) {
         server.lua_client = createClient(NULL);
         server.lua_client->flags |= CLIENT_LUA;
 
         /* We do not want to allow blocking commands inside Lua */
+        // 我们不希望在Lua中允许阻塞命令
         server.lua_client->flags |= CLIENT_DENY_BLOCKING;
     }
 
@@ -1803,6 +1807,7 @@ NULL
  * ------------------------------------------------------------------------- */
 
 /* Initialize Lua debugger data structures. */
+// 初始化Lua调试器数据结构。
 void ldbInit(void) {
     ldb.conn = NULL;
     ldb.active = 0;

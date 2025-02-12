@@ -192,6 +192,7 @@ struct redisServer server; /* Server global state */
  *    TYPE, EXPIRE*, PEXPIRE*, TTL, PTTL, ...
  */
 
+
 // redis的命令表
 struct redisCommand redisCommandTable[] = {
     {"module", moduleCommand, -2,
@@ -2975,6 +2976,112 @@ void initServerConfig(void)
     initConfigValues();
 }
 
+void memtest(size_t megabytes, int passes);
+
+void parseArgv(int argc, char **argv){
+    int j = 0;
+    /* Store the executable path and arguments in a safe place in order
+     * to be able to restart the server later. */
+    //【3】记录Redis程序可执行路径及启动参数，以便后续重启服务器。
+    server.executable = getAbsolutePath(argv[0]);
+
+    server.exec_argv = zmalloc(sizeof(char *) * (argc + 1));
+    server.exec_argv[argc] = NULL;
+    serverLog(LL_WARNING, "参数个数：%d", argc);
+    for (j = 0; j < argc; j++){
+        serverLog(LL_WARNING, "参数[%d]：%s", j, argv[j]);
+        server.exec_argv[j] = zstrdup(argv[j]);
+    }
+
+    if (argc >= 2)      // 如果启动参数大于等于2
+    {
+        char config_from_stdin = 0;
+        j = 1; /* First option to parse in argv[] */        // 在 argv 中解析的第一个选项
+        sds options = sdsempty();
+
+        /* Handle special options --help and --version */
+        // 【6】对-v、--version、--help、-h、--test-memory等命令进行优先处理。
+        // strcmp函数比较两个字符串str1、str2，若str1=str2，则返回零；若str1 != str2，则返回正数。
+        if (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0){
+            version();
+        }
+        if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0){
+            usage();
+        }
+        if (strcmp(argv[1], "--test-memory") == 0){
+            if (argc == 3){  // 如果参数个数为3个
+                // 进行内存测试
+                memtest(atoi(argv[2]), 50);
+                exit(0);
+            }else{      // 参数不是3个，给错误提示
+                fprintf(stderr, "Please specify the amount of memory to test in megabytes.\n");
+                fprintf(stderr, "Example: ./redis-server --test-memory 4096\n\n");
+                exit(1);
+            }
+        }
+
+        /* Parse command line options
+         * Precedence wise, File, stdin, explicit options -- last config is the one that matters.
+         *
+         * First argument is the config file name? */
+        // 【7】如果启动命令的第二个参数不是以“-”开头的，则是配置文件参数，将配置文件路径转化为绝对路径，存入server.configfile中
+        if (argv[1][0] != '-')
+        {
+            /* Replace the config file in server.exec_argv with its absolute path. */
+            server.configfile = getAbsolutePath(argv[1]);
+            zfree(server.exec_argv[1]);
+            server.exec_argv[1] = zstrdup(server.configfile);
+            j = 2; // Skip this arg when parsing options
+        }
+
+        //【8】读取启动命令中的启动配置项，并将它们拼接到一个字符串中。
+        while (j < argc)
+        {
+            /* Either first or last argument - Should we read config from stdin? */
+            // 第一个或最后一个参数 - 我们应该从标准输入中读取配置吗？
+            if (argv[j][0] == '-' && argv[j][1] == '\0' && (j == 1 || j == argc - 1))
+            {
+                config_from_stdin = 1;
+            }
+                /* All the other options are parsed and conceptually appended to the
+                 * configuration file. For instance --port 6380 will generate the
+                 * string "port 6380\n" to be parsed after the actual config file
+                 * and stdin input are parsed (if they exist). */
+            else if (argv[j][0] == '-' && argv[j][1] == '-')
+            {
+                /* Option name */
+                if (sdslen(options))
+                    options = sdscat(options, "\n");
+                options = sdscat(options, argv[j] + 2);
+                options = sdscat(options, " ");
+            }
+            else
+            {
+                /* Option argument */
+                options = sdscatrepr(options, argv[j], strlen(argv[j]));
+                options = sdscat(options, " ");
+            }
+            j++;
+        }
+
+        //【9】以Sentinel模式启动，必须指定配置文件，否则直接报错退出。
+        if (server.sentinel_mode && !server.configfile)
+        {
+            serverLog(LL_WARNING,"Sentinel needs config file on disk to save state.  Exiting...");
+            exit(1);
+        }
+        // 【10】config.c/resetServerSaveParams函数重置server.saveparams属性（该属性存放RDB SAVE配置）。
+        // config.c/loadServerConfig函数从配置文件中加载所有配置项，并使用启动命令配置项覆盖配置文件中的配置项。
+        loadServerConfig(server.configfile, config_from_stdin, options);
+
+        // 如果是哨兵模式，加载哨兵配置
+        if (server.sentinel_mode){
+            loadSentinelConfigFromQueue();
+        }
+        sdsfree(options);
+    }
+}
+
 extern char **environ;
 
 /* Restart the server, executing the same executable that started this
@@ -3300,6 +3407,8 @@ int listenToPort(int port, int *fds, int *count)
 /* Resets the stats that we expose via INFO or other means that we want
  * to reset via CONFIG RESETSTAT. The function is also used in order to
  * initialize these fields in initServer() at server startup. */
+// 重置我们通过INFO或我们想通过CONFIG RESETSTAT重置的其他方式暴露的统计数据。
+// 该函数还用于在服务器启动时初始化initServer（）中的这些字段。
 void resetServerStats(void)
 {
     int j;
@@ -3452,6 +3561,7 @@ void initServer(void)
     }
 
     /* Open the listening Unix domain socket. */
+    // 打开监听的Unix域套接字。
     if (server.unixsocket != NULL)
     {
         unlink(server.unixsocket); /* don't care if this fails */
@@ -3467,6 +3577,7 @@ void initServer(void)
     }
 
     /* Abort if there are no listening sockets at all. */
+    // 如果根本没有监听套接字，则中止。
     if (server.ipfd_count == 0 && server.tlsfd_count == 0 && server.sofd < 0)
     {
         serverLog(LL_WARNING, "Configured to not listen anywhere, exiting.");
@@ -3525,7 +3636,8 @@ void initServer(void)
     server.rdb_save_time_last = -1;
     server.rdb_save_time_start = -1;
     server.dirty = 0;
-    resetServerStats();                 // 重置服务器统计
+    // 重置服务器统计
+    resetServerStats();
 
     /* A few stats we don't want to reset: server startup time, and peak mem. */
     // 我们不想重置的一些统计数据：服务器启动时间和峰值内存。
@@ -3551,7 +3663,7 @@ void initServer(void)
     /* Create the timer callback, this is our way to process many background
      * operations incrementally, like clients timeout, eviction of unaccessed
      * expired keys and so forth. */
-    //【10】创建一个时间事件，执行函数为serverCron，负责处理Redis中的定时任务，如清理过期数据、生成RDB文件等。
+    //【10】创建一个时间事件，执行函数为serverCron，负责处理Redis中的定时任务，如清理过期数据、删除未访问的过期key，生成RDB文件等。
     if (aeCreateTimeEvent(server.el, 1, serverCron, NULL, NULL) == AE_ERR)
     {
         serverPanic("Can't create event loop timers.");
@@ -3561,21 +3673,20 @@ void initServer(void)
     /* Create an event handler for accepting new connections in TCP and Unix
      * domain sockets. */
     /* TCP新连接是可以读事件，这里指定了处理TCP连接的handler为acceptTcpHandler函数*/
-    //【11】分别为TCP Socket、TSL Socks、UNIX Socket注册监听AE_READABLE类型的文件事件，
+    //【11】分别为TCP Socket、TSL Sockets、UNIX Socket注册监听AE_READABLE类型的文件事件，
     // 事件处理函数分别为acceptTcpHandler、acceptTLSHandler、acceptUnixHandler，这些函数负责接收Socket中的新连接，
     for (j = 0; j < server.ipfd_count; j++){
         // 注册监听事件，server.ipfd是TCP文件描述符，AE_READABLE可读事件，acceptTcpHandler事件处理回调函数
         if (aeCreateFileEvent(server.el, server.ipfd[j], AE_READABLE,
                               acceptTcpHandler, NULL) == AE_ERR){
-            serverPanic(
-                "Unrecoverable error creating server.ipfd file event.");
+            serverPanic("Unrecoverable error creating server.ipfd file event.");
         }
     }
+
     for (j = 0; j < server.tlsfd_count; j++){
         if (aeCreateFileEvent(server.el, server.tlsfd[j], AE_READABLE,
                               acceptTLSHandler, NULL) == AE_ERR){
-            serverPanic(
-                "Unrecoverable error creating server.tlsfd file event.");
+            serverPanic("Unrecoverable error creating server.tlsfd file event.");
         }
     }
     if (server.sofd > 0 && aeCreateFileEvent(server.el, server.sofd, AE_READABLE,
@@ -3588,8 +3699,7 @@ void initServer(void)
     /* 为管道注册一个用于唤醒事件循环的可读事件，需要注意模块中被阻塞的客户端 */
     if (aeCreateFileEvent(server.el, server.module_blocked_pipe[0], AE_READABLE,
                           moduleBlockedClientPipeReadable, NULL) == AE_ERR){
-        serverPanic(
-            "Error registering the readable event for the module "
+        serverPanic("Error registering the readable event for the module "
             "blocked clients subsystem.");
     }
 
@@ -6119,6 +6229,8 @@ void printStartLog(int argc, char **argv)
     {
         serverLog(LL_WARNING, "Configuration loaded");
     }
+
+    redisAsciiArt();             // 打印启动ascii_logo
 }
 // 打印版本
 void version(void)
@@ -6380,7 +6492,7 @@ void sendChildCOWInfo(int ptype, int on_exit, char *pname)
     sendChildInfo(ptype, on_exit, private_dirty);
 }
 
-void memtest(size_t megabytes, int passes);
+
 
 /* Returns 1 if there is --sentinel among the arguments or if
  * argv[0] contains "redis-sentinel". */
@@ -6445,10 +6557,8 @@ void loadDataFromDisk(void)
 // Redis内存溢出处理函数
 void redisOutOfMemoryHandler(size_t allocation_size)
 {
-    serverLog(LL_WARNING, "Out Of Memory allocating %zu bytes!",
-              allocation_size);
-    serverPanic("Redis aborting for OUT OF MEMORY. Allocating %zu bytes!",
-                allocation_size);
+    serverLog(LL_WARNING, "Out Of Memory allocating %zu bytes!",allocation_size);
+    serverPanic("Redis aborting for OUT OF MEMORY. Allocating %zu bytes!",allocation_size);
 }
 
 /* Callback for sdstemplate on proc-title-template. See redis.conf for
@@ -6656,8 +6766,6 @@ int iAmMaster(void)
 int main(int argc, char **argv)
 {
     struct timeval tv;
-    int j;
-    char config_from_stdin = 0;
 
 #ifdef REDIS_TEST
     if (argc == 3 && !strcasecmp(argv[1], "test"))
@@ -6720,6 +6828,7 @@ int main(int argc, char **argv)
     // 随机数初始化
     srand(time(NULL) ^ getpid());
     srandom(time(NULL) ^ getpid());
+
     // 精确时间
     gettimeofday(&tv, NULL);
     // 使用种子初始化 mt[NN]
@@ -6738,6 +6847,7 @@ int main(int argc, char **argv)
     // hash算法种子
     uint8_t hashseed[16];
     getRandomBytes(hashseed, sizeof(hashseed));
+
     // 设置哈希种子
     dictSetHashFunctionSeed(hashseed);
     //【1】检查该Redis服务器是否以sentinel模式启动。
@@ -6745,24 +6855,19 @@ int main(int argc, char **argv)
 
     //【2】initServerConfig函数将redisServer中记录配置项的属性初始化为默认值。
     initServerConfig();
-    // ACLInit函数初始化ACL机制，moduleInitModulesSystem函数初始化Module机制。
+    // ACLInit函数初始化ACL机制。
+    // ACL 子系统必须尽快初始化，因为基本网络代码和客户端创建依赖于它。ASAP: as soon as possible
     ACLInit();          /* The ACL subsystem must be initialized ASAP because the
-                            basic networking code and client creation depends on it. */     // ACL 子系统必须尽快初始化，因为基本网络代码和客户端创建依赖于它。
+                            basic networking code and client creation depends on it. */
+
+    // moduleInitModulesSystem函数初始化Module机制。
     moduleInitModulesSystem();
     tlsInit();
 
     /* Store the executable path and arguments in a safe place in order
      * to be able to restart the server later. */
     //【3】记录Redis程序可执行路径及启动参数，以便后续重启服务器。
-    server.executable = getAbsolutePath(argv[0]);
-    serverLog(LL_WARNING, "参数个数：argc: %d", argc);
-    serverLog(LL_WARNING, "程序绝对路径：%s", argv[0]);
-    server.exec_argv = zmalloc(sizeof(char *) * (argc + 1));
-    server.exec_argv[argc] = NULL;
-    for (j = 0; j < argc; j++){
-        serverLog(LL_WARNING, "argv[%d]：%s", j, argv[j]);
-        server.exec_argv[j] = zstrdup(argv[j]);
-    }
+    parseArgv(argc, argv);
 
     /* We need to init sentinel right now as parsing the configuration file
      * in sentinel mode will have the effect of populating the sentinel
@@ -6790,94 +6895,6 @@ int main(int argc, char **argv)
         redis_check_aof_main(argc, argv);
     }
 
-    if (argc >= 2)      // 如果启动参数大于等于2
-    {
-        j = 1; /* First option to parse in argv[] */        // 在 argv 中解析的第一个选项
-        sds options = sdsempty();
-
-        /* Handle special options --help and --version */
-        // 【6】对-v、--version、--help、-h、--test-memory等命令进行优先处理。
-        // strcmp函数比较两个字符串str1、str2，若str1=str2，则返回零；若str1 != str2，则返回正数。
-        if (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0){
-            version();
-        }
-        if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0){
-            usage();
-        }
-        if (strcmp(argv[1], "--test-memory") == 0){
-            if (argc == 3){  // 如果参数个数为3个
-                // 进行内存测试
-                memtest(atoi(argv[2]), 50);
-                exit(0);
-            }else{      // 参数不是3个，给错误提示
-                fprintf(stderr, "Please specify the amount of memory to test in megabytes.\n");
-                fprintf(stderr, "Example: ./redis-server --test-memory 4096\n\n");
-                exit(1);
-            }
-        }
-
-        /* Parse command line options
-         * Precedence wise, File, stdin, explicit options -- last config is the one that matters.
-         *
-         * First argument is the config file name? */
-        // 【7】如果启动命令的第二个参数不是以“-”开头的，则是配置文件参数，将配置文件路径转化为绝对路径，存入server.configfile中
-        if (argv[1][0] != '-')
-        {
-            /* Replace the config file in server.exec_argv with its absolute path. */
-            server.configfile = getAbsolutePath(argv[1]);
-            zfree(server.exec_argv[1]);
-            server.exec_argv[1] = zstrdup(server.configfile);
-            j = 2; // Skip this arg when parsing options
-        }
-
-        //【8】读取启动命令中的启动配置项，并将它们拼接到一个字符串中。
-        while (j < argc)
-        {
-            /* Either first or last argument - Should we read config from stdin? */
-            // 第一个或最后一个参数 - 我们应该从标准输入中读取配置吗？
-            if (argv[j][0] == '-' && argv[j][1] == '\0' && (j == 1 || j == argc - 1))
-            {
-                config_from_stdin = 1;
-            }
-            /* All the other options are parsed and conceptually appended to the
-             * configuration file. For instance --port 6380 will generate the
-             * string "port 6380\n" to be parsed after the actual config file
-             * and stdin input are parsed (if they exist). */
-            else if (argv[j][0] == '-' && argv[j][1] == '-')
-            {
-                /* Option name */
-                if (sdslen(options))
-                    options = sdscat(options, "\n");
-                options = sdscat(options, argv[j] + 2);
-                options = sdscat(options, " ");
-            }
-            else
-            {
-                /* Option argument */
-                options = sdscatrepr(options, argv[j], strlen(argv[j]));
-                options = sdscat(options, " ");
-            }
-            j++;
-        }
-
-        //【9】以Sentinel模式启动，必须指定配置文件，否则直接报错退出。
-        if (server.sentinel_mode && !server.configfile)
-        {
-            serverLog(LL_WARNING,
-                      "Sentinel needs config file on disk to save state.  Exiting...");
-            exit(1);
-        }
-        // 【10】config.c/resetServerSaveParams函数重置server.saveparams属性（该属性存放RDB SAVE配置）。
-        // config.c/loadServerConfig函数从配置文件中加载所有配置项，并使用启动命令配置项覆盖配置文件中的配置项。
-        loadServerConfig(server.configfile, config_from_stdin, options);
-
-        // 如果是哨兵模式，加载哨兵配置
-        if (server.sentinel_mode){
-            loadSentinelConfigFromQueue();
-        }
-        sdsfree(options);
-    }
-
     //【11】server.supervised属性指定是否以upstart服务或systemd服务启动Redis。
     // 如果配置了server.daemonize且没有配置server.supervised，则以守护进程的方式启动Redis。
     server.supervised = redisIsSupervised(server.supervised_mode);
@@ -6889,7 +6906,6 @@ int main(int argc, char **argv)
 
     //【12】打印启动日志。
     printStartLog(argc, argv);
-    redisAsciiArt();             // 打印启动ascii_logo
 
     readOOMScoreAdj();
     //【13】initServer函数初始化Redis运行时数据，aeCreateEventLoop函数创建事件循环器，createPidFile函数创建pid文件。
@@ -6930,6 +6946,8 @@ int main(int argc, char **argv)
         }
 #endif /* __arm64__ */
 #endif /* __linux__ */
+
+        // 最后初始化Module机制。
         moduleInitModulesSystemLast();
         //【14】如果非Sentinel模式启动，则完成以下操作：
         // (1）moduleLoadFromQueue函数加载配置文件指定的Module模块；
@@ -6945,8 +6963,7 @@ int main(int argc, char **argv)
         {
             if (verifyClusterConfigWithData() == C_ERR)
             {
-                serverLog(LL_WARNING,
-                          "You can't have keys in a DB different than DB 0 when in "
+                serverLog(LL_WARNING,"You can't have keys in a DB different than DB 0 when in "
                           "Cluster mode. Exiting.");
                 exit(1);
             }

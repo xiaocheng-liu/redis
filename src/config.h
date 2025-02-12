@@ -40,6 +40,7 @@
 #endif
 
 /* Define redis_fstat to fstat or fstat64() */
+#define MAC_OS_X_VERSION_10_6 __MAC_10_6
 #if defined(__APPLE__) && !defined(MAC_OS_X_VERSION_10_6)
 #define redis_fstat fstat64
 #define redis_stat stat64

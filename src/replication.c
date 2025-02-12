@@ -1086,6 +1086,7 @@ void sendBulkToSlave(connection *conn) {
     char buf[PROTO_IOBUF_LEN];
     ssize_t nwritten, buflen;
 
+    int memory_order_relaxed = 0;
     /* Before sending the RDB file, we send the preamble as configured by the
      * replication process. Currently the preamble is just the bulk count of
      * the file in the form "$<length>\r\n". */

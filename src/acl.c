@@ -43,6 +43,8 @@ user *DefaultUser;  /* Global reference to the default user.
                        AUTH or HELLO is used to authenticate with a
                        different user. */
 
+// 这是在配置文件中找到的用户列表，我们需要在Redis初始化的最后阶段加载，在所有模块都已经加载之后。
+// 每个列表元素都是一个以NULL结尾的SDS指针数组：第一个是用户名，其余所有指针都是ACL规则，格式与ACLSetUser（）相同。
 list *UsersToLoad;  /* This is a list of users found in the configuration file
                        that we'll need to load in the final stage of Redis
                        initialization, after all the modules are already
@@ -50,8 +52,9 @@ list *UsersToLoad;  /* This is a list of users found in the configuration file
                        array of SDS pointers: the first is the user name,
                        all the remaining pointers are ACL rules in the same
                        format as ACLSetUser(). */
+// 我们的安全日志，用户可以使用ACL log命令检查它。
 list *ACLLog;       /* Our security log, the user is able to inspect that
-                       using the ACL LOG command .*/
+                       using the ACL LOG command. */
 
 static rax *commandId = NULL; /* Command name to id mapping */
 
@@ -1070,6 +1073,7 @@ void ACLInit(void) {
     Users = raxNew();
     UsersToLoad = listCreate();
     ACLLog = listCreate();
+    // 初始化默认用户
     ACLInitDefaultUser();
     server.requirepass = NULL; /* Only used for backward compatibility. */
 }
