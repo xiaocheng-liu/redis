@@ -35,6 +35,7 @@
 #include "latency.h"
 #include "atomicvar.h"
 #include "mt19937-64.h"
+#include "debugmacro.h"
 
 #include <time.h>
 #include <signal.h>
@@ -6753,21 +6754,9 @@ int iAmMaster(void)
             (server.cluster_enabled && nodeIsMaster(server.cluster->myself)));
 }
 
-
-
-
-/**
- * @brief
- * 
- * @param argc 
- * @param argv 
- * @return int 
- */
- // server.c/main是Redis启动方法，负责加载配置，初始化数据库，启动网络服务，创建并启动事件循环器。
-int main(int argc, char **argv)
+/* 测试 */
+void redis_test(int argc, char **argv)
 {
-    struct timeval tv;
-
 #ifdef REDIS_TEST
     if (argc == 3 && !strcasecmp(argv[1], "test"))
     {
@@ -6815,12 +6804,32 @@ int main(int argc, char **argv)
         return -1; /* test not found */
     }
 #endif
+}
 
-/* We need to initialize our libraries, and the server configuration. */
-// 我们需要初始化我们的库和服务器配置。
+void init_setproctitle_replacement(int argc, char **argv)
+{
 #ifdef INIT_SETPROCTITLE_REPLACEMENT
     spt_init(argc, argv);
 #endif
+}
+/**
+ * @brief
+ * 
+ * @param argc 
+ * @param argv 
+ * @return int 
+ */
+ // server.c/main是Redis启动方法，负责加载配置，初始化数据库，启动网络服务，创建并启动事件循环器。
+int main(int argc, char **argv)
+{
+    struct timeval tv;
+
+    redis_test(argc, argv);
+	init_setproctitle_replacement(argc, argv);
+
+	/* We need to initialize our libraries, and the server configuration. */
+	// 我们需要初始化我们的库和服务器配置。
+
     setlocale(LC_COLLATE, "");
     // 设置时间环境变量
     tzset(); /* Populates 'timezone' global. */
