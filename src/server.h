@@ -2630,37 +2630,39 @@ void preventCommandReplication(client *c);
 int prepareForShutdown(int flags);
 
 #ifdef __GNUC__
-
 void serverLog(int level, const char *fmt, ...)
     __attribute__((format(printf, 2, 3)));
-
 #else
 void serverLog(int level, const char *fmt, ...);
 #endif
-
 void serverLogRaw(int level, const char *msg);
 void serverLogFromHandler(int level, const char *msg);
+// 创建Pid文件
 void createPidFile(void);
 void daemonize(void);
+// 打印启动日志
 void printStartLog(int argc, char **argv);
+// 打印版本
 void version(void);
+// 打印帮助
 void usage(void);
+// 打印Redis ASCII艺术Logo
 void redisAsciiArt(void);
 void updateDictResizePolicy(void);
 int htNeedsResize(dict *dict);
 void populateCommandTable(void);
+
+// 重置服务统计
+void resetServerStats(void);
+// 重置命令统计
 void resetCommandTableStats(void);
+// 重置错误统计
 void resetErrorTableStats(void);
 void adjustOpenFilesLimit(void);
 
 void incrementErrorCount(const char *fullerr, size_t namelen);
-
 void closeListeningSockets(int unlink_unix_socket);
-
 void updateCachedTime(int update_daylight_info);
-
-// 重置服务统计
-void resetServerStats(void);
 
 void activeDefragCycle(void);
 
@@ -2773,8 +2775,9 @@ void initConfigValues(void);
 int removeExpire(redisDb *db, robj *key);
 void propagateExpire(redisDb *db, robj *key, int lazy);
 int expireIfNeeded(redisDb *db, robj *key);
+// 获取过期时间
 long long getExpire(redisDb *db, robj *key);
-// 设置过期
+// 设置过期时间
 void setExpire(client *c, redisDb *db, robj *key, long long when);
 // 检查是否已经过期
 int checkAlreadyExpired(long long when);
@@ -3227,27 +3230,19 @@ void resetCommand(client *c);
 void failoverCommand(client *c);
 
 #if defined(__GNUC__)
-
 void *calloc(size_t count, size_t size) __attribute__((deprecated));
-
 void free(void *ptr) __attribute__((deprecated));
-
 void *malloc(size_t size) __attribute__((deprecated));
-
 void *realloc(void *ptr, size_t size) __attribute__((deprecated));
-
 #endif
 
 /* Debugging stuff */
 void _serverAssertWithInfo(const client *c, const robj *o, const char *estr, const char *file, int line);
-
 void _serverAssert(const char *estr, const char *file, int line);
 
 #ifdef __GNUC__
-
 void _serverPanic(const char *file, int line, const char *msg, ...)
     __attribute__((format(printf, 3, 4)));
-
 #else
 void _serverPanic(const char *file, int line, const char *msg, ...);
 #endif

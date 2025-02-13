@@ -137,12 +137,13 @@ static int dictExpand(dict *ht, unsigned long size) {
     return DICT_OK;
 }
 
-/* 在hash表中添加一个新的元素 */
+/* Add an element to the target hash table */
 static int dictAdd(dict *ht, void *key, void *val) {
     int index;
     dictEntry *entry;
 
-    /* 返回key在hash表中的下标，如果已经存在了就返回-1*/
+    /* Get the index of the new element, or -1 if
+     * the element already exists. */
     if ((index = _dictKeyIndex(ht, key)) == -1)
         return DICT_ERR;
 
@@ -266,16 +267,11 @@ static dictEntry *dictFind(dict *ht, const void *key) {
     return NULL;
 }
 
-static dictIterator *dictGetIterator(dict *ht) {
-    dictIterator *iter = hi_malloc(sizeof(*iter));
-    if (iter == NULL)
-        return NULL;
-
+static void dictInitIterator(dictIterator *iter, dict *ht) {
     iter->ht = ht;
     iter->index = -1;
     iter->entry = NULL;
     iter->nextEntry = NULL;
-    return iter;
 }
 
 static dictEntry *dictNext(dictIterator *iter) {
@@ -298,19 +294,15 @@ static dictEntry *dictNext(dictIterator *iter) {
     return NULL;
 }
 
-static void dictReleaseIterator(dictIterator *iter) {
-    hi_free(iter);
-}
-
 /* ------------------------- private functions ------------------------------ */
 
-/* 如有必要，扩大hashtable的大小  */
+/* Expand the hash table if needed */
 static int _dictExpandIfNeeded(dict *ht) {
     /* If the hash table is empty expand it to the initial size,
      * if the table is "full" double its size. */
     if (ht->size == 0)
         return dictExpand(ht, DICT_HT_INITIAL_SIZE);
-    if (ht->used == ht->size)  // 如果redis的负载因子到1，把ht空间扩大一倍 
+    if (ht->used == ht->size)
         return dictExpand(ht, ht->size*2);
     return DICT_OK;
 }
@@ -339,7 +331,7 @@ static int _dictKeyIndex(dict *ht, const void *key) {
         return -1;
     /* Compute the key hash value */
     h = dictHashKey(ht, key) & ht->sizemask;
-    /* 遍历单链表，查找是否已经包含该key了  */
+    /* Search if this slot does not already contain the given key */
     he = ht->table[h];
     while(he) {
         if (dictCompareHashKeys(ht, key, he->key))

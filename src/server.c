@@ -6232,6 +6232,7 @@ void printStartLog(int argc, char **argv)
 
     redisAsciiArt();             // 打印启动ascii_logo
 }
+
 // 打印版本
 void version(void)
 {

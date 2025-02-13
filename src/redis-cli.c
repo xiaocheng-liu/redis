@@ -276,7 +276,7 @@ static char *getInfoField(char *info, char *field);
 static long getLongInfoField(char *info, char *field);
 
 /*------------------------------------------------------------------------------
- * Utility functions    实用函数
+ * Utility functions    函数
  *--------------------------------------------------------------------------- */
 
 static void cliPushHandler(void *, void *);
@@ -1370,6 +1370,8 @@ static int cliSendCommand(int argc, char **argv, long repeat) {
     /* Negative repeat is allowed and causes infinite loop,
        works well with the interval option. */
     while(repeat < 0 || repeat-- > 0) {
+
+        // 发送命令
         redisAppendCommandArgv(context,argc,(const char**)argv,argvlen);
         while (config.monitor_mode) {
             if (cliReadReply(output_raw) != REDIS_OK) exit(1);
@@ -8160,6 +8162,7 @@ int main(int argc, char **argv) {
     int firstarg;
     struct timeval tv;
 
+    // 给cliSSLconfig结构体分配空间
     memset(&config.sslconfig, 0, sizeof(config.sslconfig));
     config.hostip = sdsnew("127.0.0.1");
     config.hostport = 6379;
