@@ -32,6 +32,7 @@
 #include "slowlog.h"
 #include "rdb.h"
 #include "monotonic.h"
+#include "t_list.h"
 #include <dlfcn.h>
 #include <sys/stat.h>
 #include <sys/wait.h>

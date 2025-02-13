@@ -27,7 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "server.h"
+#include "t_list.h"
 
 /*-----------------------------------------------------------------------------
  * List API

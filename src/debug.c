@@ -32,6 +32,7 @@
 #include "sha1.h"   /* SHA1 is used for DEBUG DIGEST */
 #include "crc64.h"
 #include "bio.h"
+#include "t_list.h"
 
 #include <arpa/inet.h>
 #include <signal.h>

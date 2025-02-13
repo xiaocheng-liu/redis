@@ -26,13 +26,12 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-
+#include <signal.h>
+#include <ctype.h>
 #include "server.h"
 #include "cluster.h"
 #include "atomicvar.h"
-
-#include <signal.h>
-#include <ctype.h>
+#include "t_list.h"
 
 /* Database backup. */
 struct dbBackup {

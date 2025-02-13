@@ -64,6 +64,7 @@
 #include "slowlog.h"
 #include "latency.h"
 #include "monotonic.h"
+#include "t_list.h"
 
 int serveClientBlockedOnList(client *receiver, robj *key, robj *dstkey, redisDb *db, robj *value, int wherefrom, int whereto);
 int getListPositionFromObjectOrReply(client *c, robj *arg, int *position);
