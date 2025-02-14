@@ -47,6 +47,7 @@
 /* This is a special pointer that is guaranteed to never have the same value
  * of a radix tree node. It's used in order to report "not found" error without
  * requiring the function to have multiple return values. */
+// 这是一个特殊的指针，保证它永远不会有相同的根树节点值。它用于报告“未找到”错误，而不要求函数具有多个返回值。
 void *raxNotFound = (void*)"rax-not-found-pointer";
 
 /* -------------------------------- Debugging ------------------------------ */

@@ -1549,6 +1549,7 @@ int freeClientsInAsyncFreeQueue(void) {
 /* Return a client by ID, or NULL if the client ID is not in the set
  * of registered clients. Note that "fake clients", created with -1 as FD,
  * are not registered clients. */
+// 通过ID查找客户端
 client *lookupClientByID(uint64_t id) {
     id = htonu64(id);
     client *c = raxFind(server.clients_index,(unsigned char*)&id,sizeof(id));
@@ -1566,6 +1567,7 @@ client *lookupClientByID(uint64_t id) {
  * */
 int writeToClient(client *c, int handler_installed) {
     /* Update total number of writes on server */
+    // 更新写入总数统计
     atomicIncr(server.stat_total_writes_processed, 1);
 
     ssize_t nwritten = 0, totwritten = 0;
@@ -2345,6 +2347,7 @@ void readQueryFromClient(connection *conn) {
     c->lastinteraction = server.unixtime;   // 修改最后交互时间
     // 如果客户端是 master 的话,更新它的复制偏移量,便于进行部分重同步,增加从服务器重启的效率
     if (c->flags & CLIENT_MASTER) c->read_reploff += nread; // 主机修改复制偏移位置
+
     atomicIncr(server.stat_net_input_bytes, nread);
     // 如果读取的缓存长度超过了定义的最大长度，会关闭客户端
     if (sdslen(c->querybuf) > server.client_max_querybuf_len) {

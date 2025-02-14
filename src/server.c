@@ -6812,10 +6812,31 @@ void init_setproctitle_replacement(int argc, char **argv)
     spt_init(argc, argv);
 #endif
 }
+
+void checkIfSentenelMode(void)
+{
+  if (server.sentinel_mode)
+    {
+        // 哨兵模式配置初始化。
+        initSentinelConfig();
+        // 哨兵模式初始化。
+        initSentinel();
+    }
+}
+
+void redisCheckRdbOrAof(int argc, char **argv)
+{
+  	if (strstr(argv[0], "redis-check-rdb") != NULL){
+        redis_check_rdb_main(argc, argv, NULL);
+    }else if (strstr(argv[0], "redis-check-aof") != NULL){
+        redis_check_aof_main(argc, argv);
+    }
+}
+
 /**
  * @brief
  * 
- * @param argc 
+ * @param argc
  * @param argv 
  * @return int 
  */
@@ -6830,6 +6851,7 @@ int main(int argc, char **argv)
 	/* We need to initialize our libraries, and the server configuration. */
 	// 我们需要初始化我们的库和服务器配置。
 
+    // 设置本地化信息为字符串比较变量中的默认设置
     setlocale(LC_COLLATE, "");
     // 设置时间环境变量
     tzset(); /* Populates 'timezone' global. */
@@ -6885,13 +6907,7 @@ int main(int argc, char **argv)
      */
     // 我们现在需要初始化 sentinel，因为在 sentinel 模式下解析配置文件将具有使用要监控的主节点填充 sentinel 数据结构的效果。
     // 【4】如果以Sentinel模式启动，则初始化Sentinel机制。
-    if (server.sentinel_mode)
-    {
-        // 哨兵模式配置初始化。
-        initSentinelConfig();
-        // 哨兵模式初始化。
-        initSentinel();
-    }
+    checkIfSentenelMode();
 
     /* Check if we need to start in redis-check-rdb/aof mode. We just execute
      * the program main. However, the program is part of the Redis executable
@@ -6899,11 +6915,7 @@ int main(int argc, char **argv)
     // 【5】如果启动程序是redis-check-rdb或redis-check-aof，
     // 则执行redis_check_rdb_main或redis_check_aof_main函数，
     // 它们尝试检验并修复RDB、AOF文件后便退出程序。
-    if (strstr(argv[0], "redis-check-rdb") != NULL){
-        redis_check_rdb_main(argc, argv, NULL);
-    }else if (strstr(argv[0], "redis-check-aof") != NULL){
-        redis_check_aof_main(argc, argv);
-    }
+	redisCheckRdbOrAof(argc, argv);
 
     //【11】server.supervised属性指定是否以upstart服务或systemd服务启动Redis。
     // 如果配置了server.daemonize且没有配置server.supervised，则以守护进程的方式启动Redis。
