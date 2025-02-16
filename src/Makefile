@@ -31,7 +31,7 @@ ifneq (,$(findstring FreeBSD,$(uname_S)))
   STD+=-Wno-c11-extensions
 endif
 endif
-# 输出所有编译警告信息 ，Wno-missing-field-initializers 不输出missing-的警告信息
+# 输出所有编译警告信息 ，Wno-missing-field-initializers 不输出missing-的警告信息 
 WARN=-Wall -W -Wno-missing-field-initializers -Wno-macro-redefined -Wno-strict-prototypes
 OPT=$(OPTIMIZATION)
 

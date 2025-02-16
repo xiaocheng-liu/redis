@@ -181,23 +181,23 @@ extern int configOOMScoreAdjValuesDefaults[CONFIG_OOM_COUNT];
 /* Command flags. Please check the command table defined in the server.c file
  * for more information about the meaning of every flag. */
 // 命令标志。请检查 server.c 文件中定义的命令表，了解有关每个标志含义的更多信息。
-#define CMD_WRITE (1ULL << 0) /* "write" flag */                  // “写入”标志
-#define CMD_READONLY (1ULL << 1) /* "read-only" flag */           // “只读”标志
-#define CMD_DENYOOM (1ULL << 2) /* "use-memory" flag */           // “使用内存”标志
+#define CMD_WRITE (1ULL << 0) /* "write" flag */                  // "写入"标志
+#define CMD_READONLY (1ULL << 1) /* "read-only" flag */           // "只读"标志
+#define CMD_DENYOOM (1ULL << 2) /* "use-memory" flag */           // "使用内存"标志
 #define CMD_MODULE (1ULL << 3) /* Command exported by module. */  // 命令由模块导出。
-#define CMD_ADMIN (1ULL << 4) /* "admin" flag */                  // “管理员”标志
-#define CMD_PUBSUB (1ULL << 5) /* "pub-sub" flag */               // “发布-订阅”标志
-#define CMD_NOSCRIPT (1ULL << 6) /* "no-script" flag */           // “无脚本”标志
-#define CMD_RANDOM (1ULL << 7) /* "random" flag */                // “随机”标志
-#define CMD_SORT_FOR_SCRIPT (1ULL << 8) /* "to-sort" flag */      // “待排序”标志
-#define CMD_LOADING (1ULL << 9) /* "ok-loading" flag */           // “正常加载”标志
-#define CMD_STALE (1ULL << 10) /* "ok-stale" flag */              // “确定修复”标志
-#define CMD_SKIP_MONITOR (1ULL << 11) /* "no-monitor" flag */     // “无监视器”标志
-#define CMD_SKIP_SLOWLOG (1ULL << 12) /* "no-slowlog" flag */     // “无慢日志”标志
-#define CMD_ASKING (1ULL << 13) /* "cluster-asking" flag */       // “群集询问”标志
-#define CMD_FAST (1ULL << 14) /* "fast" flag */                   // “快速”标志
-#define CMD_NO_AUTH (1ULL << 15) /* "no-auth" flag */             // “无身份验证”标志
-#define CMD_MAY_REPLICATE (1ULL << 16) /* "may-replicate" flag */ // “可以复制”标志
+#define CMD_ADMIN (1ULL << 4) /* "admin" flag */                  // "管理员"标志
+#define CMD_PUBSUB (1ULL << 5) /* "pub-sub" flag */               // "发布-订阅"标志
+#define CMD_NOSCRIPT (1ULL << 6) /* "no-script" flag */           // "无脚本"标志
+#define CMD_RANDOM (1ULL << 7) /* "random" flag */                // "随机"标志
+#define CMD_SORT_FOR_SCRIPT (1ULL << 8) /* "to-sort" flag */      // "待排序"标志
+#define CMD_LOADING (1ULL << 9) /* "ok-loading" flag */           // "正常加载"标志
+#define CMD_STALE (1ULL << 10) /* "ok-stale" flag */              // "确定修复"标志
+#define CMD_SKIP_MONITOR (1ULL << 11) /* "no-monitor" flag */     // "无监视器"标志
+#define CMD_SKIP_SLOWLOG (1ULL << 12) /* "no-slowlog" flag */     // "无慢日志"标志
+#define CMD_ASKING (1ULL << 13) /* "cluster-asking" flag */       // "群集询问"标志
+#define CMD_FAST (1ULL << 14) /* "fast" flag */                   // "快速"标志
+#define CMD_NO_AUTH (1ULL << 15) /* "no-auth" flag */             // "无身份验证"标志
+#define CMD_MAY_REPLICATE (1ULL << 16) /* "may-replicate" flag */ // "可以复制"标志
 
 /* Command flags used by the module system. */
 // 模块系统使用的命令标志。
@@ -615,29 +615,18 @@ struct RedisModuleDefragCtx;
  * to serialize and deserialize the value in the RDB file, rewrite the AOF
  * log, create the digest for "DEBUG DIGEST", and free the value when a key
  * is deleted. */
-// 每个模块类型实现都应导出一组方法，以便序列化和反序列化 RDB 文件中的值，重写 AOF 日志，为“调试摘要”创建摘要，并在删除键时释放值。
+// 每个模块类型实现都应导出一组方法，以便序列化和反序列化 RDB 文件中的值，重写 AOF 日志，为"调试摘要"创建摘要，并在删除键时释放值。
 typedef void *(*moduleTypeLoadFunc)(struct RedisModuleIO *io, int encver);
-
 typedef void (*moduleTypeSaveFunc)(struct RedisModuleIO *io, void *value);
-
 typedef int (*moduleTypeAuxLoadFunc)(struct RedisModuleIO *rdb, int encver, int when);
-
 typedef void (*moduleTypeAuxSaveFunc)(struct RedisModuleIO *rdb, int when);
-
 typedef void (*moduleTypeRewriteFunc)(struct RedisModuleIO *io, struct redisObject *key, void *value);
-
 typedef void (*moduleTypeDigestFunc)(struct RedisModuleDigest *digest, void *value);
-
 typedef size_t (*moduleTypeMemUsageFunc)(const void *value);
-
 typedef void (*moduleTypeFreeFunc)(void *value);
-
 typedef size_t (*moduleTypeFreeEffortFunc)(struct redisObject *key, const void *value);
-
 typedef void (*moduleTypeUnlinkFunc)(struct redisObject *key, void *value);
-
 typedef void *(*moduleTypeCopyFunc)(struct redisObject *fromkey, struct redisObject *tokey, const void *value);
-
 typedef int (*moduleTypeDefragFunc)(struct RedisModuleDefragCtx *ctx, struct redisObject *key, void **value);
 
 /* This callback type is called by moduleNotifyUserChanged() every time
@@ -695,7 +684,7 @@ typedef struct moduleValue
 /* This is a wrapper for the 'rio' streams used inside rdb.c in Redis, so that
  * the user does not have to take the total count of the written bytes nor
  * to care about error conditions. */
-// 这是 Redis 中 rdb.c 内部使用的“rio”流的包装器，因此用户不必获取写入字节的总数，也不必关心错误条件。
+// 这是 Redis 中 rdb.c 内部使用的"rio"流的包装器，因此用户不必获取写入字节的总数，也不必关心错误条件。
 typedef struct RedisModuleIO
 {
     size_t bytes;               /* Bytes read / written so far. */
@@ -710,7 +699,7 @@ typedef struct RedisModuleIO
 
 /* Macro to initialize an IO context. Note that the 'ver' field is populated
  * inside rdb.c according to the version of the value to load. */
-// 用于初始化 IO 上下文的宏。请注意，“ver”字段根据要加载的值的版本填充在 rdb.c 中。
+// 用于初始化 IO 上下文的宏。请注意，"ver"字段根据要加载的值的版本填充在 rdb.c 中。
 #define moduleInitIOContext(iovar, mtype, rioptr, keyptr) \
     do                                                    \
     {                                                     \
@@ -748,7 +737,7 @@ typedef struct RedisModuleDigest
 /* Objects encoding. Some kind of objects like Strings and Hashes can be
  * internally represented in multiple ways. The 'encoding' field of the object
  * is set to one of this fields for this object. */
-// 对象编码。某些类型的对象（如字符串和哈希）可以在内部以多种方式表示。对象的“编码”字段设置为此对象的此字段之一。
+// 对象编码。某些类型的对象（如字符串和哈希）可以在内部以多种方式表示。对象的"编码"字段设置为此对象的此字段之一。
 /*
  * 编码方式，如果说每个类型只有一种方式，那么其实type和encoding两个字段只需要保留一个即可，
  * 但redis为了在各种情况下尽可能节约内存，对每种类型的数据在不同情况下有不同的编码格式，
@@ -798,7 +787,7 @@ typedef struct redisObject
 /* The a string name for an object's type as listed above
  * Native types are checked against the OBJ_STRING, OBJ_LIST, OBJ_* defines,
  * and Module types have their registered name returned. */
-// 根据对象获取对象名称名称
+// 根据对象获取对象名称
 char *getObjectTypeName(robj *);
 
 /* Macro used to initialize a Redis object allocated on the stack.
@@ -815,7 +804,7 @@ char *getObjectTypeName(robj *);
         _var.ptr = _ptr;                     \
     } while (0)
 
-//struct evictionPoolEntry; /* Defined in evict.c */ // 在 evict.c 中定义
+// struct evictionPoolEntry; /* Defined in evict.c */ // 在 evict.c 中定义
 
 /* This structure is used in order to represent the output buffer of a client,
  * which is actually a linked list of blocks like that, that is: client->reply. */
@@ -829,7 +818,7 @@ typedef struct clientReplyBlock
 /* Redis database representation. There are multiple databases identified
  * by integers from 0 (the default database) up to the max configured
  * database. The database number is the 'id' field in the structure. */
-// Redis数据库表示。已识别多个数据库从0（默认数据库）到配置的最大值的整数数据库。数据库编号是结构中的“id”字段。
+// Redis数据库表示。已识别多个数据库从0（默认数据库）到配置的最大值的整数数据库。数据库编号是结构中的"id"字段。
 typedef struct redisDb
 {
     dict *dict;                                                                             /* The keyspace for this DB                                           // 保存着数据库中的所有键值对数据, 这个属性也被称为键空间（key space）*/
@@ -1339,10 +1328,10 @@ struct redisServer
     int config_hz;                                                                                      /* Configured HZ value. May be different than
                                                                                                              the actual 'hz' field value if dynamic-hz
                                                                                                              is enabled. */
-                                                                                                        // 配置的 HZ 值。如果启用了动态 hz，则可能与实际的“hz”字段值不同。
+                                                                                                        // 配置的 HZ 值。如果启用了动态 hz，则可能与实际的"hz"字段值不同。
     mode_t umask; /* The umask value of the process on startup */                                       // 进程在启动时的掩码值
     int hz; /* serverCron() calls frequency in hertz */                                                 // redis 定时任务触发的频率
-    int in_fork_child; /* indication that this is a fork child */                                       // 表明这是一个分叉子项
+    int in_fork_child; /* indication that this is a fork child */                                       // 表明这是一个子进程
     redisDb *db;                                                                                        // redisDb 数组，默认 16 个 redisDb
     dict *commands; /* Command table */                                                                 // redis 支持的命令的字典
     dict *orig_commands; /* Command table before command renaming. */                                   // 没有转化的命令
@@ -1665,9 +1654,9 @@ struct redisServer
     /* Replication (slave) */
     /* 必须要这个用户才能登录 */
     char *masteruser; /* AUTH with this user and masterauth with master */ // 此用户的身份验证和主用户的主身份验证
-    /* masteruser用户对应的验证密码，当主服务器配置了“requirepass password”时，即表示从服
-       务器必须通过密码认证才能同步主服务器数据。同样的需要在从服务器配置“masterauth<master-
-       password>”，用于设置请求同步主服务器时的认证密码.
+    /* masteruser用户对应的验证密码，当主服务器配置了"requirepass password"时，即表示从服
+       务器必须通过密码认证才能同步主服务器数据。同样的需要在从服务器配置"masterauth<master-
+       password>"，用于设置请求同步主服务器时的认证密码.
      */
     sds masterauth; /* AUTH with this password with master */ // 使用此密码与主密码进行身份验证
     /* 主服务器的IP */
@@ -1859,7 +1848,7 @@ struct redisServer
     sds requirepass;                                                        /* Remember the cleartext password set with
                                                                                the old "requirepass" directive for
                                                                                backward compatibility with Redis <= 5. */
-                                                                            // 请记住使用旧的“requirepass”指令设置的明文密码，以便向后兼容Redis <= 5。
+                                                                            // 请记住使用旧的"requirepass"指令设置的明文密码，以便向后兼容Redis <= 5。
     int acl_pubusub_default; /* Default ACL pub/sub channels flag */        // 默认 ACL 发布子频道标志
 
     /* Assert & bug reporting */
