@@ -5,6 +5,8 @@
 #ifndef REDIS_EVICT_H
 #define REDIS_EVICT_H
 
+#include "server.h"
+
 /* ----------------------------------------------------------------------------
  * Data structures
  * --------------------------------------------------------------------------*/
@@ -30,5 +32,9 @@ struct evictionPoolEntry {
 };
 
 static struct evictionPoolEntry *EvictionPoolLRU;
+
+int getMaxmemoryState(size_t *total, size_t *logical, size_t *tofree, float *level);
+size_t freeMemoryGetNotCountedMemory(void);
+int overMaxmemoryAfterAlloc(size_t moremem);
 
 #endif //REDIS_EVICT_H

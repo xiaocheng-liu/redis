@@ -51,24 +51,27 @@ static void anetSetError(char *err, const char *fmt, ...)
 {
     va_list ap;
 
-    if (!err) return;
+    if (!err)
+        return;
     va_start(ap, fmt);
     vsnprintf(err, ANET_ERR_LEN, fmt, ap);
     va_end(ap);
 }
 
-int anetSetBlock(char *err, int fd, int non_block) {
+int anetSetBlock(char *err, int fd, int non_block)
+{
     int flags;
 
     /* Set the socket blocking (if non_block is zero) or non-blocking.
      * Note that fcntl(2) for F_GETFL and F_SETFL can't be
      * interrupted by a signal. */
-    if ((flags = fcntl(fd, F_GETFL)) == -1) {
+    if ((flags = fcntl(fd, F_GETFL)) == -1)
+    {
         anetSetError(err, "fcntl(F_GETFL): %s", strerror(errno));
         return ANET_ERR;
     }
 
-    /* Check if this flag has been set or unset, if so, 
+    /* Check if this flag has been set or unset, if so,
      * then there is no need to call fcntl to set/unset it again. */
     if (!!(flags & O_NONBLOCK) == !!non_block)
         return ANET_OK;
@@ -78,29 +81,34 @@ int anetSetBlock(char *err, int fd, int non_block) {
     else
         flags &= ~O_NONBLOCK;
 
-    if (fcntl(fd, F_SETFL, flags) == -1) {
+    if (fcntl(fd, F_SETFL, flags) == -1)
+    {
         anetSetError(err, "fcntl(F_SETFL,O_NONBLOCK): %s", strerror(errno));
         return ANET_ERR;
     }
     return ANET_OK;
 }
 
-int anetNonBlock(char *err, int fd) {
-    return anetSetBlock(err,fd,1);
+int anetNonBlock(char *err, int fd)
+{
+    return anetSetBlock(err, fd, 1);
 }
 
-int anetBlock(char *err, int fd) {
-    return anetSetBlock(err,fd,0);
+int anetBlock(char *err, int fd)
+{
+    return anetSetBlock(err, fd, 0);
 }
 
-/* Enable the FD_CLOEXEC on the given fd to avoid fd leaks. 
- * This function should be invoked for fd's on specific places 
+/* Enable the FD_CLOEXEC on the given fd to avoid fd leaks.
+ * This function should be invoked for fd's on specific places
  * where fork + execve system calls are called. */
-int anetCloexec(int fd) {
+int anetCloexec(int fd)
+{
     int r;
     int flags;
 
-    do {
+    do
+    {
         r = fcntl(fd, F_GETFD);
     } while (r == -1 && errno == EINTR);
 
@@ -109,7 +117,8 @@ int anetCloexec(int fd) {
 
     flags = r | FD_CLOEXEC;
 
-    do {
+    do
+    {
         r = fcntl(fd, F_SETFD, flags);
     } while (r == -1 && errno == EINTR);
 
@@ -136,7 +145,8 @@ int anetKeepAlive(char *err, int fd, int interval)
 
     /* Send first probe after interval. */
     val = interval;
-    if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPIDLE, &val, sizeof(val)) < 0) {
+    if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPIDLE, &val, sizeof(val)) < 0)
+    {
         anetSetError(err, "setsockopt TCP_KEEPIDLE: %s\n", strerror(errno));
         return ANET_ERR;
     }
@@ -144,9 +154,11 @@ int anetKeepAlive(char *err, int fd, int interval)
     /* Send next probes after the specified interval. Note that we set the
      * delay as interval / 3, as we send three probes before detecting
      * an error (see the next setsockopt call). */
-    val = interval/3;
-    if (val == 0) val = 1;
-    if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPINTVL, &val, sizeof(val)) < 0) {
+    val = interval / 3;
+    if (val == 0)
+        val = 1;
+    if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPINTVL, &val, sizeof(val)) < 0)
+    {
         anetSetError(err, "setsockopt TCP_KEEPINTVL: %s\n", strerror(errno));
         return ANET_ERR;
     }
@@ -154,12 +166,13 @@ int anetKeepAlive(char *err, int fd, int interval)
     /* Consider the socket in error state after three we send three ACK
      * probes without getting a reply. */
     val = 3;
-    if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPCNT, &val, sizeof(val)) < 0) {
+    if (setsockopt(fd, IPPROTO_TCP, TCP_KEEPCNT, &val, sizeof(val)) < 0)
+    {
         anetSetError(err, "setsockopt TCP_KEEPCNT: %s\n", strerror(errno));
         return ANET_ERR;
     }
 #else
-    ((void) interval); /* Avoid unused var warning for non Linux systems. */
+    ((void)interval); /* Avoid unused var warning for non Linux systems. */
 #endif
 
     return ANET_OK;
@@ -185,7 +198,6 @@ int anetDisableTcpNoDelay(char *err, int fd)
     return anetSetTcpNoDelay(err, fd, 0);
 }
 
-
 int anetSetSendBuffer(char *err, int fd, int buffsize)
 {
     if (setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &buffsize, sizeof(buffsize)) == -1)
@@ -199,7 +211,8 @@ int anetSetSendBuffer(char *err, int fd, int buffsize)
 int anetTcpKeepAlive(char *err, int fd)
 {
     int yes = 1;
-    if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &yes, sizeof(yes)) == -1) {
+    if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &yes, sizeof(yes)) == -1)
+    {
         anetSetError(err, "setsockopt SO_KEEPALIVE: %s", strerror(errno));
         return ANET_ERR;
     }
@@ -208,12 +221,14 @@ int anetTcpKeepAlive(char *err, int fd)
 
 /* Set the socket send timeout (SO_SNDTIMEO socket option) to the specified
  * number of milliseconds, or disable it if the 'ms' argument is zero. */
-int anetSendTimeout(char *err, int fd, long long ms) {
+int anetSendTimeout(char *err, int fd, long long ms)
+{
     struct timeval tv;
 
-    tv.tv_sec = ms/1000;
-    tv.tv_usec = (ms%1000)*1000;
-    if (setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) == -1) {
+    tv.tv_sec = ms / 1000;
+    tv.tv_usec = (ms % 1000) * 1000;
+    if (setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) == -1)
+    {
         anetSetError(err, "setsockopt SO_SNDTIMEO: %s", strerror(errno));
         return ANET_ERR;
     }
@@ -222,12 +237,14 @@ int anetSendTimeout(char *err, int fd, long long ms) {
 
 /* Set the socket receive timeout (SO_RCVTIMEO socket option) to the specified
  * number of milliseconds, or disable it if the 'ms' argument is zero. */
-int anetRecvTimeout(char *err, int fd, long long ms) {
+int anetRecvTimeout(char *err, int fd, long long ms)
+{
     struct timeval tv;
 
-    tv.tv_sec = ms/1000;
-    tv.tv_usec = (ms%1000)*1000;
-    if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) == -1) {
+    tv.tv_sec = ms / 1000;
+    tv.tv_usec = (ms % 1000) * 1000;
+    if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) == -1)
+    {
         anetSetError(err, "setsockopt SO_RCVTIMEO: %s", strerror(errno));
         return ANET_ERR;
     }
@@ -241,24 +258,29 @@ int anetRecvTimeout(char *err, int fd, long long ms) {
  * that are actually already IPv4 or IPv6 addresses. This turns the function
  * into a validating / normalizing function. */
 int anetResolve(char *err, char *host, char *ipbuf, size_t ipbuf_len,
-                       int flags)
+                int flags)
 {
     struct addrinfo hints, *info;
     int rv;
 
-    memset(&hints,0,sizeof(hints));
-    if (flags & ANET_IP_ONLY) hints.ai_flags = AI_NUMERICHOST;
+    memset(&hints, 0, sizeof(hints));
+    if (flags & ANET_IP_ONLY)
+        hints.ai_flags = AI_NUMERICHOST;
     hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;  /* specify socktype to avoid dups */
+    hints.ai_socktype = SOCK_STREAM; /* specify socktype to avoid dups */
 
-    if ((rv = getaddrinfo(host, NULL, &hints, &info)) != 0) {
+    if ((rv = getaddrinfo(host, NULL, &hints, &info)) != 0)
+    {
         anetSetError(err, "%s", gai_strerror(rv));
         return ANET_ERR;
     }
-    if (info->ai_family == AF_INET) {
+    if (info->ai_family == AF_INET)
+    {
         struct sockaddr_in *sa = (struct sockaddr_in *)info->ai_addr;
         inet_ntop(AF_INET, &(sa->sin_addr), ipbuf, ipbuf_len);
-    } else {
+    }
+    else
+    {
         struct sockaddr_in6 *sa = (struct sockaddr_in6 *)info->ai_addr;
         inet_ntop(AF_INET6, &(sa->sin6_addr), ipbuf, ipbuf_len);
     }
@@ -267,27 +289,32 @@ int anetResolve(char *err, char *host, char *ipbuf, size_t ipbuf_len,
     return ANET_OK;
 }
 
-static int anetSetReuseAddr(char *err, int fd) {
+static int anetSetReuseAddr(char *err, int fd)
+{
     int yes = 1;
     /* Make sure connection-intensive things like the redis benchmark
      * will be able to close/open sockets a zillion of times */
-    if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1) {
+    if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1)
+    {
         anetSetError(err, "setsockopt SO_REUSEADDR: %s", strerror(errno));
         return ANET_ERR;
     }
     return ANET_OK;
 }
 
-static int anetCreateSocket(char *err, int domain) {
+static int anetCreateSocket(char *err, int domain)
+{
     int s;
-    if ((s = socket(domain, SOCK_STREAM, 0)) == -1) {
+    if ((s = socket(domain, SOCK_STREAM, 0)) == -1)
+    {
         anetSetError(err, "creating socket: %s", strerror(errno));
         return ANET_ERR;
     }
 
     /* Make sure connection-intensive things like the redis benchmark
      * will be able to close/open sockets a zillion of times */
-    if (anetSetReuseAddr(err,s) == ANET_ERR) {
+    if (anetSetReuseAddr(err, s) == ANET_ERR)
+    {
         close(s);
         return ANET_ERR;
     }
@@ -297,32 +324,62 @@ static int anetCreateSocket(char *err, int domain) {
 #define ANET_CONNECT_NONE 0
 #define ANET_CONNECT_NONBLOCK 1
 #define ANET_CONNECT_BE_BINDING 2 /* Best effort binding. */
+
+/**
+ * Attempts to establish a TCP connection to a specified address and port.
+ *
+ * This function tries to create a TCP connection to a specified address and port.
+ * It supports both IPv4 and IPv6, and can handle non-blocking connections and binding to a specific source address.
+ *
+ * @param err A pointer to an error message buffer, used to store error descriptions if the connection fails.
+ * @param addr The address of the target server, in string format.
+ * @param port The port number of the target server.
+ * @param source_addr The source address to bind to, in string format. If not needed, pass NULL.
+ * @param flags Connection flags, used to specify connection options, such as non-blocking mode.
+ * @return Returns the file descriptor of the connected socket on success, or ANET_ERR on failure.
+ */
 static int anetTcpGenericConnect(char *err, const char *addr, int port,
                                  const char *source_addr, int flags)
 {
+    // Initialize socket descriptor and return value
     int s = ANET_ERR, rv;
-    char portstr[6];  /* strlen("65535") + 1; */
+    char portstr[6]; /* strlen("65535") + 1; */
     struct addrinfo hints, *servinfo, *bservinfo, *p, *b;
 
-    snprintf(portstr,sizeof(portstr),"%d",port);
-    memset(&hints,0,sizeof(hints));
+    // Convert port number to string
+    snprintf(portstr, sizeof(portstr), "%d", port);
+    // Clear hints structure
+    memset(&hints, 0, sizeof(hints));
+    // Set address family to unspecified, allowing both IPv4 and IPv6
     hints.ai_family = AF_UNSPEC;
+    // Set socket type to stream
     hints.ai_socktype = SOCK_STREAM;
 
-    if ((rv = getaddrinfo(addr,portstr,&hints,&servinfo)) != 0) {
+    // Use getaddrinfo to get address information for the target server
+    if ((rv = getaddrinfo(addr, portstr, &hints, &servinfo)) != 0)
+    {
+        // If getaddrinfo fails, set error message and return failure
         anetSetError(err, "%s", gai_strerror(rv));
         return ANET_ERR;
     }
-    for (p = servinfo; p != NULL; p = p->ai_next) {
+    // Iterate through all returned address information
+    for (p = servinfo; p != NULL; p = p->ai_next)
+    {
         /* Try to create the socket and to connect it.
          * If we fail in the socket() call, or on connect(), we retry with
          * the next entry in servinfo. */
-        if ((s = socket(p->ai_family,p->ai_socktype,p->ai_protocol)) == -1)
+        // Try to create a socket
+        if ((s = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
             continue;
-        if (anetSetReuseAddr(err,s) == ANET_ERR) goto error;
-        if (flags & ANET_CONNECT_NONBLOCK && anetNonBlock(err,s) != ANET_OK)
+        // Set socket to reuse address
+        if (anetSetReuseAddr(err, s) == ANET_ERR)
             goto error;
-        if (source_addr) {
+        // If non-blocking connection is requested, set socket to non-blocking mode
+        if (flags & ANET_CONNECT_NONBLOCK && anetNonBlock(err, s) != ANET_OK)
+            goto error;
+        // If a source address is specified, try to bind to it
+        if (source_addr)
+        {
             int bound = 0;
             /* Using getaddrinfo saves us from self-determining IPv4 vs IPv6 */
             if ((rv = getaddrinfo(source_addr, NULL, &hints, &bservinfo)) != 0)
@@ -330,23 +387,31 @@ static int anetTcpGenericConnect(char *err, const char *addr, int port,
                 anetSetError(err, "%s", gai_strerror(rv));
                 goto error;
             }
-            for (b = bservinfo; b != NULL; b = b->ai_next) {
-                if (bind(s,b->ai_addr,b->ai_addrlen) != -1) {
+            // Iterate through all returned source address information, trying to bind to one
+            for (b = bservinfo; b != NULL; b = b->ai_next)
+            {
+                if (bind(s, b->ai_addr, b->ai_addrlen) != -1)
+                {
                     bound = 1;
                     break;
                 }
             }
             freeaddrinfo(bservinfo);
-            if (!bound) {
+            // If binding fails, set error message and go to error handling
+            if (!bound)
+            {
                 anetSetError(err, "bind: %s", strerror(errno));
                 goto error;
             }
         }
-        if (connect(s,p->ai_addr,p->ai_addrlen) == -1) {
+        // Try to connect to the target server
+        if (connect(s, p->ai_addr, p->ai_addrlen) == -1)
+        {
             /* If the socket is non-blocking, it is ok for connect() to
              * return an EINPROGRESS error here. */
             if (errno == EINPROGRESS && flags & ANET_CONNECT_NONBLOCK)
                 goto end;
+            // If connect fails, close the socket and continue trying the next address
             close(s);
             s = ANET_ERR;
             continue;
@@ -356,49 +421,92 @@ static int anetTcpGenericConnect(char *err, const char *addr, int port,
          * have a connected socket. Let's return to the caller. */
         goto end;
     }
+    // If no address information was returned, set error message
     if (p == NULL)
         anetSetError(err, "creating socket: %s", strerror(errno));
 
 error:
-    if (s != ANET_ERR) {
+    // Error handling, close the socket if it was created
+    if (s != ANET_ERR)
+    {
         close(s);
         s = ANET_ERR;
     }
 
 end:
+    // Release address information
     freeaddrinfo(servinfo);
 
     /* Handle best effort binding: if a binding address was used, but it is
      * not possible to create a socket, try again without a binding address. */
-    if (s == ANET_ERR && source_addr && (flags & ANET_CONNECT_BE_BINDING)) {
-        return anetTcpGenericConnect(err,addr,port,NULL,flags);
-    } else {
+    if (s == ANET_ERR && source_addr && (flags & ANET_CONNECT_BE_BINDING))
+    {
+        return anetTcpGenericConnect(err, addr, port, NULL, flags);
+    }
+    else
+    {
+        // Return the socket descriptor or error code
         return s;
     }
 }
 
+/**
+ * anetTcpConnect是一个用于建立TCP连接的函数。
+ * 它通过调用anetTcpGenericConnect函数来实现，不启用任何特殊连接选项。
+ *
+ * @param err 错误描述字符串的缓冲区，用于存储发生错误时的错误信息。
+ * @param addr 一个包含IP地址或主机名的字符串，指示要连接到的地址。
+ * @param port 要连接到的远程主机的端口号。
+ *
+ * @return 返回一个整数值，表示连接的结果。具体返回值的含义依赖于具体实现。
+ */
 int anetTcpConnect(char *err, const char *addr, int port)
 {
-    return anetTcpGenericConnect(err,addr,port,NULL,ANET_CONNECT_NONE);
+    // 调用通用的TCP连接函数，不启用任何特殊选项
+    return anetTcpGenericConnect(err, addr, port, NULL, ANET_CONNECT_NONE);
 }
 
+/**
+ * anetTcpNonBlockConnect函数用于创建一个非阻塞的TCP连接。
+ *
+ * @param err 错误信息的缓冲区，如果发生错误，将被填充。
+ * @param addr 服务器的地址。
+ * @param port 服务器的端口。
+ *
+ * @return 返回一个整数值，表示创建的非阻塞TCP连接的文件描述符（fd）。
+ *         如果返回值为-1，则表示连接失败，此时err参数中会包含具体的错误信息。
+ */
 int anetTcpNonBlockConnect(char *err, const char *addr, int port)
 {
-    return anetTcpGenericConnect(err,addr,port,NULL,ANET_CONNECT_NONBLOCK);
+    // 调用anetTcpGenericConnect函数创建一个非阻塞的TCP连接
+    return anetTcpGenericConnect(err, addr, port, NULL, ANET_CONNECT_NONBLOCK);
 }
 
+/**
+ * 使用TCP协议建立非阻塞连接的函数
+ *
+ * @param err 错误信息的缓冲区，如果发生错误，将填充相关错误信息
+ * @param addr 目标服务器的地址字符串，例如 "127.0.0.1"
+ * @param port 目标服务器的端口号
+ * @param source_addr 源地址字符串，用于绑定到特定的本地接口，如果不需要绑定则留空
+ *
+ * @return 返回一个文件描述符，表示新建的非阻塞TCP连接如果发生错误，则返回-1，并在err参数中填充错误信息
+ *
+ * 此函数通过调用更通用的anetTcpGenericConnect函数来实现，它使用了ANET_CONNECT_NONBLOCK标志来指示建立非阻塞连接
+ * 非阻塞模式意味着在连接建立过程中，如果不能立即完成，函数将不会等待，而是直接返回
+ */
 int anetTcpNonBlockBindConnect(char *err, const char *addr, int port,
                                const char *source_addr)
 {
-    return anetTcpGenericConnect(err,addr,port,source_addr,
-            ANET_CONNECT_NONBLOCK);
+    return anetTcpGenericConnect(err, addr, port, source_addr,
+                                 ANET_CONNECT_NONBLOCK);
 }
 
 int anetTcpNonBlockBestEffortBindConnect(char *err, const char *addr, int port,
                                          const char *source_addr)
 {
-    return anetTcpGenericConnect(err,addr,port,source_addr,
-            ANET_CONNECT_NONBLOCK|ANET_CONNECT_BE_BINDING);
+    return anetTcpGenericConnect(err, addr, port, source_addr,
+                                 ANET_CONNECT_NONBLOCK | ANET_CONNECT_BE_BINDING);
 }
 
 int anetUnixGenericConnect(char *err, const char *path, int flags)
@@ -406,18 +514,21 @@ int anetUnixGenericConnect(char *err, const char *path, int flags)
     int s;
     struct sockaddr_un sa;
 
-    if ((s = anetCreateSocket(err,AF_LOCAL)) == ANET_ERR)
+    if ((s = anetCreateSocket(err, AF_LOCAL)) == ANET_ERR)
         return ANET_ERR;
 
     sa.sun_family = AF_LOCAL;
-    strncpy(sa.sun_path,path,sizeof(sa.sun_path)-1);
-    if (flags & ANET_CONNECT_NONBLOCK) {
-        if (anetNonBlock(err,s) != ANET_OK) {
+    strncpy(sa.sun_path, path, sizeof(sa.sun_path) - 1);
+    if (flags & ANET_CONNECT_NONBLOCK)
+    {
+        if (anetNonBlock(err, s) != ANET_OK)
+        {
             close(s);
             return ANET_ERR;
         }
     }
-    if (connect(s,(struct sockaddr*)&sa,sizeof(sa)) == -1) {
+    if (connect(s, (struct sockaddr *)&sa, sizeof(sa)) == -1)
+    {
         if (errno == EINPROGRESS &&
             flags & ANET_CONNECT_NONBLOCK)
             return s;
@@ -431,12 +542,12 @@ int anetUnixGenericConnect(char *err, const char *path, int flags)
 
 int anetUnixConnect(char *err, const char *path)
 {
-    return anetUnixGenericConnect(err,path,ANET_CONNECT_NONE);
+    return anetUnixGenericConnect(err, path, ANET_CONNECT_NONE);
 }
 
 int anetUnixNonBlockConnect(char *err, const char *path)
 {
-    return anetUnixGenericConnect(err,path,ANET_CONNECT_NONBLOCK);
+    return anetUnixGenericConnect(err, path, ANET_CONNECT_NONBLOCK);
 }
 
 /* Like read(2) but make sure 'count' is read before to return
@@ -444,10 +555,13 @@ int anetUnixNonBlockConnect(char *err, const char *path)
 int anetRead(int fd, char *buf, int count)
 {
     ssize_t nread, totlen = 0;
-    while(totlen != count) {
-        nread = read(fd,buf,count-totlen);
-        if (nread == 0) return totlen;
-        if (nread == -1) return -1;
+    while (totlen != count)
+    {
+        nread = read(fd, buf, count - totlen);
+        if (nread == 0)
+            return totlen;
+        if (nread == -1)
+            return -1;
         totlen += nread;
         buf += nread;
     }
@@ -459,24 +573,30 @@ int anetRead(int fd, char *buf, int count)
 int anetWrite(int fd, char *buf, int count)
 {
     ssize_t nwritten, totlen = 0;
-    while(totlen != count) {
-        nwritten = write(fd,buf,count-totlen);
-        if (nwritten == 0) return totlen;
-        if (nwritten == -1) return -1;
+    while (totlen != count)
+    {
+        nwritten = write(fd, buf, count - totlen);
+        if (nwritten == 0)
+            return totlen;
+        if (nwritten == -1)
+            return -1;
         totlen += nwritten;
         buf += nwritten;
     }
     return totlen;
 }
 
-static int anetListen(char *err, int s, struct sockaddr *sa, socklen_t len, int backlog) {
-    if (bind(s,sa,len) == -1) {
+static int anetListen(char *err, int s, struct sockaddr *sa, socklen_t len, int backlog)
+{
+    if (bind(s, sa, len) == -1)
+    {
         anetSetError(err, "bind: %s", strerror(errno));
         close(s);
         return ANET_ERR;
     }
 
-    if (listen(s, backlog) == -1) {
+    if (listen(s, backlog) == -1)
+    {
         anetSetError(err, "listen: %s", strerror(errno));
         close(s);
         return ANET_ERR;
@@ -484,9 +604,11 @@ static int anetListen(char *err, int s, struct sockaddr *sa, socklen_t len, int 
     return ANET_OK;
 }
 
-static int anetV6Only(char *err, int s) {
+static int anetV6Only(char *err, int s)
+{
     int yes = 1;
-    if (setsockopt(s,IPPROTO_IPV6,IPV6_V6ONLY,&yes,sizeof(yes)) == -1) {
+    if (setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, &yes, sizeof(yes)) == -1)
+    {
         anetSetError(err, "setsockopt: %s", strerror(errno));
         return ANET_ERR;
     }
@@ -496,39 +618,46 @@ static int anetV6Only(char *err, int s) {
 static int _anetTcpServer(char *err, int port, char *bindaddr, int af, int backlog)
 {
     int s = -1, rv;
-    char _port[6];  /* strlen("65535") */
+    char _port[6]; /* strlen("65535") */
     struct addrinfo hints, *servinfo, *p;
 
-    snprintf(_port,6,"%d",port);
-    memset(&hints,0,sizeof(hints));
+    snprintf(_port, 6, "%d", port);
+    memset(&hints, 0, sizeof(hints));
     hints.ai_family = af;
     hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_PASSIVE;    /* No effect if bindaddr != NULL */
+    hints.ai_flags = AI_PASSIVE; /* No effect if bindaddr != NULL */
     if (bindaddr && !strcmp("*", bindaddr))
         bindaddr = NULL;
     if (af == AF_INET6 && bindaddr && !strcmp("::*", bindaddr))
         bindaddr = NULL;
 
-    if ((rv = getaddrinfo(bindaddr,_port,&hints,&servinfo)) != 0) {
+    if ((rv = getaddrinfo(bindaddr, _port, &hints, &servinfo)) != 0)
+    {
         anetSetError(err, "%s", gai_strerror(rv));
         return ANET_ERR;
     }
-    for (p = servinfo; p != NULL; p = p->ai_next) {
-        if ((s = socket(p->ai_family,p->ai_socktype,p->ai_protocol)) == -1)
+    for (p = servinfo; p != NULL; p = p->ai_next)
+    {
+        if ((s = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
             continue;
 
-        if (af == AF_INET6 && anetV6Only(err,s) == ANET_ERR) goto error;
-        if (anetSetReuseAddr(err,s) == ANET_ERR) goto error;
-        if (anetListen(err,s,p->ai_addr,p->ai_addrlen,backlog) == ANET_ERR) s = ANET_ERR;
+        if (af == AF_INET6 && anetV6Only(err, s) == ANET_ERR)
+            goto error;
+        if (anetSetReuseAddr(err, s) == ANET_ERR)
+            goto error;
+        if (anetListen(err, s, p->ai_addr, p->ai_addrlen, backlog) == ANET_ERR)
+            s = ANET_ERR;
         goto end;
     }
-    if (p == NULL) {
+    if (p == NULL)
+    {
         anetSetError(err, "unable to bind socket, errno: %d", errno);
         goto error;
     }
 
 error:
-    if (s != -1) close(s);
+    if (s != -1)
+        close(s);
     s = ANET_ERR;
 end:
     freeaddrinfo(servinfo);
@@ -550,27 +679,31 @@ int anetUnixServer(char *err, char *path, mode_t perm, int backlog)
     int s;
     struct sockaddr_un sa;
 
-    if ((s = anetCreateSocket(err,AF_LOCAL)) == ANET_ERR)
+    if ((s = anetCreateSocket(err, AF_LOCAL)) == ANET_ERR)
         return ANET_ERR;
 
-    memset(&sa,0,sizeof(sa));
+    memset(&sa, 0, sizeof(sa));
     sa.sun_family = AF_LOCAL;
-    strncpy(sa.sun_path,path,sizeof(sa.sun_path)-1);
-    if (anetListen(err,s,(struct sockaddr*)&sa,sizeof(sa),backlog) == ANET_ERR)
+    strncpy(sa.sun_path, path, sizeof(sa.sun_path) - 1);
+    if (anetListen(err, s, (struct sockaddr *)&sa, sizeof(sa), backlog) == ANET_ERR)
         return ANET_ERR;
     if (perm)
         chmod(sa.sun_path, perm);
     return s;
 }
 
-static int anetGenericAccept(char *err, int s, struct sockaddr *sa, socklen_t *len) {
+static int anetGenericAccept(char *err, int s, struct sockaddr *sa, socklen_t *len)
+{
     int fd;
-    while(1) {
-        fd = accept(s,sa,len);
-        if (fd == -1) {
+    while (1)
+    {
+        fd = accept(s, sa, len);
+        if (fd == -1)
+        {
             if (errno == EINTR)
                 continue;
-            else {
+            else
+            {
                 anetSetError(err, "accept: %s", strerror(errno));
                 return ANET_ERR;
             }
@@ -580,88 +713,123 @@ static int anetGenericAccept(char *err, int s, struct sockaddr *sa, socklen_t *l
     return fd;
 }
 
-int anetTcpAccept(char *err, int s, char *ip, size_t ip_len, int *port) {
+int anetTcpAccept(char *err, int s, char *ip, size_t ip_len, int *port)
+{
     int fd;
     struct sockaddr_storage sa;
     socklen_t salen = sizeof(sa);
-    if ((fd = anetGenericAccept(err,s,(struct sockaddr*)&sa,&salen)) == -1)
+    if ((fd = anetGenericAccept(err, s, (struct sockaddr *)&sa, &salen)) == -1)
         return ANET_ERR;
 
-    if (sa.ss_family == AF_INET) {
+    if (sa.ss_family == AF_INET)
+    {
         struct sockaddr_in *s = (struct sockaddr_in *)&sa;
-        if (ip) inet_ntop(AF_INET,(void*)&(s->sin_addr),ip,ip_len);
-        if (port) *port = ntohs(s->sin_port);
-    } else {
+        if (ip)
+            inet_ntop(AF_INET, (void *)&(s->sin_addr), ip, ip_len);
+        if (port)
+            *port = ntohs(s->sin_port);
+    }
+    else
+    {
         struct sockaddr_in6 *s = (struct sockaddr_in6 *)&sa;
-        if (ip) inet_ntop(AF_INET6,(void*)&(s->sin6_addr),ip,ip_len);
-        if (port) *port = ntohs(s->sin6_port);
+        if (ip)
+            inet_ntop(AF_INET6, (void *)&(s->sin6_addr), ip, ip_len);
+        if (port)
+            *port = ntohs(s->sin6_port);
     }
     return fd;
 }
 
-int anetUnixAccept(char *err, int s) {
+int anetUnixAccept(char *err, int s)
+{
     int fd;
     struct sockaddr_un sa;
     socklen_t salen = sizeof(sa);
-    if ((fd = anetGenericAccept(err,s,(struct sockaddr*)&sa,&salen)) == -1)
+    if ((fd = anetGenericAccept(err, s, (struct sockaddr *)&sa, &salen)) == -1)
         return ANET_ERR;
 
     return fd;
 }
 
-int anetFdToString(int fd, char *ip, size_t ip_len, int *port, int fd_to_str_type) {
+int anetFdToString(int fd, char *ip, size_t ip_len, int *port, int fd_to_str_type)
+{
     struct sockaddr_storage sa;
     socklen_t salen = sizeof(sa);
 
-    if (fd_to_str_type == FD_TO_PEER_NAME) {
-        if (getpeername(fd, (struct sockaddr *)&sa, &salen) == -1) goto error;
-    } else {
-        if (getsockname(fd, (struct sockaddr *)&sa, &salen) == -1) goto error;
+    if (fd_to_str_type == FD_TO_PEER_NAME)
+    {
+        if (getpeername(fd, (struct sockaddr *)&sa, &salen) == -1)
+            goto error;
     }
-    if (ip_len == 0) goto error;
+    else
+    {
+        if (getsockname(fd, (struct sockaddr *)&sa, &salen) == -1)
+            goto error;
+    }
+    if (ip_len == 0)
+        goto error;
 
-    if (sa.ss_family == AF_INET) {
+    if (sa.ss_family == AF_INET)
+    {
         struct sockaddr_in *s = (struct sockaddr_in *)&sa;
-        if (ip) inet_ntop(AF_INET,(void*)&(s->sin_addr),ip,ip_len);
-        if (port) *port = ntohs(s->sin_port);
-    } else if (sa.ss_family == AF_INET6) {
+        if (ip)
+            inet_ntop(AF_INET, (void *)&(s->sin_addr), ip, ip_len);
+        if (port)
+            *port = ntohs(s->sin_port);
+    }
+    else if (sa.ss_family == AF_INET6)
+    {
         struct sockaddr_in6 *s = (struct sockaddr_in6 *)&sa;
-        if (ip) inet_ntop(AF_INET6,(void*)&(s->sin6_addr),ip,ip_len);
-        if (port) *port = ntohs(s->sin6_port);
-    } else if (sa.ss_family == AF_UNIX) {
-        if (ip) snprintf(ip, ip_len, "/unixsocket");
-        if (port) *port = 0;
-    } else {
+        if (ip)
+            inet_ntop(AF_INET6, (void *)&(s->sin6_addr), ip, ip_len);
+        if (port)
+            *port = ntohs(s->sin6_port);
+    }
+    else if (sa.ss_family == AF_UNIX)
+    {
+        if (ip)
+            snprintf(ip, ip_len, "/unixsocket");
+        if (port)
+            *port = 0;
+    }
+    else
+    {
         goto error;
     }
     return 0;
 
 error:
-    if (ip) {
-        if (ip_len >= 2) {
+    if (ip)
+    {
+        if (ip_len >= 2)
+        {
             ip[0] = '?';
             ip[1] = '\0';
-        } else if (ip_len == 1) {
+        }
+        else if (ip_len == 1)
+        {
             ip[0] = '\0';
         }
     }
-    if (port) *port = 0;
+    if (port)
+        *port = 0;
     return -1;
 }
 
 /* Format an IP,port pair into something easy to parse. If IP is IPv6
  * (matches for ":"), the ip is surrounded by []. IP and port are just
  * separated by colons. This the standard to display addresses within Redis. */
-int anetFormatAddr(char *buf, size_t buf_len, char *ip, int port) {
-    return snprintf(buf,buf_len, strchr(ip,':') ?
-           "[%s]:%d" : "%s:%d", ip, port);
+int anetFormatAddr(char *buf, size_t buf_len, char *ip, int port)
+{
+    return snprintf(buf, buf_len, strchr(ip, ':') ? "[%s]:%d" : "%s:%d", ip, port);
 }
 
 /* Like anetFormatAddr() but extract ip and port from the socket's peer/sockname. */
-int anetFormatFdAddr(int fd, char *buf, size_t buf_len, int fd_to_str_type) {
+int anetFormatFdAddr(int fd, char *buf, size_t buf_len, int fd_to_str_type)
+{
     char ip[INET6_ADDRSTRLEN];
     int port;
 
-    anetFdToString(fd,ip,sizeof(ip),&port,fd_to_str_type);
+    anetFdToString(fd, ip, sizeof(ip), &port, fd_to_str_type);
     return anetFormatAddr(buf, buf_len, ip, port);
 }

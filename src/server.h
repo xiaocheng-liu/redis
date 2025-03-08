@@ -55,8 +55,8 @@
 #include <systemd/sd-daemon.h>
 #endif
 
-typedef long long mstime_t; /* millisecond time type. */
-typedef long long ustime_t; /* microsecond time type. */
+typedef long long mstime_t; /* millisecond time type. */ // 毫秒时间类型
+typedef long long ustime_t; /* microsecond time type. */ // 微秒时间类型
 
 #include "version.h" /* Version macro 版本宏*/
 
@@ -64,21 +64,20 @@ typedef long long ustime_t; /* microsecond time type. */
 #include "sds.h"       /* Dynamic safe strings 动态安全字符串*/
 #include "dict.h"      /* Hash tables 哈希表*/
 #include "adlist.h"    /* Linked lists 链表 */
-#include "zmalloc.h"   /* total memory usage aware version of malloc/free */
-#include "anet.h"      /* Networking the easy way */
+#include "zmalloc.h"   /* total memory usage aware version of malloc/free */ // 该头文件提供了内存分配函数的替代版本（如 malloc 和 free）
+#include "anet.h"      /* Networking the easy way */ // 网络编程
 #include "ziplist.h"   /* Compact list data structure 压缩列表数据结构*/
 #include "intset.h"    /* Compact integer set structure 压缩整型结构*/
-#include "quicklist.h" /* Lists are encoded as linked lists of N-elements flat arrays */
-#include "rax.h"       /* Radix tree */
+#include "quicklist.h" /* Lists are encoded as linked lists of N-elements flat arrays */ // 列表被编码为包含n个元素的平面数组的链表
+#include "rax.h"       /* Radix tree */ // 基数树
 
 #include "util.h"       /* Misc functions useful in many places 工具函数*/
-#include "latency.h"    /* Latency monitor API */
-#include "sparkline.h"  /* ASCII graphs API */
-#include "connection.h" /* Connection abstraction */
+#include "latency.h"    /* Latency monitor API */    // 延迟监视器API,通过包含此头文件，程序可以调用其中定义的函数和宏来监测系统的延迟情况。
+#include "sparkline.h"  /* ASCII graphs API */ // ASCII 图表的 API。通过包含这个头文件，程序可以调用其中定义的函数来绘制简单的文本图表。
+#include "connection.h" /* Connection abstraction */ // 连接抽象的接口或实现。通过包含此头文件，程序可以使用其中定义的与连接相关的功能和数据结构。
 
-#define REDISMODULE_CORE 1
-
-#include "redismodule.h" /* Redis modules API defines. */
+#define REDISMODULE_CORE 1 // 这个宏通常用于标识代码是否为核心模块的一部分，以便在编译时进行条件编译。
+#include "redismodule.h" /* Redis modules API defines. */ // 模块开发接口。这为后续编写 Redis 模块提供了必要的函数和数据结构支持。
 
 /* Following includes allow test functions to be called from Redis main() */
 // 以下内容包括允许从 Redis main（） 调用测试函数
@@ -86,6 +85,7 @@ typedef long long ustime_t; /* microsecond time type. */
 #include "sha1.h"
 #include "endianconv.h"
 #include "crc64.h"
+#include "evict.h"
 
 /* Error codes */
 // 错误代码
@@ -94,6 +94,7 @@ typedef long long ustime_t; /* microsecond time type. */
 
 /* Static server configuration */
 // 静态服务器配置
+// 这段代码定义了三个宏，用于配置系统的时间中断频率。CONFIG_DEFAULT_HZ 设置默认时间为每秒 10 次中断，CONFIG_MIN_HZ 和 CONFIG_MAX_HZ 分别设置最小和最大时间中断频率为每秒 1 次和 500 次。
 #define CONFIG_DEFAULT_HZ 10 /* Time interrupt calls/sec. */
 #define CONFIG_MIN_HZ 1
 #define CONFIG_MAX_HZ 500
@@ -104,6 +105,7 @@ typedef long long ustime_t; /* microsecond time type. */
 #define PROTO_SHARED_SELECT_CMDS 10
 #define OBJ_SHARED_INTEGERS 10000
 #define OBJ_SHARED_BULKHDR_LEN 32
+// 这段代码定义了一个宏 LOG_MAX_LEN，其值为1024，表示系统日志消息的最大默认长度。
 #define LOG_MAX_LEN 1024 /* Default maximum length of syslog messages.*/
 #define AOF_REWRITE_ITEMS_PER_CMD 64
 #define AOF_READ_DIFF_INTERVAL_BYTES (1024 * 10)
@@ -112,12 +114,12 @@ typedef long long ustime_t; /* microsecond time type. */
 #define RDB_EOF_MARK_SIZE 40
 #define CONFIG_REPL_BACKLOG_MIN_SIZE (1024 * 16)                               /* 16k */
 #define CONFIG_BGSAVE_RETRY_DELAY 5 /* Wait a few secs before trying again. */ // 请等待几秒钟，然后重试。
-#define CONFIG_DEFAULT_PID_FILE "/var/run/redis.pid"
-#define CONFIG_DEFAULT_CLUSTER_CONFIG_FILE "nodes.conf"
-#define CONFIG_DEFAULT_UNIX_SOCKET_PERM 0
-#define CONFIG_DEFAULT_LOGFILE ""
-#define NET_IP_STR_LEN 46                      /* INET6_ADDRSTRLEN is 46, but we need to be sure */
-#define NET_ADDR_STR_LEN (NET_IP_STR_LEN + 32) /* Must be enough for ip:port */
+#define CONFIG_DEFAULT_PID_FILE "/var/run/redis.pid"                           // 默认的 PID 文件路径
+#define CONFIG_DEFAULT_CLUSTER_CONFIG_FILE "nodes.conf"                        // 默认的集群配置文件路径
+#define CONFIG_DEFAULT_UNIX_SOCKET_PERM 0                                      // 默认的 UNIX 域套接字权限
+#define CONFIG_DEFAULT_LOGFILE ""                                              // 默认的日志文件路径
+#define NET_IP_STR_LEN 46                                                      /* INET6_ADDRSTRLEN is 46, but we need to be sure */
+#define NET_ADDR_STR_LEN (NET_IP_STR_LEN + 32)                                 /* Must be enough for ip:port */
 #define CONFIG_BINDADDR_MAX 16
 #define CONFIG_MIN_RESERVED_FDS 32
 #define CONFIG_DEFAULT_PROC_TITLE_TEMPLATE "{title} {listen-addr} {server-mode}"
@@ -452,11 +454,13 @@ typedef enum
 #define SANITIZE_DUMP_CLIENTS 2
 
 /* Sets operations codes */
+// 这段代码定义了三个宏，用于表示集合操作的类型：SET_OP_UNION 表示并集操作，SET_OP_DIFF 表示差集操作，SET_OP_INTER 表示交集操作。
 #define SET_OP_UNION 0
 #define SET_OP_DIFF 1
 #define SET_OP_INTER 2
 
 /* oom-score-adj defines */
+// 这段代码定义了三个宏，用于表示不同的OOM（Out of Memory）分数调整方式：OOM_SCORE_ADJ_NO 表示不调整，OOM_SCORE_RELATIVE 表示相对调整，OOM_SCORE_ADJ_ABSOLUTE 表示绝对调整。
 #define OOM_SCORE_ADJ_NO 0
 #define OOM_SCORE_RELATIVE 1
 #define OOM_SCORE_ADJ_ABSOLUTE 2
@@ -482,7 +486,7 @@ typedef enum
 #define MAXMEMORY_NO_EVICTION (7 << 8)                                                 // 不淘汰数，当内存空间满时插入数据会报错
 
 /* Units */
-// 单位
+// 这段代码定义了两个宏，用于表示时间单位。UNIT_SECONDS 表示秒，值为 0；UNIT_MILLISECONDS 表示毫秒，值为 1。
 #define UNIT_SECONDS 0
 #define UNIT_MILLISECONDS 1
 
@@ -762,8 +766,11 @@ typedef struct RedisModuleDigest
 // 以毫秒为单位的LRU时钟精度
 #define LRU_CLOCK_RESOLUTION 1000 /* LRU clock resolution in ms */
 
+// 全局对象的引用计数，值为 INT_MAX，意味着该对象永远不会被销毁
 #define OBJ_SHARED_REFCOUNT INT_MAX       /* Global object never destroyed. */
+// OBJ_STATIC_REFCOUNT 表示栈上分配的对象的引用计数，值为 INT_MAX - 1
 #define OBJ_STATIC_REFCOUNT (INT_MAX - 1) /* Object allocated in the stack. */
+// OBJ_FIRST_SPECIAL_REFCOUNT 是 OBJ_STATIC_REFCOUNT 的别名。
 #define OBJ_FIRST_SPECIAL_REFCOUNT OBJ_STATIC_REFCOUNT
 
 typedef struct redisObject
@@ -787,7 +794,9 @@ typedef struct redisObject
 /* The a string name for an object's type as listed above
  * Native types are checked against the OBJ_STRING, OBJ_LIST, OBJ_* defines,
  * and Module types have their registered name returned. */
-// 根据对象获取对象名称
+// 该函数 getObjectTypeName 根据传入的对象指针 robj * 返回对象的类型名称。
+// 对于原生类型，它会检查对象是否属于预定义的类型（如字符串、列表等），并返回相应的名称；
+// 对于模块类型，则返回其注册的名称。
 char *getObjectTypeName(robj *);
 
 /* Macro used to initialize a Redis object allocated on the stack.
@@ -795,6 +804,7 @@ char *getObjectTypeName(robj *);
  * we'll update it when the structure is changed, to avoid bugs like
  * bug #85 introduced exactly in this way. */
 // 用于初始化堆栈上分配的 Redis 对象的宏。请注意，此宏位于结构定义附近，以确保我们在结构更改时对其进行更新，以避免以这种方式引入的 bug 85 等错误。
+// 设置对象的引用计数、类型、编码方式和指针。
 #define initStaticStringObject(_var, _ptr)   \
     do                                       \
     {                                        \
@@ -848,6 +858,8 @@ typedef struct multiCmd
     struct redisCommand *cmd;
 } multiCmd;
 
+// 定义了一个名为 multiState 的结构体，用于存储 Redis 中 MULTI 命令执行状态。
+// 它包含命令数组、命令总数、命令标志位的累积、反向标志位累积、最小副本数以及同步复制超时时间。
 typedef struct multiState
 {
     multiCmd *commands;         /* Array of MULTI commands */
@@ -914,6 +926,7 @@ typedef struct blockingState
  * also called ready_keys in every structure representing a Redis database,
  * where we make sure to remember if a given key was already added in the
  * server.ready_keys list. */
+// 定义了一个名为 readyList 的结构体，包含两个成员：redisDb *db 和 robj *key。该结构体用于存储与 Redis 数据库和键对象相关的引用。
 typedef struct readyList
 {
     redisDb *db;
@@ -945,10 +958,11 @@ typedef struct readyList
                                                   * deep sanitization of RESTORE \
                                                   * payload. */
 
+// 用于存储 Redis 用户的权限和相关信息。
 typedef struct
 {
     sds name; /* The username as an SDS string. */ // 作为 SDS 字符串的用户名。
-    uint64_t flags; /* See USER_FLAG_* */          // 请参阅USER_FLAG_*
+    uint64_t flags; /* See USER_FLAG_* */          // 请参阅USER_FLAG_* 权限标志，如是否可以访问所有键或频道。
 
     /* The bit in allowed_commands is set if this user has the right to
      * execute this command. In commands having subcommands, if this bit is
@@ -957,6 +971,7 @@ typedef struct
      * If the bit for a given command is NOT set and the command has
      * subcommands, Redis will also check allowed_subcommands in order to
      * understand if the command can be executed. */
+    // 允许执行的命令列表。
     uint64_t allowed_commands[USER_COMMAND_BITS_COUNT / 64];
 
     /* This array points, for each command ID (corresponding to the command
@@ -964,11 +979,15 @@ typedef struct
      * a NULL pointer, with all the sub commands that can be executed for
      * this command. When no subcommands matching is used, the field is just
      * set to NULL to avoid allocating USER_COMMAND_BITS_COUNT pointers. */
+    // 允许执行的子命令列表。
     sds **allowed_subcommands;
+    // 密码列表
     list *passwords; /* A list of SDS valid passwords for this user. */
+    // 允许的键模式列表
     list *patterns;  /* A list of allowed key patterns. If this field is NULL
                         the user cannot mention any key in a command, unless
                         the flag ALLKEYS is set in the user. */
+    // 允许的 Pub/Sub 频道模式列表。
     list *channels;  /* A list of allowed Pub/Sub channel patterns. If this
                         field is NULL the user cannot mention any channel in a
                         `PUBLISH` or [P][UNSUSBSCRIBE] command, unless the flag
@@ -1007,6 +1026,7 @@ typedef struct client
                                                                               // cmd: 待执行的客户端命令；解析命令请求后，会根据命令名称查找该命令对应的命令对象，存储在客户端cmd字段，
                                                                               // 可以看到其类型为struct redisCommand。
 
+    // 义了一个指向用户结构体的指针 user，用于表示与当前连接关联的用户。如果 user 指针为 NULL，则表示该连接具有管理员权限，可以执行任何操作
     user *user;                                                                   /* User associated with this connection. If the
                                                                                       user is set to NULL the connection can do
                                                                                       anything (admin). */
@@ -1071,6 +1091,7 @@ typedef struct client
      * the specified client ID. */
     // 如果这个客户端处于跟踪模式，那么这个字段就不为0，通过客户端获取的键的无效消息将被送往指定ID的客户端
     uint64_t client_tracking_redirection;
+    // 这段代码定义了一个名为 client_tracking_prefixes 的指针变量，指向一个字典。该字典用于存储客户端已经订阅的广播模式（BCAST mode）前缀，在客户端缓存上下文中使用。
     rax *client_tracking_prefixes; /* A dictionary of prefixes we are already
                                       subscribed to in BCAST mode, in the
                                       context of client side caching. */
@@ -1119,6 +1140,7 @@ struct sentinelConfig
     list *post_monitor_cfg;
 };
 
+// 这段代码定义了一个名为 sharedObjectsStruct 的结构体，用于存储 Redis 中常用的对象和字符串。这些对象包括各种错误信息、命令关键字、常用整数对象等，旨在减少内存分配次数并提高性能。
 struct sharedObjectsStruct
 {
     robj *crlf, *ok, *err, *emptybulk, *czero, *cone, *pong, *space,
@@ -1187,6 +1209,12 @@ extern clientBufferLimitsConfig clientBufferLimitsDefaults[CLIENT_TYPE_OBUF_COUN
  *
  * Currently only used to additionally propagate more commands to AOF/Replication
  * after the propagation of the executed command. */
+// 这段代码定义了一个名为 redisOp 的结构体，用于表示 Redis 操作。结构体包含以下成员：
+// argv：指向参数数组的指针。
+// argc：参数个数。
+// dbid：数据库 ID。
+// target：目标标识。
+// cmd：指向 Redis 命令的指针。
 typedef struct redisOp
 {
     robj **argv;
@@ -1201,6 +1229,7 @@ typedef struct redisOp
  * redisOpArrayAppend();
  * redisOpArrayFree();
  */
+// 这段代码定义了一个名为 redisOpArray 的结构体，用于存储操作数组。其中 ops 是指向 redisOp 类型的指针，表示操作数组；numops 是整数类型，表示操作数组中元素的数量。
 typedef struct redisOpArray
 {
     redisOp *ops;
@@ -1209,6 +1238,9 @@ typedef struct redisOpArray
 
 /* This structure is returned by the getMemoryOverheadData() function in
  * order to return memory overhead information. */
+// 定义了一个名为 redisMemOverhead 的结构体，用于存储 Redis 内存开销的统计信息。
+// 结构体成员包括内存分配峰值、客户端连接数、AOF 缓冲区大小等。
+// 此外，还包含一个嵌套结构体 db，用于存储每个数据库的哈希表开销。
 struct redisMemOverhead
 {
     size_t peak_allocated;
@@ -1265,6 +1297,12 @@ typedef struct rdbSaveInfo
     {                      \
         -1, 0, "0000000000000000000000000000000000000000", -1}
 
+// 这段代码定义了一个名为 malloc_stats 的结构体，用于存储与内存分配相关的统计信息。具体字段包括：
+// zmalloc_used：zmalloc 使用的内存量
+// process_rss：进程占用的物理内存大小
+// allocator_allocated：分配器已分配的内存量
+// allocator_active：分配器活跃的内存量
+// allocator_resident：分配器驻留的内存量
 struct malloc_stats
 {
     size_t zmalloc_used;
@@ -1549,25 +1587,26 @@ struct redisServer
 
     /* RDB persistence */
     // RDB 持久性
-    long long dirty;                                                 /* RDB持久化之后数据有变化，可以看到所有redis写命令都会执行server.dirty++ */
-    long long dirty_before_bgsave;                                   /* Used to restore dirty on failed BGSAVE */
-    struct saveparam *saveparams;                                    /* Save points array for RDB */
-    int saveparamslen;                                               /* Number of saving points */
-    char *rdb_filename;                                              /* Name of RDB file */
-    int rdb_compression;                                             /* Use compression in RDB? */
-    int rdb_checksum;                                                /* Use RDB checksum? */
-    int rdb_del_sync_files;                                          /* Remove RDB files used only for SYNC if
-                                                                         the instance does not use persistence. */
-    time_t lastsave; /* Unix time of last successful save */         // 上次成功保存的 Unix 时间
-    time_t lastbgsave_try;                                           /* Unix time of last attempted bgsave */
-    time_t rdb_save_time_last; /* Time used by last RDB save run. */ // 记录最后一次RDB保存的时间
-    time_t rdb_save_time_start; /* Current RDB save start time. */   // 记录当前的RDB保存的时间
-    int rdb_bgsave_scheduled;                                        /* BGSAVE when possible if true. */
-    int rdb_child_type;                                              /* Type of save by active child. */
-    int lastbgsave_status;                                           /* C_OK or C_ERR */
-    int stop_writes_on_bgsave_err;                                   /* Don't allow writes if can't BGSAVE */
-    int rdb_pipe_read;                                               /* RDB pipe used to transfer the rdb data */
-    /* to the parent process in diskless repl. */
+    long long dirty;                                                            /* RDB持久化之后数据有变化，可以看到所有redis写命令都会执行server.dirty++ */
+    long long dirty_before_bgsave; /* Used to restore dirty on failed BGSAVE */ // 记录上次RDB保存 dirty 的值
+    struct saveparam *saveparams; /* Save points array for RDB */               // 保存点数组
+    int saveparamslen; /* Number of saving points */                            // 保存点的数量
+    char *rdb_filename; /* Name of RDB file */                                  // RDB文件名
+    int rdb_compression; /* Use compression in RDB? */                          // 是否压缩RDB文件
+    int rdb_checksum; /* Use RDB checksum? */                                   // 是否使用RDB校验
+    int rdb_del_sync_files;                                                     /* Remove RDB files used only for SYNC if the instance does not use persistence. */
+                                                                                // 删除仅用于同步的RDB文件，如果实例不使用持久化
+
+    time_t lastsave; /* Unix time of last successful save */                                               // 上次成功保存的 Unix 时间
+    time_t lastbgsave_try; /* Unix time of last attempted bgsave */                                        // 记录最后一次尝试RDB保存的 Unix 时间
+    time_t rdb_save_time_last; /* Time used by last RDB save run. */                                       // 记录最后一次RDB保存的时间
+    time_t rdb_save_time_start; /* Current RDB save start time. */                                         // 记录当前的RDB保存的时间
+    int rdb_bgsave_scheduled; /* BGSAVE when possible if true. */                                          // 如果为真，则尝试在可能的情况下进行RDB保存
+    int rdb_child_type; /* Type of save by active child. */                                                // 保存类型
+    int lastbgsave_status; /* C_OK or C_ERR */                                                             // 记录最后一次RDB保存的状态
+    int stop_writes_on_bgsave_err; /* Don't allow writes if can't BGSAVE */                                // 如果为真，则不允许写入
+    int rdb_pipe_read; /* RDB pipe used to transfer the rdb data to the parent process in diskless repl.*/ // RDB管道，用于将RDB数据传输到父进程的磁盘less repl中
+
     int rdb_child_exit_pipe;       /* Used by the diskless parent allow child exit. */
     connection **rdb_pipe_conns;   /* Connections which are currently the */
     int rdb_pipe_numconns;         /* target of diskless rdb fork child. */
@@ -1588,15 +1627,17 @@ struct redisServer
 
     /* Logging */
     // 日志
-    char *logfile;         /* Path of log file 日志文件路径*/
-    int syslog_enabled;    /* Is syslog enabled? 是否开启系统日志*/
-    char *syslog_ident;    /* Syslog ident */
-    int syslog_facility;   /* Syslog facility */
-    int crashlog_enabled;  /* Enable signal handler for crashlog.
-                            * disable for clean core dumps. */
-    int memcheck_enabled;  /* Enable memory check on crash. */
-    int use_exit_on_panic; /* Use exit() on panic and assert rather than
-                            * abort(). useful for Valgrind. */
+    char *logfile; /* Path of log file */                     // 日志文件路径
+    int syslog_enabled; /* Is syslog enabled? */              // 是否启用syslog
+    char *syslog_ident; /* Syslog ident */                    // syslog标识
+    int syslog_facility; /* Syslog facility */                //  syslog facility
+    int crashlog_enabled;                                     /* Enable signal handler for crashlog.
+                                                               * disable for clean core dumps. */
+                                                              // 崩溃时使用信号处理程序进行crashlog
+    int memcheck_enabled; /* Enable memory check on crash. */ // 内存检查
+    int use_exit_on_panic;                                    /* Use exit() on panic and assert rather than
+                                                               * abort(). useful for Valgrind. */
+                                                              // 崩溃时使用exit()而不是abort()
 
     /* Replication (master) */
     // 复制（主）
@@ -1717,18 +1758,18 @@ struct redisServer
 
     /* Limits */
     // 限制
-    unsigned int maxclients; /* Max number of simultaneous clients */            // 最大并发客户端数
-    unsigned long long maxmemory; /* Max number of memory bytes to use */        // 要使用的最大内存字节数
-    int maxmemory_policy; /* Policy for key eviction */                          // 密钥逐出策略
-    int maxmemory_samples; /* Precision of random sampling */                    // 由 redis.conf 中的配置项 maxmemory-samples 决定的，该配置项的默认值是 5
-    int maxmemory_eviction_tenacity; /* Aggressiveness of eviction processing */ // 驱逐处理的积极性
-    int lfu_log_factor; /* LFU logarithmic counter factor. */                    // LFU 对数计数器因子
-    int lfu_decay_time; /* LFU counter decay factor. */                          // LFU 计数器衰减因子。
-    long long proto_max_bulk_len;                                                /* Protocol bulk length maximum size. */
-    int oom_score_adj_base;                                                      /* Base oom_score_adj value, as observed on startup */
-    int oom_score_adj_values[CONFIG_OOM_COUNT];                                  /* Linux oom_score_adj configuration */
-    int oom_score_adj;                                                           /* If true, oom_score_adj is managed */
-    int disable_thp;                                                             /* If true, disable THP by syscall */
+    unsigned int maxclients; /* Max number of simultaneous clients */                   // 最大并发客户端数
+    unsigned long long maxmemory; /* Max number of memory bytes to use */               // 要使用的最大内存字节数
+    int maxmemory_policy; /* Policy for key eviction */                                 // 密钥逐出策略
+    int maxmemory_samples; /* Precision of random sampling */                           // 由 redis.conf 中的配置项 maxmemory-samples 决定的，该配置项的默认值是 5
+    int maxmemory_eviction_tenacity; /* Aggressiveness of eviction processing */        // 驱逐处理的积极性
+    int lfu_log_factor; /* LFU logarithmic counter factor. */                           // LFU 对数计数器因子
+    int lfu_decay_time; /* LFU counter decay factor. */                                 // LFU 计数器衰减因子。
+    long long proto_max_bulk_len; /* Protocol bulk length maximum size. */              // 协议最大批量长度最大大小
+    int oom_score_adj_base; /* Base oom_score_adj value, as observed on startup */      // 启动时观察到的 oom_score_adj 的基本值
+    int oom_score_adj_values[CONFIG_OOM_COUNT]; /* Linux oom_score_adj configuration */ // Linux oom_score_adj 配置
+    int oom_score_adj; /* If true, oom_score_adj is managed */                          // 如果为真，则管理 oom_score_adj
+    int disable_thp; /* If true, disable THP by syscall */                              // 禁用 THP 的系统调用
 
     /* Blocked clients */
     // 被阻止的客户端
@@ -1888,6 +1929,8 @@ struct redisServer
     int failover_state;         /* Failover state */
 };
 
+// 这段代码定义了一个名为 pubsubPattern 的结构体，用于表示发布/订阅模式中的模式匹配。
+// 结构体包含两个成员：一个指向 client 类型的指针，表示客户端；一个指向 robj 类型的指针，表示模式对象。
 typedef struct pubsubPattern
 {
     client *client;
@@ -1945,17 +1988,22 @@ struct redisCommand
                                                                       // 命令 ID。这是一个从 0 开始的渐进式 ID，在运行时分配，用于检查 ACL。如果与连接关联的用户在允许命令的位图中设置了此命令位，则连接能够执行给定命令。
 };
 
+// 这段代码定义了一个名为 redisError 的结构体，其中包含一个名为 count 的成员变量，类型为 long long。
+// 该结构体用于表示错误信息，count 可能用于记录错误的数量或其他与错误相关的计数值。
 struct redisError
 {
     long long count;
 };
 
+// 这段代码定义了一个名为 redisFunctionSym 的结构体，用于存储函数符号的信息。
+// 它包含两个成员：name 是一个指向函数名称的字符串指针，pointer 是一个无符号长整型，用于存储函数的地址。
 struct redisFunctionSym
 {
     char *name;
     unsigned long pointer;
 };
 
+// 这段代码定义了一个名为 redisSortObject 的结构体，用于存储 Redis 排序操作中的对象。结构体包含一个指向 Redis 对象的指针 obj 和一个联合体 u，联合体中包含一个双精度浮点数 score 或指向 Redis 对象的指针 cmpobj，用于不同的排序依据。
 typedef struct _redisSortObject
 {
     robj *obj;
@@ -1966,6 +2014,7 @@ typedef struct _redisSortObject
     } u;
 } redisSortObject;
 
+// 这段代码定义了一个名为 _redisSortOperation 的结构体，并使用 typedef 将其别名为 redisSortOperation。该结构体包含两个成员：一个整型变量 type，用于表示操作类型；一个指向 robj 类型对象的指针 pattern，用于存储模式。
 typedef struct _redisSortOperation
 {
     int type;
@@ -2048,10 +2097,13 @@ extern dictType sdsReplyDictType;
 
 /* Modules */
 // 模块
+// 该函数 moduleInitModulesSystem 用于初始化模块系统。具体功能包括初始化各个子模块，设置初始参数和状态，确保系统在启动时处于正确的工作状态。
 void moduleInitModulesSystem(void);
 void moduleInitModulesSystemLast(void);
+// moduleLoad 函数用于加载模块，参数包括模块路径、参数列表和参数个数。该函数返回一个整数表示加载结果，成功返回0，失败返回非0值。argv 是指向指针数组的指针，argc 是参数个数。
 int moduleLoad(const char *path, void **argv, int argc);
 void moduleLoadFromQueue(void);
+// 该函数用于通过API获取Redis命令中的键。它接收Redis命令结构体、参数列表、参数个数和结果结构体作为输入，返回一个整数值表示操作结果。
 int moduleGetCommandKeysViaAPI(struct redisCommand *cmd, robj **argv, int argc, getKeysResult *result);
 moduleType *moduleTypeLookupModuleByID(uint64_t id);
 void moduleTypeNameByID(char *name, uint64_t moduleid);
@@ -2084,6 +2136,7 @@ int moduleLateDefrag(robj *key, robj *value, unsigned long *cursor, long long en
 long moduleDefragGlobals(void);
 
 /* Utils */
+// 这两个函数 ustime 和 mstime 分别用于获取当前时间，前者返回微秒级的时间戳，后者返回毫秒级的时间戳。它们都返回一个 long long 类型的值
 long long ustime(void);
 long long mstime(void);
 
@@ -2578,9 +2631,7 @@ int zslLexValueLteMax(sds value, zlexrangespec *spec);
 
 /* Core functions */
 // 核心函数
-int getMaxmemoryState(size_t *total, size_t *logical, size_t *tofree, float *level);
-size_t freeMemoryGetNotCountedMemory(void);
-int overMaxmemoryAfterAlloc(size_t moremem);
+
 int processCommand(client *c);
 int processPendingCommandsAndResetClient(client *c);
 void setupSignalHandlers(void);

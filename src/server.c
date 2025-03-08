@@ -2666,6 +2666,7 @@ void afterSleep(struct aeEventLoop *eventLoop)
 /* =========================== Server initialization ======================== */
 /* =========================== 服务器初始化 ======================== */
 
+// 创建共享对象
 void createSharedObjects(void)
 {
     int j;
@@ -3172,16 +3173,27 @@ int restartServer(int flags, mstime_t delay)
     return C_ERR; /* Never reached. */
 }
 
+/**
+ * 读取进程的OOM（Out of Memory）score adjustment值
+ *
+ * 此函数旨在读取当前进程的OOM score adjustment值，该值影响内存不足时进程被Linux内核OOM杀手选择的可能性
+ * OOM score adjustment值越高，进程在内存不足时被选择的可能性越大
+ * 此函数仅在定义了HAVE_PROC_OOM_SCORE_ADJ宏时编译，确保系统支持此特性
+ */
 static void readOOMScoreAdj(void)
 {
 #ifdef HAVE_PROC_OOM_SCORE_ADJ
+    // 定义一个缓冲区，用于存储读取的OOM score adjustment值
     char buf[64];
     int fd = open("/proc/self/oom_score_adj", O_RDONLY);
 
+    // 如果文件打开失败，直接返回
     if (fd < 0)
         return;
+    // 如果文件读取成功，更新server.oom_score_adj_base变量的值
     if (read(fd, buf, sizeof(buf)) > 0)
         server.oom_score_adj_base = atoi(buf);
+    // 关闭文件描述符
     close(fd);
 #endif
 }
@@ -6223,6 +6235,7 @@ void createPidFile(void)
     }
 }
 
+// 守护进程
 void daemonize(void)
 {
     int fd;
@@ -6307,9 +6320,9 @@ void redisAsciiArt(void)
     char *buf = zmalloc(1024 * 16);
     char *mode;
 
-    if (server.cluster_enabled)
+    if (server.cluster_enabled) // 判断是否为集群模式
         mode = "cluster";
-    else if (server.sentinel_mode)
+    else if (server.sentinel_mode) // 判断是否为哨兵模式
         mode = "sentinel";
     else
         mode = "standalone";
@@ -6322,13 +6335,13 @@ void redisAsciiArt(void)
                       isatty(fileno(stdout))) ||
                      server.always_show_logo);
 
-    if (!show_logo)
+    if (!show_logo) // 不显示logo
     {
         serverLog(LL_NOTICE,
                   "Running mode=%s, port=%d.",
                   mode, server.port ? server.port : server.tls_port);
     }
-    else
+    else // 显示logo
     {
         snprintf(buf, 1024 * 16, ascii_logo,
                  REDIS_VERSION,
@@ -6339,7 +6352,7 @@ void redisAsciiArt(void)
                  (long)getpid());
         serverLogRaw(LL_NOTICE | LL_RAW, buf);
     }
-    zfree(buf);
+    zfree(buf); // 释放buf
 }
 
 static void sigShutdownHandler(int sig)
@@ -6519,6 +6532,7 @@ int redisFork(int purpose)
     return childpid;
 }
 
+// 向子进程发送COW信息
 void sendChildCOWInfo(int ptype, int on_exit, char *pname)
 {
     size_t private_dirty = zmalloc_get_private_dirty(-1);
@@ -6791,7 +6805,7 @@ int redisIsSupervised(int mode)
     return ret;
 }
 
-/* 判断我是否是主节点 */
+/* 判断是否是主节点 */
 int iAmMaster(void)
 {
     return ((!server.cluster_enabled && server.masterhost == NULL) ||
@@ -6870,6 +6884,7 @@ void checkIfSentenelMode(void)
     }
 }
 
+// 检查rdb或者aof
 void redisCheckRdbOrAof(int argc, char **argv)
 {
     if (strstr(argv[0], "redis-check-rdb") != NULL)
@@ -6882,11 +6897,112 @@ void redisCheckRdbOrAof(int argc, char **argv)
     }
 }
 
+// 检查最大内存
 void checkMaxmemory(void)
 {
     if (server.maxmemory > 0 && server.maxmemory < 1024 * 1024)
     {
         serverLog(LL_WARNING, "WARNING: You specified a maxmemory value that is less than 1MB (current value is %llu bytes). Are you sure this is what you really want?", server.maxmemory);
+    }
+}
+
+// redis模式运行
+void redisRun(void)
+{
+    /* Things not needed when running in Sentinel mode. */
+    // 在哨兵模式下运行时不需要的东西。
+    serverLog(LL_WARNING, "Server initialized");
+#ifdef __linux__
+    linuxMemoryWarnings();
+#if defined(__arm64__)
+    int ret;
+    if ((ret = linuxMadvFreeForkBugCheck()))
+    {
+        if (ret == 1)
+            serverLog(LL_WARNING, "WARNING Your kernel has a bug that could lead to data corruption during background save. "
+                                  "Please upgrade to the latest stable kernel.");
+        else
+            serverLog(LL_WARNING, "Failed to test the kernel for a bug that could lead to data corruption during background save. "
+                                  "Your system could be affected, please report this error.");
+        if (!checkIgnoreWarning("ARM64-COW-BUG"))
+        {
+            serverLog(LL_WARNING, "Redis will now exit to prevent data corruption. "
+                                  "Note that it is possible to suppress this warning by setting the following config: ignore-warnings ARM64-COW-BUG");
+            exit(1);
+        }
+    }
+#endif /* __arm64__ */
+#endif /* __linux__ */
+
+    // 最后初始化Module机制。
+    moduleInitModulesSystemLast();
+    // 【14】如果非Sentinel模式启动，则完成以下操作：
+    //  (1）moduleLoadFromQueue函数加载配置文件指定的Module模块；
+    moduleLoadFromQueue();
+    // （2）ACLLoadUsersAtStartup函数加载ACL用户控制列表；
+    ACLLoadUsersAtStartup();
+    // （3）InitServerLast函数负责创建后台线程、I/O线程，该步骤需在Module模块加载后再执行；
+    InitServerLast();
+    // (4)开启aof或者rdb持久化时，会尝试从文件中恢复之前的redis数据
+    loadDataFromDisk();
+    // (5)如果以Cluster模式启动，那么还需要验证加载的数据是否正确。集群模式下配置文件的检测
+    if (server.cluster_enabled)
+    {
+        if (verifyClusterConfigWithData() == C_ERR)
+        {
+            serverLog(LL_WARNING, "You can't have keys in a DB different than DB 0 when in "
+                                  "Cluster mode. Exiting.");
+            exit(1);
+        }
+    }
+    if (server.ipfd_count > 0 || server.tlsfd_count > 0)
+    {
+        serverLog(LL_NOTICE, "Ready to accept connections");
+    }
+    if (server.sofd > 0)
+    {
+        serverLog(LL_NOTICE, "The server is now ready to accept connections at %s", server.unixsocket);
+    }
+    if (server.supervised_mode == SUPERVISED_SYSTEMD)
+    {
+        if (!server.masterhost)
+        {
+            redisCommunicateSystemd("STATUS=Ready to accept connections\n");
+            redisCommunicateSystemd("READY=1\n");
+        }
+        else
+        {
+            redisCommunicateSystemd("STATUS=Waiting for MASTER <-> REPLICA sync\n");
+        }
+    }
+}
+
+// sentinel模式运行
+void sentinelRun(void)
+{
+    // 加载ACL用户控制列表
+    ACLLoadUsersAtStartup();
+    // 【15】如果以Sentinel模式启动，则调用sentinelIsRunning函数启动Sentinel机制。
+    InitServerLast();    // 初始化一些后台线程
+    sentinelIsRunning(); // sentinel模式的配置初始化操作
+    if (server.supervised_mode == SUPERVISED_SYSTEMD)
+    {
+        redisCommunicateSystemd("STATUS=Ready to accept connections\n");
+        redisCommunicateSystemd("READY=1\n");
+    }
+}
+
+// 初始化其他的
+void initServerOther(void)
+{
+    // 如果不是哨兵模式
+    if (!server.sentinel_mode)
+    {
+        redisRun();
+    }
+    else
+    {
+        sentinelRun();
     }
 }
 
@@ -6902,6 +7018,7 @@ int main(int argc, char **argv)
 {
     struct timeval tv;
 
+    // 用于redis测试
     redis_test(argc, argv);
     init_setproctitle_replacement(argc, argv);
 
@@ -6981,111 +7098,36 @@ int main(int argc, char **argv)
     int background = server.daemonize && !server.supervised;
     if (background)
     {
+        // 守护进程
         daemonize();
     }
 
     // 【12】打印启动日志。
     printStartLog(argc, argv);
-    redisAsciiArt(); // 打印启动ascii_logo
+    // 打印启动ascii_logo
+    redisAsciiArt();
 
     readOOMScoreAdj();
 
     // 【13】initServer函数初始化Redis运行时数据，aeCreateEventLoop函数创建事件循环器，createPidFile函数创建pid文件。
     initServer();
 
+    // 如果设置了后台运行模式或PID文件路径，则创建PID文件
     if (background || server.pidfile)
     {
         createPidFile();
     }
+    // 如果设置了进程标题，则设置Redis进程标题
     if (server.set_proc_title)
     {
         redisSetProcTitle(NULL);
     }
 
-    checkTcpBacklogSettings(); // 检查tcp_backlog
+    // 检查tcp_backlog
+    checkTcpBacklogSettings();
 
-    // 如果不是哨兵模式
-    if (!server.sentinel_mode)
-    {
-        /* Things not needed when running in Sentinel mode. */
-        // 在哨兵模式下运行时不需要的东西。
-        serverLog(LL_WARNING, "Server initialized");
-#ifdef __linux__
-        linuxMemoryWarnings();
-#if defined(__arm64__)
-        int ret;
-        if ((ret = linuxMadvFreeForkBugCheck()))
-        {
-            if (ret == 1)
-                serverLog(LL_WARNING, "WARNING Your kernel has a bug that could lead to data corruption during background save. "
-                                      "Please upgrade to the latest stable kernel.");
-            else
-                serverLog(LL_WARNING, "Failed to test the kernel for a bug that could lead to data corruption during background save. "
-                                      "Your system could be affected, please report this error.");
-            if (!checkIgnoreWarning("ARM64-COW-BUG"))
-            {
-                serverLog(LL_WARNING, "Redis will now exit to prevent data corruption. "
-                                      "Note that it is possible to suppress this warning by setting the following config: ignore-warnings ARM64-COW-BUG");
-                exit(1);
-            }
-        }
-#endif /* __arm64__ */
-#endif /* __linux__ */
-
-        // 最后初始化Module机制。
-        moduleInitModulesSystemLast();
-        // 【14】如果非Sentinel模式启动，则完成以下操作：
-        //  (1）moduleLoadFromQueue函数加载配置文件指定的Module模块；
-        moduleLoadFromQueue();
-        // （2）ACLLoadUsersAtStartup函数加载ACL用户控制列表；
-        ACLLoadUsersAtStartup();
-        // （3）InitServerLast函数负责创建后台线程、I/O线程，该步骤需在Module模块加载后再执行；
-        InitServerLast();
-        // (4)开启aof或者rdb持久化时，会尝试从文件中恢复之前的redis数据
-        loadDataFromDisk();
-        // (5)如果以Cluster模式启动，那么还需要验证加载的数据是否正确。集群模式下配置文件的检测
-        if (server.cluster_enabled)
-        {
-            if (verifyClusterConfigWithData() == C_ERR)
-            {
-                serverLog(LL_WARNING, "You can't have keys in a DB different than DB 0 when in "
-                                      "Cluster mode. Exiting.");
-                exit(1);
-            }
-        }
-        if (server.ipfd_count > 0 || server.tlsfd_count > 0)
-        {
-            serverLog(LL_NOTICE, "Ready to accept connections");
-        }
-        if (server.sofd > 0)
-        {
-            serverLog(LL_NOTICE, "The server is now ready to accept connections at %s", server.unixsocket);
-        }
-        if (server.supervised_mode == SUPERVISED_SYSTEMD)
-        {
-            if (!server.masterhost)
-            {
-                redisCommunicateSystemd("STATUS=Ready to accept connections\n");
-                redisCommunicateSystemd("READY=1\n");
-            }
-            else
-            {
-                redisCommunicateSystemd("STATUS=Waiting for MASTER <-> REPLICA sync\n");
-            }
-        }
-    }
-    else
-    {
-        ACLLoadUsersAtStartup();
-        // 【15】如果以Sentinel模式启动，则调用sentinelIsRunning函数启动Sentinel机制。
-        InitServerLast();    // 初始化一些后台线程
-        sentinelIsRunning(); // sentinel模式的配置初始化操作
-        if (server.supervised_mode == SUPERVISED_SYSTEMD)
-        {
-            redisCommunicateSystemd("STATUS=Ready to accept connections\n");
-            redisCommunicateSystemd("READY=1\n");
-        }
-    }
+    // 初始化其他的机制
+    initServerOther();
 
     /* Warning the user about suspicious maxmemory setting. */
     // 检查最大内存是否小于1M，并给与警告提示
