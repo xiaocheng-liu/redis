@@ -26,14 +26,15 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <math.h>
+#include <ctype.h>
+#include <stdarg.h>
+#include <sys/socket.h>
+#include <sys/uio.h>
 
 #include "server.h"
 #include "atomicvar.h"
 #include "cluster.h"
-#include <sys/socket.h>
-#include <sys/uio.h>
-#include <math.h>
-#include <ctype.h>
 
 static void setProtocolError(const char *errstr, client *c);
 int postponeClientRead(client *c);
@@ -230,6 +231,7 @@ void clientInstallWriteHandler(client *c) {
     /* Schedule the client to write the output buffers to the socket only
      * if not already done and, for slaves, if the slave can actually receive
      * writes at this stage. */
+    // 这段代码的功能是调度客户端将输出缓冲区写入套接字，但仅在尚未完成写入且对于从服务器而言当前可以接收写入的情况下进行。
     if (!(c->flags & CLIENT_PENDING_WRITE) &&
         (c->replstate == REPL_STATE_NONE ||
          (c->replstate == SLAVE_STATE_ONLINE && !c->repl_put_online_on_ack)))
@@ -270,11 +272,11 @@ void clientInstallWriteHandler(client *c) {
 int prepareClientToWrite(client *c) {
     /* If it's the Lua client we always return ok without installing any
      * handler since there is no socket at all. */
-    /* 如果是 Lua 客户端，我们总是返回 OK 而不安装任何处理程序，因为根本没有套接字。*/
+    /* 如果是 Lua 客户端或者模块，我们总是返回 OK 而不安装任何处理程序，因为根本没有套接字。*/
     if (c->flags & (CLIENT_LUA|CLIENT_MODULE)) return C_OK;
 
     /* If CLIENT_CLOSE_ASAP flag is set, we need not write anything. */
-    /* 如果设置了CLIENT_CLOSE_ASAP标志，则无需编写任何内容。*/
+    /* 如果设置了CLIENT_CLOSE_ASAP标志(尽快关闭客户端)，则无需编写任何内容。*/
     if (c->flags & CLIENT_CLOSE_ASAP) return C_ERR;
 
     /* CLIENT REPLY OFF / SKIP handling: don't send replies. */
@@ -283,10 +285,11 @@ int prepareClientToWrite(client *c) {
 
     /* Masters don't receive replies, unless CLIENT_MASTER_FORCE_REPLY flag
      * is set. */
+    // 这段代码的功能是说明主节点（Masters）通常不会接收回复，除非设置了CLIENT_MASTER_FORCE_REPLY标志。
     if ((c->flags & CLIENT_MASTER) &&
         !(c->flags & CLIENT_MASTER_FORCE_REPLY)) return C_ERR;
 
-    /* 用于 AOF 加载的假客户端。*/
+    // 这段代码的功能是检查客户端连接是否为空。如果客户端连接 c->conn 为空，则返回错误码 C_ERR，表示这是一个用于 AOF 加载的虚拟客户端。
     if (!c->conn) return C_ERR; /* Fake client for AOF loading. */
 
     /* Schedule the client to write the output buffers to the socket, unless
@@ -296,10 +299,12 @@ int prepareClientToWrite(client *c) {
      * not install a write handler. Instead, it will be done by
      * handleClientsWithPendingReadsUsingThreads() upon return.
      */
+    // 这段代码的功能是检查客户端是否有待处理的回复或是否处于等待读取的状态。如果两者都不是，则安装写处理器。
     if (!clientHasPendingReplies(c) && !(c->flags & CLIENT_PENDING_READ))
             clientInstallWriteHandler(c);
 
     /* Authorize the caller to queue in the output buffer of this client. */
+    // 这段代码的功能是授权调用者将数据排队到该客户端的输出缓冲区中。具体来说，它允许调用者在客户端的输出缓冲区中添加数据，确保数据能够正确地被处理和发送。
     return C_OK;
 }
 
@@ -2131,9 +2136,9 @@ void commandProcessed(client *c) {
 int processCommandAndResetClient(client *c) {
     int deadclient = 0;
     server.current_client = c;
-    // 解析命令
+    // 命令处理
     if (processCommand(c) == C_OK) {
-        // 命令处理
+        // 命令处理完后执行
         commandProcessed(c);
     }
     if (server.current_client == NULL) deadclient = 1;
@@ -2141,9 +2146,6 @@ int processCommandAndResetClient(client *c) {
     /* performEvictions may flush slave output buffers. This may
      * result in a slave, that may be the active client, to be
      * freed. */
-    /* 执行逐出可能会刷新从属输出缓冲区。这可能
-     * 导致从属服务器，即活动客户端，成为
-     * 免费。*/
     return deadclient ? C_ERR : C_OK;
 }
 
@@ -2161,6 +2163,9 @@ int processPendingCommandsAndResetClient(client *c) {
     return C_OK;
 }
 
+// 这段代码的功能是处理客户端输入缓冲区。
+// 具体来说，它接收一个客户端对象 c 作为参数，并对客户端的输入数据进行处理。
+// 该函数可能包含读取、解析和响应客户端请求的逻辑。
 void processInputBuffer(client *c) {
     /* Keep processing while there is something in the input buffer */
     /* 在输入缓冲区中有某些内容时继续处理 */
@@ -2315,7 +2320,7 @@ void readQueryFromClient(connection *conn) {
     // 这些滞留内容也许不能完整构成一个符合协议的命令，
     qblen = sdslen(c->querybuf);
     // 如果有需要，更新缓冲区内容长度的峰值（peak）
-    if (c->querybuf_peak < qblen) c->querybuf_peak = qblen;             // 修改最近读的最大值
+    if (c->querybuf_peak < qblen) c->querybuf_peak = qblen;   // 修改最近读的最大值
     c->querybuf = sdsMakeRoomFor(c->querybuf, readlen);       // 开辟空间
     // 从已连接的套接字中读取客户端的请求数据到输入缓冲区
     nread = connRead(c->conn, c->querybuf+qblen, readlen);  // 读取字节

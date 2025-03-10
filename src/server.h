@@ -1435,7 +1435,9 @@ struct redisServer
     list *paused_clients;                                                     /* List of pause clients */
     mstime_t client_pause_end_time;                                           /* Time when we undo clients_paused */
     char neterr[ANET_ERR_LEN];                                                /* Error buffer for anet.c */
-    dict *migrate_cached_sockets;                                             /* MIGRATE cached sockets */
+    dict *migrate_cached_sockets;
+    /* MIGRATE cached sockets */
+    // 这段代码定义了一个名为 next_client_id 的全局变量，类型为 redisAtomic uint64_t。它用于存储下一个客户端的唯一ID，并且该ID是递增的。
     redisAtomic uint64_t next_client_id;                                      /* Next client unique ID. Incremental. */
     int protected_mode;                                                       /* Don't accept external connections. */
     int gopher_enabled;                                                       /* If true the server will reply to gopher
@@ -2631,7 +2633,7 @@ int zslLexValueLteMax(sds value, zlexrangespec *spec);
 
 /* Core functions */
 // 核心函数
-
+// 该函数 processCommand 接收一个 client 类型的指针参数 c，用于处理客户端命令。具体功能包括解析命令、执行相应操作并返回处理结果。由于代码逻辑较为复杂，具体实现细节需要查看函数内部。
 int processCommand(client *c);
 int processPendingCommandsAndResetClient(client *c);
 void setupSignalHandlers(void);

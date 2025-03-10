@@ -67,15 +67,18 @@ int anetUnixServer(char *err, char *path, mode_t perm, int backlog);
 int anetTcpAccept(char *err, int serversock, char *ip, size_t ip_len, int *port);
 int anetUnixAccept(char *err, int serversock);
 int anetWrite(int fd, char *buf, int count);
+// 该函数 anetNonBlock 用于将文件描述符设置为非阻塞模式。它接受两个参数：一个错误信息字符串指针 err 和一个文件描述符 fd。如果设置成功返回 0，否则返回 -1 并设置错误信息。
 int anetNonBlock(char *err, int fd);
 int anetBlock(char *err, int fd);
 int anetCloexec(int fd);
+// 该函数用于启用TCP_NODELAY选项，禁用Nagle算法，减少网络延迟。参数err用于返回错误信息，fd为文件描述符。函数返回值为0表示成功，非0表示失败。
 int anetEnableTcpNoDelay(char *err, int fd);
 int anetDisableTcpNoDelay(char *err, int fd);
 int anetTcpKeepAlive(char *err, int fd);
 int anetSendTimeout(char *err, int fd, long long ms);
 int anetRecvTimeout(char *err, int fd, long long ms);
 int anetFdToString(int fd, char *ip, size_t ip_len, int *port, int fd_to_str_type);
+// 该函数 anetKeepAlive 用于设置套接字的保活选项。它接受三个参数：错误信息字符串指针 err，文件描述符 fd 和保活间隔时间 interval。函数返回一个整数，表示操作是否成功。
 int anetKeepAlive(char *err, int fd, int interval);
 int anetFormatAddr(char *fmt, size_t fmt_len, char *ip, int port);
 int anetFormatFdAddr(int fd, char *buf, size_t buf_len, int fd_to_str_type);
