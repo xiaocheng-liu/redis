@@ -7258,6 +7258,7 @@ void moduleCallCommandFilters(client *c) {
         /* Skip filter if REDISMODULE_CMDFILTER_NOSELF is set and module is
          * currently processing a command.
          */
+        // 这段代码的功能是检查命令过滤器的标志和模块调用状态。如果命令过滤器设置了 REDISMODULE_CMDFILTER_NOSELF 标志且模块正在调用，则跳过当前命令。
         if ((f->flags & REDISMODULE_CMDFILTER_NOSELF) && f->module->in_call) continue;
 
         /* Call filter */

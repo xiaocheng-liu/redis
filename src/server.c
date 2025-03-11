@@ -4064,11 +4064,15 @@ void propagate(struct redisCommand *cmd, int dbid, robj **argv, int argc,
      * This way we'll deliver the MULTI/..../EXEC block as a whole and
      * both the AOF and the replication link will have the same consistency
      * and atomicity guarantees. */
+    // 这段代码的功能是：当遇到第一个写命令时，传播一个MULTI请求。
+    // 这样可以确保MULTI/.../EXEC块作为一个整体被传递，从而使AOF和复制链路具有相同的一致性和原子性保证。
     if (server.in_exec && !server.propagate_in_transaction)
         execCommandPropagateMulti(dbid);
 
     /* This needs to be unreachable since the dataset should be fixed during
      * client pause, otherwise data may be lossed during a failover. */
+    // 这段代码是一个注释，说明在客户端暂停期间，数据集应该是固定的，否则在故障转移过程中可能会丢失数据。
+    // 因此，这部分代码逻辑应该是不可达的。
     serverAssert(!(areClientsPaused() && !server.client_pause_in_transaction));
 
     if (server.aof_state != AOF_OFF && flags & PROPAGATE_AOF)
@@ -4181,6 +4185,7 @@ void preventCommandReplication(client *c)
 void call(client *c, int flags)
 {
     long long dirty;
+    // 这行代码定义了一个名为 call_timer 的变量，类型为 monotime。monotime 通常用于记录单调递增的时间值，常用于测量时间间隔或定时任务。
     monotime call_timer;
     int client_old_flags = c->flags;
     struct redisCommand *real_cmd = c->cmd;
@@ -4210,11 +4215,14 @@ void call(client *c, int flags)
     dirty = server.dirty;
     prev_err_count = server.stat_total_error_replies;
     updateCachedTime(0);
+
+    // 这段代码的功能是启动一个计时器 call_timer，记录从调用该函数开始的时间。elapsedStart 函数用于初始化或重置计时器，以便后续可以计算经过的时间。
     elapsedStart(&call_timer);
 
     // 会调用客户端命令对应的 redisCommand 的处理方法
     // serverLog(LL_DEBUG, "命令名称：%s", c->cmd->name);
     c->cmd->proc(c);
+    // 这段代码的功能是计算并存储 call_timer 计时器所经过的时间，单位为微秒。elapsedUs 函数用于获取计时器的流逝时间，并将结果赋值给常量 duration。
     const long duration = elapsedUs(call_timer);
     c->duration = duration;
     dirty = server.dirty - dirty;
@@ -4248,6 +4256,7 @@ void call(client *c, int flags)
     /* If the caller is Lua, we want to force the EVAL caller to propagate
      * the script if the command flag or client flag are forcing the
      * propagation. */
+    // 这段代码的功能是：如果调用者是Lua，则强制EVAL调用者在命令标志或客户端标志要求传播脚本时进行传播。
     if (c->flags & CLIENT_LUA && server.lua_caller)
     {
         if (c->flags & CLIENT_FORCE_REPL)
@@ -4258,23 +4267,28 @@ void call(client *c, int flags)
 
     /* Log the command into the Slow log if needed, and populate the
      * per-command statistics that we show in INFO commandstats. */
+    // 这段代码的功能是：如果需要，将命令记录到慢查询日志中，并更新每个命令的统计信息，这些统计信息会在INFO commandstats中显示。
     if (flags & CMD_CALL_SLOWLOG && !(c->cmd->flags & CMD_SKIP_SLOWLOG))
     {
         char *latency_event = (c->cmd->flags & CMD_FAST) ? "fast-command" : "command";
         latencyAddSampleIfNeeded(latency_event, duration / 1000);
         /* If command argument vector was rewritten, use the original
          * arguments. */
+        // 这段代码的功能是检查命令参数向量是否被重写，如果是，则使用原始参数。这通常用于确保在某些情况下（如参数被临时修改后）能够恢复到最初的参数值。
         robj **argv = c->original_argv ? c->original_argv : c->argv;
         int argc = c->original_argv ? c->original_argc : c->argc;
         /* If the client is blocked we will handle slowlog when it is unblocked . */
+        // 这段代码表示如果客户端被阻塞，将在客户端解除阻塞时处理慢查询日志。该逻辑简化了在阻塞期间的日志处理，确保日志记录的准确性和及时性。
         if (!(c->flags & CLIENT_BLOCKED))
         {
             // 记录慢查询日志
             slowlogPushEntryIfNeeded(c, argv, argc, duration);
         }
     }
+    // 释放客户端原始参数内存。该函数用于释放与客户端关联的原始参数数组所占用的内存，确保资源正确回收。
     freeClientOriginalArgv(c);
 
+    // 是否需要统计命令调用信息。
     if (flags & CMD_CALL_STATS)
     {
         /* use the real command that was executed (cmd and lastamc) may be
@@ -4285,6 +4299,8 @@ void call(client *c, int flags)
     }
 
     /* Propagate the command into the AOF and replication link */
+    // 这段代码的功能是将命令传播到AOF（Append Only File）和复制链接中。
+    // 具体来说，它确保命令不仅被记录在AOF文件中以便持久化，还会通过复制链接同步到从服务器。
     if (flags & CMD_CALL_PROPAGATE &&
         (c->flags & CLIENT_PREVENT_PROP) != CLIENT_PREVENT_PROP)
     {
@@ -4292,11 +4308,13 @@ void call(client *c, int flags)
 
         /* Check if the command operated changes in the data set. If so
          * set for replication / AOF propagation. */
+        // 这段代码的功能是检查命令是否对数据集进行了更改。如果确实进行了更改，则设置为进行复制或AOF传播。
         if (dirty)
             propagate_flags |= (PROPAGATE_AOF | PROPAGATE_REPL);
 
         /* If the client forced AOF / replication of the command, set
          * the flags regardless of the command effects on the data set. */
+        // 这段代码的功能是：如果客户端强制要求AOF（Append Only File）或复制命令，则无论该命令是否对数据集产生影响，都设置相应的标志位
         if (c->flags & CLIENT_FORCE_REPL)
             propagate_flags |= PROPAGATE_REPL;
         if (c->flags & CLIENT_FORCE_AOF)
@@ -4305,6 +4323,8 @@ void call(client *c, int flags)
         /* However prevent AOF / replication propagation if the command
          * implementation called preventCommandPropagation() or similar,
          * or if we don't have the call() flags to do so. */
+        // 这段代码的功能是防止在特定条件下将命令传播到AOF或复制系统。
+        // 具体来说，如果命令实现调用了preventCommandPropagation()函数，或者没有设置call()标志来允许传播，则不会进行AOF或复制传播。
         if (c->flags & CLIENT_PREVENT_REPL_PROP ||
             !(flags & CMD_CALL_PROPAGATE_REPL))
             propagate_flags &= ~PROPAGATE_REPL;
@@ -4315,6 +4335,9 @@ void call(client *c, int flags)
         /* Call propagate() only if at least one of AOF / replication
          * propagation is needed. Note that modules commands handle replication
          * in an explicit way, so we never replicate them automatically. */
+        // 这段代码的功能是判断是否需要调用 propagate() 函数。
+        // 只有在 AOF 或者复制传播至少有一个需要的情况下才会调用该函数。
+        // 模块命令的复制是显式处理的，因此不会自动复制。
         if (propagate_flags != PROPAGATE_NONE && !(c->cmd->flags & CMD_MODULE))
 
             // 调用 propagate()函数同步数据到 AOF 文件和 slave节点。
@@ -4323,6 +4346,7 @@ void call(client *c, int flags)
 
     /* Restore the old replication flags, since call() can be executed
      * recursively. */
+    // 这段代码的功能是恢复旧的复制标志，因为 call() 函数可能会递归执行。在递归调用之前保存复制标志，在递归调用之后恢复这些标志，以确保状态一致。
     c->flags &= ~(CLIENT_FORCE_AOF | CLIENT_FORCE_REPL | CLIENT_PREVENT_PROP);
     c->flags |= client_old_flags &
                 (CLIENT_FORCE_AOF | CLIENT_FORCE_REPL | CLIENT_PREVENT_PROP);
@@ -4330,6 +4354,7 @@ void call(client *c, int flags)
     /* Handle the alsoPropagate() API to handle commands that want to propagate
      * multiple separated commands. Note that alsoPropagate() is not affected
      * by CLIENT_PREVENT_PROP flag. */
+    // 这段代码的功能是处理 alsoPropagate() API，用于支持需要传播多个分离命令的场景。需要注意的是，alsoPropagate() 的行为不受 CLIENT_PREVENT_PROP 标志的影响。具体逻辑可能涉及判断是否需要传播命令以及如何传播。
     if (server.also_propagate.numops)
     {
         int j;
@@ -4426,6 +4451,11 @@ void rejectCommand(client *c, robj *reply)
     }
 }
 
+// 该函数 rejectCommandFormat 用于处理客户端命令格式错误的情况。主要功能包括：
+// 增加命令的拒绝调用计数。
+// 标记事务状态。
+// 格式化错误信息并确保其不包含换行符。
+// 根据命令类型选择不同的错误处理方式。
 void rejectCommandFormat(client *c, const char *fmt, ...)
 {
     if (c->cmd)
@@ -4510,7 +4540,7 @@ int processCommand(client *c)
         return C_OK;
     }
     else if ((c->cmd->arity > 0 && c->cmd->arity != c->argc) ||
-             (c->argc < -c->cmd->arity)) // 检查参数个数是否正确 错误的话进入
+             (c->argc < -c->cmd->arity)) // 如果命令的参数个数大于0且不等于实际传递的参数个数，或者实际传递的参数个数小于命令参数个数的负值，则进入错误处理流程。
     {
         rejectCommandFormat(c, "wrong number of arguments for '%s' command",
                             c->cmd->name);
@@ -4521,19 +4551,25 @@ int processCommand(client *c)
     int i;
     for (i = 1; i < c->argc && sdslen(args) < 128; i++)
     {
-        args = sdscatprintf(args, "`%.*s`, ", 128 - (int)sdslen(args), (char *)c->argv[i]->ptr);
+        args = sdscatprintf(args, "%.*s ", 128 - (int)sdslen(args), (char *)c->argv[i]->ptr);
         // printf("command `%s`, with args is: %s \n", (char *)c->argv[0]->ptr, args);
     }
+    printf("接收到的命令: %s %s \n", (char*)c->argv[0]->ptr, args);
     sdsfree(args);
 
+    // 这段代码用于判断当前命令是否为写命令。
     int is_write_command = (c->cmd->flags & CMD_WRITE) ||
                            (c->cmd->proc == execCommand && (c->mstate.cmd_flags & CMD_WRITE));
+    // 这段代码用于判断当前命令是否为禁止内存溢出（OOM）的命令。
     int is_denyoom_command = (c->cmd->flags & CMD_DENYOOM) ||
                              (c->cmd->proc == execCommand && (c->mstate.cmd_flags & CMD_DENYOOM));
+    // 这段代码用于判断是否拒绝过期命令。
     int is_denystale_command = !(c->cmd->flags & CMD_STALE) ||
                                (c->cmd->proc == execCommand && (c->mstate.cmd_inv_flags & CMD_STALE));
+    // 这段代码用于判断是否禁止加载命令。
     int is_denyloading_command = !(c->cmd->flags & CMD_LOADING) ||
                                  (c->cmd->proc == execCommand && (c->mstate.cmd_inv_flags & CMD_LOADING));
+    // 这段代码用于判断命令是否可能需要复制。
     int is_may_replicate_command = (c->cmd->flags & (CMD_WRITE | CMD_MAY_REPLICATE)) ||
                                    (c->cmd->proc == execCommand && (c->mstate.cmd_flags & (CMD_WRITE | CMD_MAY_REPLICATE)));
 
@@ -4617,7 +4653,8 @@ int processCommand(client *c)
      * the event loop since there is a busy Lua script running in timeout
      * condition, to avoid mixing the propagation of scripts with the
      * propagation of DELs due to eviction.
-     * 每次执行命令前先检查内存是否充足，如果内存不够就要尝试按配置的淘汰策略淘汰掉一部分内存 */
+     */
+    // 每次执行命令前先检查内存是否充足，如果内存不够就要尝试按配置的淘汰策略淘汰掉一部分内存
     if (server.maxmemory && !server.lua_timedout)
     {
         // 如果内存已超过限制，那么尝试通过删除过期键来释放内存
@@ -4650,6 +4687,7 @@ int processCommand(client *c)
         /* Save out_of_memory result at script start, otherwise if we check OOM
          * until first write within script, memory used by lua stack and
          * arguments might interfere. */
+        // 这段代码的注释解释了在脚本开始时保存内存不足（OOM）的结果，以避免Lua栈和参数占用的内存对后续检查产生干扰。
         if (c->cmd->proc == evalCommand || c->cmd->proc == evalShaCommand)
         {
             server.lua_oom = out_of_memory;
@@ -4663,7 +4701,8 @@ int processCommand(client *c)
 
     /* Don't accept write commands if there are problems persisting on disk
      * and if this is a master instance. */
-    // 如果磁盘上仍然存在问题，并且这是主实例，则不要接受写入命令。
+    // 这段代码的功能是：如果当前实例是主服务器，并且磁盘持久化存在问题，则不接受写命令。
+    // 这确保了在磁盘出现问题时，主服务器不会继续处理写操作，从而避免数据丢失或损坏
     int deny_write_type = writeCommandsDeniedByDiskError();
     if (deny_write_type != DISK_ERROR_TYPE_NONE &&
         server.masterhost == NULL &&
@@ -4680,7 +4719,7 @@ int processCommand(client *c)
 
     /* Don't accept write commands if there are not enough good slaves and
      * user configured the min-slaves-to-write option. */
-    // 如果没有足够的好从站并且用户配置了最小从站写入选项，则不要接受写入命令。
+    // 这段代码的功能是：在用户配置了最小从节点写入数量（min-slaves-to-write）的情况下，如果可用的从节点数量不足，则不接受写命令
     if (server.masterhost == NULL &&
         server.repl_min_slaves_to_write &&
         server.repl_min_slaves_max_lag &&
@@ -4693,7 +4732,8 @@ int processCommand(client *c)
 
     /* Don't accept write commands if this is a read only slave. But
      * accept write commands if this is our master. */
-    // 如果这是只读从属服务器，则不要接受写入命令。但是，如果这是我们的主人，请接受写入命令。
+    // 这段代码的功能是：如果当前实例是只读从服务器，则拒绝写入命令；但如果当前实例是主服务器，则接受写入命令。
+    // 逻辑主要用于区分主从角色，确保只读从服务器不会执行写操作。
     if (server.masterhost && server.repl_slave_ro &&
         !(c->flags & CLIENT_MASTER) &&
         is_write_command)
@@ -4704,7 +4744,7 @@ int processCommand(client *c)
 
     /* Only allow a subset of commands in the context of Pub/Sub if the
      * connection is in RESP2 mode. With RESP3 there are no limits. */
-    // 仅当连接处于 RESP2 模式时，才允许在 PubSub 上下文中执行命令子集。RESP3没有限制。s
+    // 这段代码的功能是限制在Pub/Sub上下文中仅允许一部分命令，前提是连接处于RESP2模式。如果连接使用RESP3模式，则没有命令限制。
     if ((c->flags & CLIENT_PUBSUB && c->resp == 2) &&
         c->cmd->proc != pingCommand &&
         c->cmd->proc != subscribeCommand &&
@@ -4723,7 +4763,7 @@ int processCommand(client *c)
     /* Only allow commands with flag "t", such as INFO, SLAVEOF and so on,
      * when slave-serve-stale-data is no and we are a slave with a broken
      * link with master. */
-    // 只允许带有标志"t"的命令，例如INFO，SLAVEOF等，当slave-serv-stale-data为no并且我们是与master链接断开的从属时。
+    // 这段代码的功能是：当从服务器与主服务器的连接中断且配置项 slave-serve-stale-data 设置为否时，仅允许带有 "t" 标志的命令（如 INFO、SLAVEOF 等）执行。
     if (server.masterhost && server.repl_state != REPL_STATE_CONNECTED &&
         server.repl_serve_stale_data == 0 &&
         is_denystale_command)
@@ -4734,7 +4774,7 @@ int processCommand(client *c)
 
     /* Loading DB? Return an error if the command has not the
      * CMD_LOADING flag. */
-    // 正在加载数据库？如果命令没有 CMD_LOADING 标志，则返回错误。
+    // 这段代码的功能是检查当前是否正在加载数据库。如果正在加载数据库，并且调用的命令没有设置CMD_LOADING标志，则返回错误。
     if (server.loading && is_denyloading_command)
     {
         rejectCommand(c, shared.loadingerr);
@@ -4747,6 +4787,8 @@ int processCommand(client *c)
      * the MULTI plus a few initial commands refused, then the timeout
      * condition resolves, and the bottom-half of the transaction gets
      * executed, see Github PR #7022. */
+    // 这段代码的功能是限制Lua脚本中命令的数量，以防止脚本执行过慢。
+    // 同时，为了确保事务命令（如MULTI）能够正常执行，避免因超时导致部分事务命令被拒绝，从而影响事务的完整性。
     if (server.lua_timedout &&
         c->cmd->proc != authCommand &&
         c->cmd->proc != helloCommand &&
@@ -4768,7 +4810,7 @@ int processCommand(client *c)
 
     /* If the server is paused, block the client until
      * the pause has ended. Replicas are never paused. */
-    // 如果服务器已暂停，请阻止客户端，直到暂停结束。副本永远不会暂停。
+    // 如果服务器处于暂停状态，则阻塞客户端直到暂停结束。副本永远不会被暂停。
     if (!(c->flags & CLIENT_SLAVE) &&
         ((server.client_pause_type == CLIENT_PAUSE_ALL) ||
          (server.client_pause_type == CLIENT_PAUSE_WRITE && is_may_replicate_command)))
@@ -4779,12 +4821,14 @@ int processCommand(client *c)
     }
 
     // 执行命令
+    // 这段代码检查客户端是否处于多命令事务模式（CLIENT_MULTI），并且当前命令不是特定的几个命令（exec、discard、multi、watch、reset）。
     if (c->flags & CLIENT_MULTI &&
         c->cmd->proc != execCommand && c->cmd->proc != discardCommand &&
         c->cmd->proc != multiCommand && c->cmd->proc != watchCommand &&
         c->cmd->proc != resetCommand)
     {
-        // 将命令入队列
+        // 调用 queueMultiCommand 函数，将命令添加到多命令队列中。
+        // 此函数通常用于批量处理多个命令，提高执行效率。
         queueMultiCommand(c);
         addReply(c, shared.queued);
     }
@@ -4792,6 +4836,8 @@ int processCommand(client *c)
     {
         // 调用call执行命令
         call(c, CMD_CALL_FULL);
+        // 这段代码的功能是将服务器的主复制偏移量（server.master_repl_offset）赋值给对象c的woff成员变量。
+        // 这通常用于记录或同步复制状态。
         c->woff = server.master_repl_offset;
         if (listLength(server.ready_keys))
             handleClientsBlockedOnKeys();

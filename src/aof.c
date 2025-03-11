@@ -547,12 +547,15 @@ sds catAppendOnlyGenericCommand(sds dst, int argc, robj **argv) {
  * This command is used in order to translate EXPIRE and PEXPIRE commands
  * into PEXPIREAT command so that we retain precision in the append only
  * file, and the time is always absolute and not relative. */
+// 这段代码的功能是创建一个表示PEXPIREAT命令的字符串，使用秒数作为生存时间，并根据cmd参数确定要转换的命令。
+// 该功能用于将EXPIRE和PEXPIRE命令转换为PEXPIREAT命令，以确保在追加仅文件中保持时间精度，并且时间始终是绝对的而不是相对的。
 sds catAppendOnlyExpireAtCommand(sds buf, struct redisCommand *cmd, robj *key, robj *seconds) {
     long long when;
     robj *argv[3];
 
     /* Make sure we can use strtoll */
     seconds = getDecodedObject(seconds);
+    // strtoll 是一个用于将字符串转换为长整型数的函数。
     when = strtoll(seconds->ptr,NULL,10);
     /* Convert argument into milliseconds for EXPIRE, SETEX, EXPIREAT */
     if (cmd->proc == expireCommand || cmd->proc == setexCommand ||
@@ -580,6 +583,8 @@ void feedAppendOnlyFile(struct redisCommand *cmd, int dictid, robj **argv, int a
     sds buf = sdsempty();
     /* The DB this command was targeting is not the same as the last command
      * we appended. To issue a SELECT command is needed. */
+    // 这段代码的功能是检查当前命令所针对的数据库是否与上一个命令所针对的数据库不同。
+    // 如果不同，则需要发出一个SELECT命令来切换数据库
     if (dictid != server.aof_selected_db) {
         char seldb[64];
 

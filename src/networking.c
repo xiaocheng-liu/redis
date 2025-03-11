@@ -2125,14 +2125,8 @@ void commandProcessed(client *c) {
  *
  * The function returns C_ERR in case the client was freed as a side effect
  * of processing the command, otherwise C_OK is returned. */
-/* 此函数调用 processCommand（），但也执行一些子任务
- * 对于在该上下文中有用的客户端：
- *
- * 1.它将当前客户端设置为客户端“c”。
- * 2.调用命令Processed（） 如果命令已处理。
- *
- * 该函数返回C_ERR，以防客户端作为副作用被释放
- * 处理命令，否则返回C_OK。*/
+// 该函数主要负责调用 processCommand() 并执行一些与客户端相关的子任务：1. 设置当前客户端为 c；2. 如果命令被处理，则调用 commandProcessed()。
+// 如果客户端在处理命令时被释放，返回 C_ERR，否则返回 C_OK。
 int processCommandAndResetClient(client *c) {
     int deadclient = 0;
     server.current_client = c;
@@ -2146,6 +2140,7 @@ int processCommandAndResetClient(client *c) {
     /* performEvictions may flush slave output buffers. This may
      * result in a slave, that may be the active client, to be
      * freed. */
+    // 这段代码的功能是：执行驱逐操作时，可能会刷新从属输出缓冲区。这可能导致当前活动客户端的从属节点被释放。
     return deadclient ? C_ERR : C_OK;
 }
 
