@@ -3,6 +3,8 @@
 
 #include "server.h"
 
+typedef struct redisObject robj;
+
 /* ----------------------------------------------------------------------------
  * Data structures
  * --------------------------------------------------------------------------*/
@@ -33,5 +35,19 @@ static struct evictionPoolEntry *EvictionPoolLRU;
 int getMaxmemoryState(size_t *total, size_t *logical, size_t *tofree, float *level);
 size_t freeMemoryGetNotCountedMemory(void);
 int overMaxmemoryAfterAlloc(size_t moremem);
+
+/* evict.c -- maxmemory handling and LRU eviction. */
+// 最大内存处理和 LRU 逐出。
+void evictionPoolAlloc(void);
+
+#define LFU_INIT_VAL 5
+unsigned long LFUGetTimeInMinutes(void);
+uint8_t LFULogIncr(uint8_t value);
+unsigned long LFUDecrAndReturn(robj *o);
+
+#define EVICT_OK 0
+#define EVICT_RUNNING 1
+#define EVICT_FAIL 2
+int performEvictions(void);
 
 #endif // EVICT_H
