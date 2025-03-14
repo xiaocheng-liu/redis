@@ -28,13 +28,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __INTSET_H
-#define __INTSET_H
+#ifndef INTSET_H
+#define INTSET_H
 #include <stdint.h>
+#include <stdio.h>
 
-typedef struct intset {
-    uint32_t encoding;  // 保存intset所使用的类型的长度
-    uint32_t length;    // 元素的个数
+typedef struct intset
+{
+    uint32_t encoding; // 保存intset所使用的类型的长度
+    uint32_t length;   // 元素的个数
     /**
      * contents 数组的 int8_t 类型声明比较容易让人误解，实际上， intset 并不使用 int8_t 类型来保存任何元素，
      * 结构中的这个类型声明只是作为一个占位符使用：在对 contents 中的元素进行读取或者写入时，
@@ -42,7 +44,7 @@ typedef struct intset {
      * 而是根据 encoding 的值，对 contents 进行类型转换和指针运算，计算出元素在内存中的正确位置。
      * 在添加新元素，进行内存分配时，分配的空间也是由 encoding 的值决定。
      */
-    int8_t contents[];  // 保存元素的数组
+    int8_t contents[]; // 保存元素的数组
 } intset;
 
 // 创建一个intset
@@ -66,4 +68,4 @@ int intsetValidateIntegrity(const unsigned char *is, size_t size, int deep);
 int intsetTest(int argc, char *argv[]);
 #endif
 
-#endif // __INTSET_H
+#endif // INTSET_H

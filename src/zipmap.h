@@ -32,8 +32,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _ZIPMAP_H
-#define _ZIPMAP_H
+#ifndef ZIPMAP_H
+#define ZIPMAP_H
+
+#include <stdio.h>
 
 unsigned char *zipmapNew(void);
 unsigned char *zipmapSet(unsigned char *zm, unsigned char *key, unsigned int klen, unsigned char *val, unsigned int vlen, int *update);
@@ -51,4 +53,4 @@ int zipmapValidateIntegrity(unsigned char *zm, size_t size, int deep);
 int zipmapTest(int argc, char *argv[]);
 #endif
 
-#endif
+#endif // ZIPMAP_H

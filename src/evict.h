@@ -1,9 +1,5 @@
-//
-// Created by 刘晓成 on 2025-02-12.
-//
-
-#ifndef REDIS_EVICT_H
-#define REDIS_EVICT_H
+#ifndef EVICT_H
+#define EVICT_H
 
 #include "server.h"
 
@@ -24,11 +20,12 @@
  * Empty entries have the key pointer set to NULL. */
 #define EVPOOL_SIZE 16
 #define EVPOOL_CACHED_SDS_SIZE 255
-struct evictionPoolEntry {
-    unsigned long long idle;    /* 对象的空闲时间 (inverse frequency for LFU) */
-    sds key;                    /* key的名字 待淘汰的键值对的key*/
-    sds cached;                 /* Cached SDS object for key name. 缓存的SDS对象*/
-    int dbid;                   /* Key DB number. 待淘汰键值对的key所在的数据库ID*/
+struct evictionPoolEntry
+{
+    unsigned long long idle; /* 对象的空闲时间 (inverse frequency for LFU) */
+    sds key;                 /* key的名字 待淘汰的键值对的key*/
+    sds cached;              /* Cached SDS object for key name. 缓存的SDS对象*/
+    int dbid;                /* Key DB number. 待淘汰键值对的key所在的数据库ID*/
 };
 
 static struct evictionPoolEntry *EvictionPoolLRU;
@@ -37,4 +34,4 @@ int getMaxmemoryState(size_t *total, size_t *logical, size_t *tofree, float *lev
 size_t freeMemoryGetNotCountedMemory(void);
 int overMaxmemoryAfterAlloc(size_t moremem);
 
-#endif //REDIS_EVICT_H
+#endif // EVICT_H

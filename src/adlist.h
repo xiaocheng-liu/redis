@@ -28,8 +28,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __T_LIST_H__
-#define __T_LIST_H__
+#ifndef ADLIST_H
+#define ADLIST_H
 
 /* Node, List, and Iterator are the only data structures used currently. */
 // 双端链表的节点
@@ -102,4 +102,4 @@ void listJoin(list *l, list *o);
 #define AL_START_HEAD 0 // 向前
 #define AL_START_TAIL 1 // 向后
 
-#endif /* __T_LIST_H__ */
+#endif /* ADLIST_H */

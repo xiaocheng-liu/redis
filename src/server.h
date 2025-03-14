@@ -27,8 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __REDIS_H
-#define __REDIS_H
+#ifndef SERVER_H
+#define SERVER_H
 
 #include "fmacros.h"
 #include "config.h"
@@ -55,28 +55,28 @@
 #include <systemd/sd-daemon.h>
 #endif
 
+#include "version.h"
+/* Version macro 版本宏*/
 typedef long long mstime_t; /* millisecond time type. */ // 毫秒时间类型
 typedef long long ustime_t; /* microsecond time type. */ // 微秒时间类型
 
-#include "version.h" /* Version macro 版本宏*/
-
-#include "ae.h"        /* Event driven programming library 事件驱动库*/
-#include "sds.h"       /* Dynamic safe strings 动态安全字符串*/
-#include "dict.h"      /* Hash tables 哈希表*/
-#include "adlist.h"    /* Linked lists 链表 */
-#include "zmalloc.h"   /* total memory usage aware version of malloc/free */ // 该头文件提供了内存分配函数的替代版本（如 malloc 和 free）
-#include "anet.h"      /* Networking the easy way */ // 网络编程
-#include "ziplist.h"   /* Compact list data structure 压缩列表数据结构*/
-#include "intset.h"    /* Compact integer set structure 压缩整型结构*/
+#include "ae.h"                                                                          /* Event driven programming library 事件驱动库*/
+#include "sds.h"                                                                         /* Dynamic safe strings 动态安全字符串*/
+#include "dict.h"                                                                        /* Hash tables 哈希表*/
+#include "adlist.h"                                                                      /* Linked lists 链表 */
+#include "zmalloc.h" /* total memory usage aware version of malloc/free */               // 该头文件提供了内存分配函数的替代版本（如 malloc 和 free）
+#include "anet.h" /* Networking the easy way */                                          // 网络编程
+#include "ziplist.h"                                                                     /* Compact list data structure 压缩列表数据结构*/
+#include "intset.h"                                                                      /* Compact integer set structure 压缩整型结构*/
 #include "quicklist.h" /* Lists are encoded as linked lists of N-elements flat arrays */ // 列表被编码为包含n个元素的平面数组的链表
-#include "rax.h"       /* Radix tree */ // 基数树
+#include "rax.h" /* Radix tree */                                                        // 基数树
 
-#include "util.h"       /* Misc functions useful in many places 工具函数*/
-#include "latency.h"    /* Latency monitor API */    // 延迟监视器API,通过包含此头文件，程序可以调用其中定义的函数和宏来监测系统的延迟情况。
-#include "sparkline.h"  /* ASCII graphs API */ // ASCII 图表的 API。通过包含这个头文件，程序可以调用其中定义的函数来绘制简单的文本图表。
+#include "util.h"                                    /* Misc functions useful in many places 工具函数*/
+#include "latency.h" /* Latency monitor API */       // 延迟监视器API,通过包含此头文件，程序可以调用其中定义的函数和宏来监测系统的延迟情况。
+#include "sparkline.h" /* ASCII graphs API */        // ASCII 图表的 API。通过包含这个头文件，程序可以调用其中定义的函数来绘制简单的文本图表。
 #include "connection.h" /* Connection abstraction */ // 连接抽象的接口或实现。通过包含此头文件，程序可以使用其中定义的与连接相关的功能和数据结构。
 
-#define REDISMODULE_CORE 1 // 这个宏通常用于标识代码是否为核心模块的一部分，以便在编译时进行条件编译。
+#define REDISMODULE_CORE 1                                // 这个宏通常用于标识代码是否为核心模块的一部分，以便在编译时进行条件编译。
 #include "redismodule.h" /* Redis modules API defines. */ // 模块开发接口。这为后续编写 Redis 模块提供了必要的函数和数据结构支持。
 
 /* Following includes allow test functions to be called from Redis main() */
@@ -86,6 +86,9 @@ typedef long long ustime_t; /* microsecond time type. */ // 微秒时间类型
 #include "endianconv.h"
 #include "crc64.h"
 #include "evict.h"
+#include "geo.h"
+#include "rdb.h"
+#include "tls.h"
 
 /* Error codes */
 // 错误代码
@@ -767,7 +770,7 @@ typedef struct RedisModuleDigest
 #define LRU_CLOCK_RESOLUTION 1000 /* LRU clock resolution in ms */
 
 // 全局对象的引用计数，值为 INT_MAX，意味着该对象永远不会被销毁
-#define OBJ_SHARED_REFCOUNT INT_MAX       /* Global object never destroyed. */
+#define OBJ_SHARED_REFCOUNT INT_MAX /* Global object never destroyed. */
 // OBJ_STATIC_REFCOUNT 表示栈上分配的对象的引用计数，值为 INT_MAX - 1
 #define OBJ_STATIC_REFCOUNT (INT_MAX - 1) /* Object allocated in the stack. */
 // OBJ_FIRST_SPECIAL_REFCOUNT 是 OBJ_STATIC_REFCOUNT 的别名。
@@ -984,14 +987,14 @@ typedef struct
     // 密码列表
     list *passwords; /* A list of SDS valid passwords for this user. */
     // 允许的键模式列表
-    list *patterns;  /* A list of allowed key patterns. If this field is NULL
-                        the user cannot mention any key in a command, unless
-                        the flag ALLKEYS is set in the user. */
+    list *patterns; /* A list of allowed key patterns. If this field is NULL
+                       the user cannot mention any key in a command, unless
+                       the flag ALLKEYS is set in the user. */
     // 允许的 Pub/Sub 频道模式列表。
-    list *channels;  /* A list of allowed Pub/Sub channel patterns. If this
-                        field is NULL the user cannot mention any channel in a
-                        `PUBLISH` or [P][UNSUSBSCRIBE] command, unless the flag
-                        ALLCHANNELS is set in the user. */
+    list *channels; /* A list of allowed Pub/Sub channel patterns. If this
+                       field is NULL the user cannot mention any channel in a
+                       `PUBLISH` or [P][UNSUSBSCRIBE] command, unless the flag
+                       ALLCHANNELS is set in the user. */
 } user;
 
 /* With multiplexing we need to take per-client state.
@@ -1313,28 +1316,6 @@ struct malloc_stats
 };
 
 /*-----------------------------------------------------------------------------
- * TLS Context Configuration
- *----------------------------------------------------------------------------*/
-
-typedef struct redisTLSContextConfig
-{
-    char *cert_file;        /* Server side and optionally client side cert file name */
-    char *key_file;         /* Private key filename for cert_file */
-    char *client_cert_file; /* Certificate to use as a client; if none, use cert_file */
-    char *client_key_file;  /* Private key filename for client_cert_file */
-    char *dh_params_file;
-    char *ca_cert_file;
-    char *ca_cert_dir;
-    char *protocols;
-    char *ciphers;
-    char *ciphersuites;
-    int prefer_server_ciphers;
-    int session_caching;
-    int session_cache_size;
-    int session_cache_timeout;
-} redisTLSContextConfig;
-
-/*-----------------------------------------------------------------------------
  * Global server state
  *----------------------------------------------------------------------------*/
 
@@ -1438,14 +1419,14 @@ struct redisServer
     dict *migrate_cached_sockets;
     /* MIGRATE cached sockets */
     // 这段代码定义了一个名为 next_client_id 的全局变量，类型为 redisAtomic uint64_t。它用于存储下一个客户端的唯一ID，并且该ID是递增的。
-    redisAtomic uint64_t next_client_id;                                      /* Next client unique ID. Incremental. */
-    int protected_mode;                                                       /* Don't accept external connections. */
-    int gopher_enabled;                                                       /* If true the server will reply to gopher
-                                                                                    queries. Will still serve RESP2 queries. */
-    int io_threads_num; /* Number of IO threads to use. */                    // 要使用的 IO 线程数。
-    int io_threads_do_reads; /* Read and parse from IO threads? */            // 从 IO 线程读取和解析？
-    int io_threads_active; /* Is IO threads currently active? */              // IO 线程当前是否处于活动状态？
-    long long events_processed_while_blocked;                                 /* processEventsWhileBlocked() */
+    redisAtomic uint64_t next_client_id;                           /* Next client unique ID. Incremental. */
+    int protected_mode;                                            /* Don't accept external connections. */
+    int gopher_enabled;                                            /* If true the server will reply to gopher
+                                                                         queries. Will still serve RESP2 queries. */
+    int io_threads_num; /* Number of IO threads to use. */         // 要使用的 IO 线程数。
+    int io_threads_do_reads; /* Read and parse from IO threads? */ // 从 IO 线程读取和解析？
+    int io_threads_active; /* Is IO threads currently active? */   // IO 线程当前是否处于活动状态？
+    long long events_processed_while_blocked;                      /* processEventsWhileBlocked() */
 
     /* RDB / AOF loading information */
     // RDB AOF 加载信息
@@ -2457,7 +2438,7 @@ int writeCommandsDeniedByDiskError(void);
 
 /* RDB persistence */
 // RDB 持久性
-#include "rdb.h"
+
 void killRDBChild(void);
 int bg_unlink(const char *filename);
 
@@ -2968,10 +2949,22 @@ uint64_t redisBuildId(void);
 char *redisBuildIdString(void);
 
 /* Commands prototypes */
-// 命令原型
-void authCommand(client *c);    // auth命令
-void pingCommand(client *c);    // ping命令
-void echoCommand(client *c);    // echo命令
+void pingCommand(client *c); // ping命令
+void echoCommand(client *c); // echo命令
+void timeCommand(client *c);
+void infoCommand(client *c);
+void monitorCommand(client *c);
+void latencyCommand(client *c);
+void moduleCommand(client *c);
+void debugCommand(client *c);
+
+// acl start
+void aclCommand(client *c);
+void authCommand(client *c); // auth命令
+// acl end
+
+// t_string start
+void stralgoCommand(client *c);
 void commandCommand(client *c); // command命令
 void setCommand(client *c);     // set命令
 void setnxCommand(client *c);   // setnx命令
@@ -2980,13 +2973,6 @@ void psetexCommand(client *c);
 void getCommand(client *c);
 void getexCommand(client *c);
 void getdelCommand(client *c);
-void delCommand(client *c);
-void unlinkCommand(client *c);
-void existsCommand(client *c);
-void setbitCommand(client *c);
-void getbitCommand(client *c);
-void bitfieldCommand(client *c);
-void bitfieldroCommand(client *c);
 void setrangeCommand(client *c);
 void getrangeCommand(client *c);
 void incrCommand(client *c);
@@ -2994,6 +2980,18 @@ void decrCommand(client *c);
 void incrbyCommand(client *c);
 void decrbyCommand(client *c);
 void incrbyfloatCommand(client *c);
+void mgetCommand(client *c);
+void getsetCommand(client *c);
+void msetCommand(client *c);
+void msetnxCommand(client *c);
+void appendCommand(client *c);
+void strlenCommand(client *c);
+// t_string end
+
+// db start
+void delCommand(client *c);
+void unlinkCommand(client *c);
+void existsCommand(client *c);
 void selectCommand(client *c);
 void swapdbCommand(client *c);
 void randomkeyCommand(client *c);
@@ -3001,16 +2999,35 @@ void keysCommand(client *c);
 void scanCommand(client *c);
 void dbsizeCommand(client *c);
 void lastsaveCommand(client *c);
-/** save命令 */
-void saveCommand(client *c);
-/** bgsave命令 */
-void bgsaveCommand(client *c);
-void bgrewriteaofCommand(client *c);
 void shutdownCommand(client *c);
 void moveCommand(client *c);
 void copyCommand(client *c);
 void renameCommand(client *c);
 void renamenxCommand(client *c);
+void flushdbCommand(client *c);
+void flushallCommand(client *c);
+// db end
+
+// bitops start
+void bitopCommand(client *c);
+void bitcountCommand(client *c);
+void bitposCommand(client *c);
+void setbitCommand(client *c);
+void getbitCommand(client *c);
+void bitfieldCommand(client *c);
+void bitfieldroCommand(client *c);
+// bitops end
+
+// rdb start
+void saveCommand(client *c);
+void bgsaveCommand(client *c);
+// rdb end
+
+// aof start
+void bgrewriteaofCommand(client *c);
+// aof end
+
+// t_list start
 void lpushCommand(client *c);
 void rpushCommand(client *c);
 void lpushxCommand(client *c);
@@ -3024,6 +3041,17 @@ void lrangeCommand(client *c);
 void ltrimCommand(client *c);
 void typeCommand(client *c);
 void lsetCommand(client *c);
+void lremCommand(client *c);
+void lposCommand(client *c);
+void rpoplpushCommand(client *c);
+void lmoveCommand(client *c);
+void blpopCommand(client *c);
+void brpopCommand(client *c);
+void brpoplpushCommand(client *c);
+void blmoveCommand(client *c);
+// t_list end
+
+// t_set start
 void saddCommand(client *c);
 void sremCommand(client *c);
 void smoveCommand(client *c);
@@ -3039,31 +3067,24 @@ void sunionstoreCommand(client *c);
 void sdiffCommand(client *c);
 void sdiffstoreCommand(client *c);
 void sscanCommand(client *c);
-void syncCommand(client *c);
-void flushdbCommand(client *c);
-void flushallCommand(client *c);
+// t_set end
+
+// sort start
 void sortCommand(client *c);
-void lremCommand(client *c);
-void lposCommand(client *c);
-void rpoplpushCommand(client *c);
-void lmoveCommand(client *c);
-void infoCommand(client *c);
-void mgetCommand(client *c);
-void monitorCommand(client *c);
+// sort end
+
+// expire start
 void expireCommand(client *c);
 void expireatCommand(client *c);
 void pexpireCommand(client *c);
 void pexpireatCommand(client *c);
-void getsetCommand(client *c);
 void ttlCommand(client *c);
 void touchCommand(client *c);
 void pttlCommand(client *c);
 void persistCommand(client *c);
-void replicaofCommand(client *c);
-void roleCommand(client *c);
-void debugCommand(client *c);
-void msetCommand(client *c);
-void msetnxCommand(client *c);
+// expire end
+
+// t_zset start
 void zaddCommand(client *c);
 void zincrbyCommand(client *c);
 void zrangeCommand(client *c);
@@ -3085,25 +3106,8 @@ void zpopmaxCommand(client *c);
 void bzpopminCommand(client *c);
 void bzpopmaxCommand(client *c);
 void zrandmemberCommand(client *c);
-void multiCommand(client *c);
-void execCommand(client *c);
-void discardCommand(client *c);
-void blpopCommand(client *c);
-void brpopCommand(client *c);
-void brpoplpushCommand(client *c);
-void blmoveCommand(client *c);
-void appendCommand(client *c);
-void strlenCommand(client *c);
 void zrankCommand(client *c);
 void zrevrankCommand(client *c);
-void hsetCommand(client *c);
-void hsetnxCommand(client *c);
-void hgetCommand(client *c);
-void hmsetCommand(client *c);
-void hmgetCommand(client *c);
-void hdelCommand(client *c);
-void hlenCommand(client *c);
-void hstrlenCommand(client *c);
 void zremrangebyrankCommand(client *c);
 void zunionstoreCommand(client *c);
 void zinterstoreCommand(client *c);
@@ -3113,6 +3117,17 @@ void zinterCommand(client *c);
 void zrangestoreCommand(client *c);
 void zdiffCommand(client *c);
 void zscanCommand(client *c);
+// t_zset end
+
+// t_hash start
+void hsetCommand(client *c);
+void hsetnxCommand(client *c);
+void hgetCommand(client *c);
+void hmsetCommand(client *c);
+void hmgetCommand(client *c);
+void hdelCommand(client *c);
+void hlenCommand(client *c);
+void hstrlenCommand(client *c);
 void hkeysCommand(client *c);
 void hvalsCommand(client *c);
 void hgetallCommand(client *c);
@@ -3122,135 +3137,90 @@ void hrandfieldCommand(client *c);
 void configCommand(client *c);
 void hincrbyCommand(client *c);
 void hincrbyfloatCommand(client *c);
+// t_hash end
 
-// 发布订阅相关
+// pubsub start
 void subscribeCommand(client *c);    // subscribe命令
 void unsubscribeCommand(client *c);  // unsubscribe命令
 void psubscribeCommand(client *c);   // psubscribe命令
 void punsubscribeCommand(client *c); // punsubscribe命令
 void publishCommand(client *c);      // publish命令
 void pubsubCommand(client *c);       // pubsub命令
+// pubsub end
 
+// multi start
+void multiCommand(client *c);
+void execCommand(client *c);
+void discardCommand(client *c);
 void watchCommand(client *c);
 void unwatchCommand(client *c);
+// multi end
 
+// cluster start
 void clusterCommand(client *c);
-
 void restoreCommand(client *c);
-
 void migrateCommand(client *c);
-
 void askingCommand(client *c);
-
 void readonlyCommand(client *c);
-
 void readwriteCommand(client *c);
-
 void dumpCommand(client *c);
+// cluster end
 
+// object start
 void objectCommand(client *c);
-
 void memoryCommand(client *c);
+// object end
 
+// networking start
 void clientCommand(client *c);
-
 void helloCommand(client *c);
-
-void evalCommand(client *c);
-
-void evalShaCommand(client *c);
-
-void scriptCommand(client *c);
-
-void timeCommand(client *c);
-
-void bitopCommand(client *c);
-
-void bitcountCommand(client *c);
-
-void bitposCommand(client *c);
-
-void replconfCommand(client *c);
-
-void waitCommand(client *c);
-
-void geoencodeCommand(client *c);
-
-void geodecodeCommand(client *c);
-
-void georadiusbymemberCommand(client *c);
-
-void georadiusbymemberroCommand(client *c);
-
-void georadiusCommand(client *c);
-
-void georadiusroCommand(client *c);
-
-void geoaddCommand(client *c);
-
-void geohashCommand(client *c);
-
-void geoposCommand(client *c);
-
-void geodistCommand(client *c);
-
-void geosearchCommand(client *c);
-
-void geosearchstoreCommand(client *c);
-
-void pfselftestCommand(client *c);
-
-void pfaddCommand(client *c);
-
-void pfcountCommand(client *c);
-
-void pfmergeCommand(client *c);
-
-void pfdebugCommand(client *c);
-
-void latencyCommand(client *c);
-
-void moduleCommand(client *c);
-
 void securityWarningCommand(client *c);
-
-void xaddCommand(client *c);
-
-void xrangeCommand(client *c);
-
-void xrevrangeCommand(client *c);
-
-void xlenCommand(client *c);
-
-void xreadCommand(client *c);
-
-void xgroupCommand(client *c);
-
-void xsetidCommand(client *c);
-
-void xackCommand(client *c);
-
-void xpendingCommand(client *c);
-
-void xclaimCommand(client *c);
-
-void xautoclaimCommand(client *c);
-
-void xinfoCommand(client *c);
-
-void xdelCommand(client *c);
-
-void xtrimCommand(client *c);
-
-void lolwutCommand(client *c);
-
-void aclCommand(client *c);
-
-void stralgoCommand(client *c);
-
 void resetCommand(client *c);
+// networking end
 
+// scripting start
+void replicaofCommand(client *c);
+void evalCommand(client *c);
+void evalShaCommand(client *c);
+void scriptCommand(client *c);
+// scripting end
+
+// replication start
+void roleCommand(client *c);
+void syncCommand(client *c);
+void replconfCommand(client *c);
+void waitCommand(client *c);
 void failoverCommand(client *c);
+// replication end
+
+// hyperloglog start
+void pfselftestCommand(client *c);
+void pfaddCommand(client *c);
+void pfcountCommand(client *c);
+void pfmergeCommand(client *c);
+void pfdebugCommand(client *c);
+// hyperloglog end
+
+// t_stream start
+void xaddCommand(client *c);
+void xrangeCommand(client *c);
+void xrevrangeCommand(client *c);
+void xlenCommand(client *c);
+void xreadCommand(client *c);
+void xgroupCommand(client *c);
+void xsetidCommand(client *c);
+void xackCommand(client *c);
+void xpendingCommand(client *c);
+void xclaimCommand(client *c);
+void xautoclaimCommand(client *c);
+void xinfoCommand(client *c);
+void xdelCommand(client *c);
+void xtrimCommand(client *c);
+// t_stream end
+
+// lolwut start
+void lolwutCommand(client *c);
+// lolwut end
 
 #if defined(__GNUC__)
 void *calloc(size_t count, size_t size) __attribute__((deprecated));
@@ -3301,11 +3271,6 @@ void killIOThreads(void);
 void killThreads(void);
 
 void makeThreadKillable(void);
-
-/* TLS stuff */
-void tlsInit(void);
-
-int tlsConfigure(redisTLSContextConfig *ctx_config);
 
 #define redisDebug(fmt, ...) \
     printf("DEBUG %s:%d > " fmt "\n", __FILE__, __LINE__, __VA_ARGS__)

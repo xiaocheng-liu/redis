@@ -27,8 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _REDIS_FMACRO_H
-#define _REDIS_FMACRO_H
+#ifndef FMACRO_H
+#define FMACRO_H
 
 #define _BSD_SOURCE
 
@@ -64,4 +64,4 @@
 #include <features.h>
 #endif
 
-#endif
+#endif // FMACRO_H

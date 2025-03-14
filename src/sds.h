@@ -34,8 +34,8 @@
 // 它的特点是：可动态扩展内存、二进制安全和与传统的C语言字符串类型兼容。
 // 下面就从源码的角度来分析一下Redis中sds的实现。
 // （sds的源码实现主要在sds.c和sds.h两个文件中）
-#ifndef __SDS_H
-#define __SDS_H
+#ifndef SDS_H
+#define SDS_H
 
 #define SDS_MAX_PREALLOC (1024 * 1024)
 extern const char *SDS_NOINIT;
@@ -326,4 +326,4 @@ void sds_free(void *ptr);                  // 释放sds空间
 int sdsTest(int argc, char *argv[]);
 #endif
 
-#endif
+#endif // SDS_H

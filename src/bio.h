@@ -27,8 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __BIO_H
-#define __BIO_H
+#ifndef BIO_H
+#define BIO_H
 
 #include <pthread.h>
 #include "adlist.h"
@@ -89,4 +89,4 @@ void *bioProcessBackgroundJobs(void *arg);
 // 确保我们有足够的堆栈来执行我们在主线程中执行的所有操作。
 #define REDIS_THREAD_STACK_SIZE (1024*1024*4)
 
-#endif
+#endif // BIO_H

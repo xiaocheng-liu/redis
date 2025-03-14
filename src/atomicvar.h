@@ -52,8 +52,8 @@
 #include <pthread.h>
 #include "config.h"
 
-#ifndef __ATOMIC_VAR_H
-#define __ATOMIC_VAR_H
+#ifndef ATOMIC_VAR_H
+#define ATOMIC_VAR_H
 
 /* Define redisAtomic for atomic variable. */
 #define redisAtomic
@@ -155,4 +155,4 @@
 #error "Unable to determine atomic operations for your platform"
 
 #endif
-#endif /* __ATOMIC_VAR_H */
+#endif /* ATOMIC_VAR_H */

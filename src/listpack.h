@@ -32,10 +32,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __LISTPACK_H
-#define __LISTPACK_H
+#ifndef LISTPACK_H
+#define LISTPACK_H
 
 #include <stdint.h>
+#include <stdio.h>
 
 #define LP_INTBUF_SIZE 21 /* 20 digits of -2^63 + 1 null term = 21. */
 
@@ -60,4 +61,4 @@ unsigned char *lpSeek(unsigned char *lp, long index);
 int lpValidateIntegrity(unsigned char *lp, size_t size, int deep);
 int lpValidateNext(unsigned char *lp, unsigned char **pp, size_t lpbytes);
 
-#endif
+#endif // LISTPACK_H

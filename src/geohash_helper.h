@@ -29,8 +29,8 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GEOHASH_HELPER_HPP_
-#define GEOHASH_HELPER_HPP_
+#ifndef GEOHASH_HELPER_H
+#define GEOHASH_HELPER_H
 
 #include "geohash.h"
 
@@ -41,7 +41,8 @@
 typedef uint64_t GeoHashFix52Bits;
 typedef uint64_t GeoHashVarBits;
 
-typedef struct {
+typedef struct
+{
     GeoHashBits hash;
     GeoHashArea area;
     GeoHashNeighbors neighbors;
@@ -63,4 +64,4 @@ int geohashGetDistanceIfInRadiusWGS84(double x1, double y1, double x2,
 int geohashGetDistanceIfInRectangle(double width_m, double height_m, double x1, double y1,
                                     double x2, double y2, double *distance);
 
-#endif /* GEOHASH_HELPER_HPP_ */
+#endif /* GEOHASH_HELPER_H */

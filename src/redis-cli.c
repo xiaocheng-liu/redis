@@ -199,7 +199,7 @@ typedef struct clusterManagerCommand {
 
 static void createClusterManagerCommand(char *cmdname, int argc, char **argv);
 
-
+// 这行代码声明了一个静态的 redisContext 类型的指针变量 context，用于在多个函数调用之间保持对 Redis 连接上下文的引用。
 static redisContext *context;
 static struct config {
     char *hostip;
@@ -2075,6 +2075,7 @@ static void repl(void) {
 
     cliRefreshPrompt();
     // 循环接收用户输入
+    // printf("%s\n", config.prompt);
     while((line = linenoise(context ? config.prompt : "not connected> ")) != NULL) {
         if (line[0] != '\0') {
 
@@ -8360,7 +8361,8 @@ int main(int argc, char **argv) {
     if (config.intrinsic_latency_mode) intrinsicLatencyMode();
 
     /* Start interactive mode when no command is provided */
-    // 未提供命令时启动交互模式
+    // 这段代码是一个注释，说明当未提供命令时，程序将启动交互模式。
+    // 具体实现逻辑需要结合后续代码分析，但核心功能是检测是否提供了命令，若未提供，则进入交互模式。
     if (argc == 0 && !config.eval) {
         /* Ignore SIGPIPE in interactive mode to force a reconnect */
         signal(SIGPIPE, SIG_IGN);
@@ -8368,6 +8370,7 @@ int main(int argc, char **argv) {
         /* Note that in repl mode we don't abort on connection error.
          * A new attempt will be performed for every command send. */
         cliConnect(0);
+        // repl() 函数通常用于启动一个读取-求值-打印循环（Read-Eval-Print Loop），允许用户交互式地输入命令或表达式并立即看到结果。
         repl();
     }
 

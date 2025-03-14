@@ -30,8 +30,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __AE_H__
-#define __AE_H__
+#ifndef AE_H
+#define AE_H
 
 #include "monotonic.h"
 
@@ -224,4 +224,4 @@ int aeResizeSetSize(aeEventLoop *eventLoop, int setsize);
 /* 通知事件的下一个迭代器将超时设置为零，即不等待 */
 void aeSetDontWait(aeEventLoop *eventLoop, int noWait);
 
-#endif
+#endif // AE_H

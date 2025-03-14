@@ -27,16 +27,20 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __SPARKLINE_H
-#define __SPARKLINE_H
+#ifndef SPARKLINE_H
+#define SPARKLINE_H
+
+#include "sds.h"
 
 /* A sequence is represented of many "samples" */
-struct sample {
+struct sample
+{
     double value;
     char *label;
 };
 
-struct sequence {
+struct sequence
+{
     int length;
     int labels;
     struct sample *samples;
@@ -53,4 +57,4 @@ void freeSparklineSequence(struct sequence *seq);
 sds sparklineRenderRange(sds output, struct sequence *seq, int rows, int offset, int len, int flags);
 sds sparklineRender(sds output, struct sequence *seq, int columns, int rows, int flags);
 
-#endif /* __SPARKLINE_H */
+#endif /* SPARKLINE_H */
