@@ -1602,6 +1602,7 @@ dictType replScriptCacheDictType = {
     NULL                   /* allow to expand */
 };
 
+// 该函数 htNeedsResize 用于判断哈希表是否需要调整大小。
 int htNeedsResize(dict *dict)
 {
     long long size, used;
@@ -3156,7 +3157,9 @@ int restartServer(int flags, mstime_t delay)
     {
         /* Test the descriptor validity before closing it, otherwise
          * Valgrind issues a warning on close(). */
+        // 检查每个描述符是否有效（通过fcntl函数）
         if (fcntl(j, F_GETFD) != -1)
+            // 关闭该描述符（调用close函数）
             close(j);
     }
 
@@ -4554,7 +4557,7 @@ int processCommand(client *c)
         args = sdscatprintf(args, "%.*s ", 128 - (int)sdslen(args), (char *)c->argv[i]->ptr);
         // printf("command `%s`, with args is: %s \n", (char *)c->argv[0]->ptr, args);
     }
-    printf("接收到的命令: %s %s \n", (char*)c->argv[0]->ptr, args);
+    printf("接收到的命令: %s %s \n", (char *)c->argv[0]->ptr, args);
     sdsfree(args);
 
     // 这段代码用于判断当前命令是否为写命令。
@@ -5075,6 +5078,8 @@ void timeCommand(client *c)
 
     /* gettimeofday() can only fail if &tv is a bad address so we
      * don't check for errors. */
+    // 这段代码是对gettimeofday()函数的注释说明，表示该函数仅在传入的地址&tv无效时才会失败，因此无需检查错误。
+    // 功能是获取当前时间
     gettimeofday(&tv, NULL);
     addReplyArrayLen(c, 2);
     addReplyBulkLongLong(c, tv.tv_sec);

@@ -298,8 +298,9 @@ void genericSetKey(client *c, redisDb *db, robj *key, robj *val, int keepttl, in
     }
     // 给对象增加引用计数
     incrRefCount(val);
-    // 过期时间设置
+    // 如果变量 keepttl 的值为假（即 !keepttl 成立）
     if (!keepttl)
+        // removeExpire 函数的作用是从数据库 db 中移除与键 key 相关的过期信息。
         removeExpire(db, key);
     if (signal)
         signalModifiedKey(c, db, key);

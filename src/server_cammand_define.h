@@ -8,8 +8,8 @@ typedef struct client client;
 /* Commands prototypes */
 void pingCommand(client *c); // ping命令
 void echoCommand(client *c); // echo命令
-void timeCommand(client *c);
-void infoCommand(client *c);
+void timeCommand(client *c); // 获取当前时间
+void infoCommand(client *c);    // info命令
 void monitorCommand(client *c);
 void latencyCommand(client *c);
 void moduleCommand(client *c);

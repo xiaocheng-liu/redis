@@ -1157,7 +1157,10 @@ struct sharedObjectsStruct
         *rpop, *lpop, *lpush, *rpoplpush, *lmove, *blmove, *zpopmin, *zpopmax,
         *emptyscan, *multi, *exec, *left, *right, *hset, *srem, *xgroup, *xclaim,
         *script, *replconf, *eval, *persist, *set, *pexpireat, *pexpire,
-        *time, *pxat, *px, *retrycount, *force, *justid,
+        *time,
+        *pxat, // 绝对过期时间标志
+        *px,   // 相对过期时间标志
+        *retrycount, *force, *justid,
         *lastid, *ping, *setid, *keepttl, *load, *createconsumer,
         *getack, *special_asterick, *special_equals, *default_username,
         *select[PROTO_SHARED_SELECT_CMDS],
@@ -2196,7 +2199,6 @@ void addReplyLoadedModules(client *c);
 void copyClientOutputBuffer(client *dst, client *src);
 
 size_t sdsZmallocSize(sds s);
-
 size_t getStringObjectSdsUsedMemory(robj *o);
 
 void freeClientReplyValue(void *o);
@@ -2542,75 +2544,40 @@ typedef struct
 } zlexrangespec;
 
 zskiplist *zslCreate(void);
-
 void zslFree(zskiplist *zsl);
-
 zskiplistNode *zslInsert(zskiplist *zsl, double score, sds ele);
-
 unsigned char *zzlInsert(unsigned char *zl, sds ele, double score);
-
 int zslDelete(zskiplist *zsl, double score, sds ele, zskiplistNode **node);
-
 zskiplistNode *zslFirstInRange(zskiplist *zsl, zrangespec *range);
-
 zskiplistNode *zslLastInRange(zskiplist *zsl, zrangespec *range);
-
 double zzlGetScore(unsigned char *sptr);
-
 void zzlNext(unsigned char *zl, unsigned char **eptr, unsigned char **sptr);
-
 void zzlPrev(unsigned char *zl, unsigned char **eptr, unsigned char **sptr);
-
 unsigned char *zzlFirstInRange(unsigned char *zl, zrangespec *range);
-
 unsigned char *zzlLastInRange(unsigned char *zl, zrangespec *range);
-
 unsigned long zsetLength(const robj *zobj);
-
 void zsetConvert(robj *zobj, int encoding);
-
 void zsetConvertToZiplistIfNeeded(robj *zobj, size_t maxelelen);
-
 int zsetScore(robj *zobj, sds member, double *score);
-
 unsigned long zslGetRank(zskiplist *zsl, double score, sds o);
-
 int zsetAdd(robj *zobj, double score, sds ele, int *flags, double *newscore);
-
 long zsetRank(robj *zobj, sds ele, int reverse);
-
 int zsetDel(robj *zobj, sds ele);
-
 robj *zsetDup(robj *o);
-
 int zsetZiplistValidateIntegrity(unsigned char *zl, size_t size, int deep);
-
 void genericZpopCommand(client *c, robj **keyv, int keyc, int where, int emitkey, robj *countarg);
-
 sds ziplistGetObject(unsigned char *sptr);
-
 int zslValueGteMin(double value, zrangespec *spec);
-
 int zslValueLteMax(double value, zrangespec *spec);
-
 void zslFreeLexRange(zlexrangespec *spec);
-
 int zslParseLexRange(robj *min, robj *max, zlexrangespec *spec);
-
 unsigned char *zzlFirstInLexRange(unsigned char *zl, zlexrangespec *range);
-
 unsigned char *zzlLastInLexRange(unsigned char *zl, zlexrangespec *range);
-
 zskiplistNode *zslFirstInLexRange(zskiplist *zsl, zlexrangespec *range);
-
 zskiplistNode *zslLastInLexRange(zskiplist *zsl, zlexrangespec *range);
-
 int zzlLexValueGteMin(unsigned char *p, zlexrangespec *spec);
-
 int zzlLexValueLteMax(unsigned char *p, zlexrangespec *spec);
-
 int zslLexValueGteMin(sds value, zlexrangespec *spec);
-
 int zslLexValueLteMax(sds value, zlexrangespec *spec);
 
 /* Core functions */
@@ -2645,6 +2612,7 @@ void serverLogRaw(int level, const char *msg);
 void serverLogFromHandler(int level, const char *msg);
 // 创建Pid文件
 void createPidFile(void);
+// 守护进程
 void daemonize(void);
 // 打印启动日志
 void printStartLog(int argc, char **argv);
@@ -2655,7 +2623,9 @@ void usage(void);
 // 打印Redis ASCII艺术Logo
 void redisAsciiArt(void);
 void updateDictResizePolicy(void);
+// 该函数 htNeedsResize 用于判断哈希表是否需要调整大小。
 int htNeedsResize(dict *dict);
+// 初始化或填充命令表。
 void populateCommandTable(void);
 
 // 重置服务统计
@@ -2680,8 +2650,9 @@ unsigned int LRU_CLOCK(void);
 
 const char *evictPolicyToString(void);
 
+// 此函数可能用于获取 Redis 内存开销的相关数据。
 struct redisMemOverhead *getMemoryOverheadData(void);
-
+// 该函数的功能是释放struct redisMemOverhead类型的内存开销数据结构
 void freeMemoryOverheadData(struct redisMemOverhead *mh);
 
 void checkChildrenDone(void);
@@ -2694,10 +2665,13 @@ void *activeDefragAlloc(void *ptr);
 
 robj *activeDefragStringOb(robj *ob, long *defragged);
 
+// 这段代码定义了三个宏，用于表示服务器重启的不同模式：
+// RESTART_SERVER_NONE 表示不执行任何重启操作。
+// RESTART_SERVER_GRACEFULLY 表示优雅关闭服务器后重启。
+// RESTART_SERVER_CONFIG_REWRITE 表示在重启前重写配置文件。
 #define RESTART_SERVER_NONE 0
 #define RESTART_SERVER_GRACEFULLY (1 << 0)     /* Do proper shutdown. */
 #define RESTART_SERVER_CONFIG_REWRITE (1 << 1) /* CONFIG REWRITE before restart.*/
-
 int restartServer(int flags, mstime_t delay);
 
 /* Set data type */
