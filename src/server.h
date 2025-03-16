@@ -1030,7 +1030,7 @@ typedef struct client
                                                                               // cmd: 待执行的客户端命令；解析命令请求后，会根据命令名称查找该命令对应的命令对象，存储在客户端cmd字段，
                                                                               // 可以看到其类型为struct redisCommand。
 
-    // 义了一个指向用户结构体的指针 user，用于表示与当前连接关联的用户。如果 user 指针为 NULL，则表示该连接具有管理员权限，可以执行任何操作
+    // 义了一个指向用户结构体的指针user，用于表示与当前连接关联的用户。如果 user 指针为 NULL，则表示该连接具有管理员权限，可以执行任何操作
     user *user;                                                                   /* User associated with this connection. If the
                                                                                       user is set to NULL the connection can do
                                                                                       anything (admin). */
@@ -2133,13 +2133,9 @@ uint64_t crc64(uint64_t crc, const unsigned char *s, uint64_t l);
 void exitFromChild(int retcode);
 
 size_t redisPopcount(void *s, long count);
-
 int redisSetProcTitle(char *title);
-
 int validateProcTitleTemplate(const char *template);
-
 int redisCommunicateSystemd(const char *sd_notify_msg);
-
 void redisSetCpuAffinity(const char *cpulist);
 
 /* networking.c -- Networking and Client related operations */
@@ -2209,84 +2205,46 @@ void getClientsMaxBuffers(unsigned long *longest_output_list,
                           unsigned long *biggest_input_buffer);
 
 char *getClientPeerId(client *client);
-
 char *getClientSockName(client *client);
-
 sds catClientInfoString(sds s, client *client);
-
 sds getAllClientsInfoString(int type);
-
 void rewriteClientCommandVector(client *c, int argc, ...);
-
 void rewriteClientCommandArgument(client *c, int i, robj *newval);
-
 void replaceClientCommandVector(client *c, int argc, robj **argv);
-
 unsigned long getClientOutputBufferMemoryUsage(client *c);
-
 int freeClientsInAsyncFreeQueue(void);
-
 void asyncCloseClientOnOutputBufferLimitReached(client *c);
-
 int getClientType(client *c);
-
 int getClientTypeByName(char *name);
-
 char *getClientTypeName(int class);
-
 void flushSlavesOutputBuffers(void);
-
 void disconnectSlaves(void);
-
 int listenToPort(int port, int *fds, int *count);
-
 void pauseClients(mstime_t duration, pause_type type);
-
 void unpauseClients(void);
-
 int areClientsPaused(void);
-
 int checkClientPauseTimeoutAndReturnIfPaused(void);
-
 void processEventsWhileBlocked(void);
-
 void loadingCron(void);
-
 void whileBlockedCron(void);
-
 void blockingOperationStarts(void);
-
 void blockingOperationEnds(void);
-
 int handleClientsWithPendingWrites(void);
-
 int handleClientsWithPendingWritesUsingThreads(void);
-
 int handleClientsWithPendingReadsUsingThreads(void);
-
 int stopThreadedIOIfNeeded(void);
-
 int clientHasPendingReplies(client *c);
-
 void unlinkClient(client *c);
-
 int writeToClient(client *c, int handler_installed);
-
 void linkClient(client *c);
-
 void protectClient(client *c);
-
 void unprotectClient(client *c);
-
 void initThreadedIO(void);
-
 client *lookupClientByID(uint64_t id);
 
 #ifdef __GNUC__
-
 void addReplyErrorFormat(client *c, const char *fmt, ...)
     __attribute__((format(printf, 2, 3)));
-
 void addReplyStatusFormat(client *c, const char *fmt, ...)
     __attribute__((format(printf, 2, 3)));
 
@@ -2654,15 +2612,10 @@ const char *evictPolicyToString(void);
 struct redisMemOverhead *getMemoryOverheadData(void);
 // 该函数的功能是释放struct redisMemOverhead类型的内存开销数据结构
 void freeMemoryOverheadData(struct redisMemOverhead *mh);
-
 void checkChildrenDone(void);
-
 int setOOMScoreAdj(int process_class);
-
 void rejectCommandFormat(client *c, const char *fmt, ...);
-
 void *activeDefragAlloc(void *ptr);
-
 robj *activeDefragStringOb(robj *ob, long *defragged);
 
 // 这段代码定义了三个宏，用于表示服务器重启的不同模式：
