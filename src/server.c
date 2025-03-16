@@ -6924,7 +6924,8 @@ void init_setproctitle_replacement(int argc, char **argv)
 #endif
 }
 
-void checkIfSentenelMode(void)
+// 该函数 checkAndInitSentenel 的功能是检查服务器是否处于哨兵模式，如果是，则初始化哨兵模式的配置和相关功能
+void checkAndInitSentenel(void)
 {
     if (server.sentinel_mode)
     {
@@ -6936,7 +6937,7 @@ void checkIfSentenelMode(void)
 }
 
 // 检查rdb或者aof
-void redisCheckRdbOrAof(int argc, char **argv)
+void checkRdbOrAof(int argc, char **argv)
 {
     if (strstr(argv[0], "redis-check-rdb") != NULL)
     {
@@ -7071,6 +7072,7 @@ int main(int argc, char **argv)
 
     // 用于redis测试
     redis_test(argc, argv);
+    // 此函数的功能可能是初始化一个进程标题替换机制，通常用于设置或修改当前进程的名称，便于调试或监控。
     init_setproctitle_replacement(argc, argv);
 
     /* We need to initialize our libraries, and the server configuration. */
@@ -7082,8 +7084,9 @@ int main(int argc, char **argv)
     tzset(); /* Populates 'timezone' global. */
     // 内存超出的handler(记录日志)
     zmalloc_set_oom_handler(redisOutOfMemoryHandler);
-    // 随机数初始化
+    // 使用当前时间和进程ID的异或值作为种子初始化标准库中的随机数生成器。
     srand(time(NULL) ^ getpid());
+    // 使用当前时间和进程ID的异或值作为种子初始化POSIX标准的随机数生成器
     srandom(time(NULL) ^ getpid());
 
     // 精确时间
@@ -7104,9 +7107,9 @@ int main(int argc, char **argv)
     // hash算法种子
     uint8_t hashseed[16];
     getRandomBytes(hashseed, sizeof(hashseed));
-
     // 设置哈希种子
     dictSetHashFunctionSeed(hashseed);
+
     // 【1】检查该Redis服务器是否以sentinel模式启动。
     server.sentinel_mode = checkForSentinelMode(argc, argv);
 
@@ -7132,7 +7135,7 @@ int main(int argc, char **argv)
      */
     // 我们现在需要初始化 sentinel，因为在 sentinel 模式下解析配置文件将具有使用要监控的主节点填充 sentinel 数据结构的效果。
     // 【4】如果以Sentinel模式启动，则初始化Sentinel机制。
-    checkIfSentenelMode();
+    checkAndInitSentenel();
 
     /* Check if we need to start in redis-check-rdb/aof mode. We just execute
      * the program main. However, the program is part of the Redis executable
@@ -7140,7 +7143,7 @@ int main(int argc, char **argv)
     // 【5】如果启动程序是redis-check-rdb或redis-check-aof，
     // 则执行redis_check_rdb_main或redis_check_aof_main函数，
     // 它们尝试检验并修复RDB、AOF文件后便退出程序。
-    redisCheckRdbOrAof(argc, argv);
+    checkRdbOrAof(argc, argv);
 
     // 【11】server.supervised属性指定是否以upstart服务或systemd服务启动Redis。
     //  如果配置了server.daemonize且没有配置server.supervised，则以守护进程的方式启动Redis。
@@ -7149,7 +7152,7 @@ int main(int argc, char **argv)
     int background = server.daemonize && !server.supervised;
     if (background)
     {
-        // 守护进程
+        // 该函数 daemonize 用于将进程转换为守护进程
         daemonize();
     }
 
@@ -7158,6 +7161,7 @@ int main(int argc, char **argv)
     // 打印启动ascii_logo
     redisAsciiArt();
 
+    // readOOMScoreAdj() 是一个函数调用，其功能是读取系统的 OOM（Out of Memory）调整值。该值用于控制进程在内存不足时被操作系统杀死的优先级。
     readOOMScoreAdj();
 
     // 【13】initServer函数初始化Redis运行时数据，aeCreateEventLoop函数创建事件循环器，createPidFile函数创建pid文件。
@@ -7166,6 +7170,7 @@ int main(int argc, char **argv)
     // 如果设置了后台运行模式或PID文件路径，则创建PID文件
     if (background || server.pidfile)
     {
+        // 创建Pid文件
         createPidFile();
     }
     // 如果设置了进程标题，则设置Redis进程标题

@@ -27,8 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __CONFIG_H
-#define __CONFIG_H
+#ifndef CONFIG_H
+#define CONFIG_H
 
 #ifdef __APPLE__
 #include <AvailabilityMacros.h>
@@ -277,4 +277,4 @@ int pthread_setname_np(const char *name);
 void setcpuaffinity(const char *cpulist);
 #endif
 
-#endif
+#endif // CONFIG_H

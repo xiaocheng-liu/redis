@@ -1364,18 +1364,19 @@ struct redisServer
     volatile sig_atomic_t shutdown_asap; /* SHUTDOWN needed ASAP */                                     // 需要尽快关闭
     int activerehashing; /* Incremental rehash in serverCron() */                                       // serverCron（） 中的增量重新哈希
     int active_defrag_running; /* Active defragmentation running (holds current scan aggressiveness) */ // 活动碎片整理正在运行（保持当前扫描主动性）
-    char *pidfile; /* PID file path */                                                                  // pidfile路径
-    int arch_bits; /* 32 or 64 depending on sizeof(long) */                                             // 32或者64取决于long的大小
-    int cronloops; /* Number of times the cron function run */                                          // cron 函数运行的次数
-    char runid[CONFIG_RUN_ID_SIZE + 1]; /* ID always different at every exec. */                        // 当前redis实例的 runid
-    int sentinel_mode; /* True if this instance is a Sentinel. */                                       // 如果此实例是哨兵，则为 true。
-    size_t initial_memory_usage; /* Bytes used after initialization. */                                 // 初始化后使用的字节数。
-    int always_show_logo; /* Show logo even for non-stdout logging. */                                  // 始终显示logo
-    int in_eval; /* Are we inside EVAL? */                                                              // 我们在EVAL里面吗？
-    int in_exec; /* Are we inside EXEC? */                                                              // 我们在EXEC里面吗？
-    int propagate_in_transaction; /* Make sure we don't propagate nested MULTI/EXEC */                  // 确保我们不会传播嵌套的 MULTIEXEC
-    char *ignore_warnings; /* Config: warnings that should be ignored. */                               // 配置：应忽略的警告。
-    int client_pause_in_transaction; /* Was a client pause executed during this Exec? */                // 在此执行期间是否执行了客户端暂停？
+    // 这段代码定义了一个指向字符的指针变量 pidfile，用于存储进程ID文件的路径
+    char *pidfile; /* PID file path */                                                   // pidfile路径
+    int arch_bits; /* 32 or 64 depending on sizeof(long) */                              // 32或者64取决于long的大小
+    int cronloops; /* Number of times the cron function run */                           // cron 函数运行的次数
+    char runid[CONFIG_RUN_ID_SIZE + 1]; /* ID always different at every exec. */         // 当前redis实例的 runid
+    int sentinel_mode; /* True if this instance is a Sentinel. */                        // 如果此实例是哨兵，则为 true。
+    size_t initial_memory_usage; /* Bytes used after initialization. */                  // 初始化后使用的字节数。
+    int always_show_logo; /* Show logo even for non-stdout logging. */                   // 始终显示logo
+    int in_eval; /* Are we inside EVAL? */                                               // 我们在EVAL里面吗？
+    int in_exec; /* Are we inside EXEC? */                                               // 我们在EXEC里面吗？
+    int propagate_in_transaction; /* Make sure we don't propagate nested MULTI/EXEC */   // 确保我们不会传播嵌套的 MULTIEXEC
+    char *ignore_warnings; /* Config: warnings that should be ignored. */                // 配置：应忽略的警告。
+    int client_pause_in_transaction; /* Was a client pause executed during this Exec? */ // 在此执行期间是否执行了客户端暂停？
 
     /* Modules */
     // 模块
@@ -1513,17 +1514,18 @@ struct redisServer
     int active_expire_enabled;                       /* Can be disabled for testing purposes. */
     int active_expire_effort;                        /* From 1 (default) to 10, active effort. */
     int active_defrag_enabled;
-    int sanitize_dump_payload;                                     /* Enables deep sanitization for ziplist and listpack in RDB and RESTORE. */
-    int skip_checksum_validation;                                  /* Disables checksum validateion for RDB and RESTORE payload. */
-    int jemalloc_bg_thread;                                        /* Enable jemalloc background thread */
-    size_t active_defrag_ignore_bytes;                             /* minimum amount of fragmentation waste to start active defrag */
-    int active_defrag_threshold_lower;                             /* minimum percentage of fragmentation to start active defrag */
-    int active_defrag_threshold_upper;                             /* maximum percentage of fragmentation at which we use maximum effort */
-    int active_defrag_cycle_min;                                   /* minimal effort for defrag in CPU percentage */
-    int active_defrag_cycle_max;                                   /* maximal effort for defrag in CPU percentage */
-    unsigned long active_defrag_max_scan_fields;                   /* maximum number of fields of set/hash/zset/list to process from within the main dict scan */
-    size_t client_max_querybuf_len;                                /* Limit for client query buffer length */
-    int dbnum; /* Total number of configured DBs */                // 数据库数量
+    int sanitize_dump_payload;                      /* Enables deep sanitization for ziplist and listpack in RDB and RESTORE. */
+    int skip_checksum_validation;                   /* Disables checksum validateion for RDB and RESTORE payload. */
+    int jemalloc_bg_thread;                         /* Enable jemalloc background thread */
+    size_t active_defrag_ignore_bytes;              /* minimum amount of fragmentation waste to start active defrag */
+    int active_defrag_threshold_lower;              /* minimum percentage of fragmentation to start active defrag */
+    int active_defrag_threshold_upper;              /* maximum percentage of fragmentation at which we use maximum effort */
+    int active_defrag_cycle_min;                    /* minimal effort for defrag in CPU percentage */
+    int active_defrag_cycle_max;                    /* maximal effort for defrag in CPU percentage */
+    unsigned long active_defrag_max_scan_fields;    /* maximum number of fields of set/hash/zset/list to process from within the main dict scan */
+    size_t client_max_querybuf_len;                 /* Limit for client query buffer length */
+    int dbnum; /* Total number of configured DBs */ // 数据库数量
+    // 用于表示是否处于监督状态。值为1时表示监督状态，值为0时表示非监督状态。
     int supervised;                                                /* 1 if supervised, 0 otherwise. */
     int supervised_mode;                                           /* See SUPERVISED_* */
     int daemonize; /* True if running as a daemon */               // 如果作为守护程序运行，则为 True
