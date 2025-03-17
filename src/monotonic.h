@@ -11,9 +11,10 @@
  * instruction is a very fast clock source for this purpose.
  */
 
-#include "fmacros.h"
 #include <stdint.h>
 #include <unistd.h>
+
+#include "fmacros.h"
 
 /* A counter in micro-seconds.  The 'monotime' type is provided for variables
  * holding a monotonic time.  This will help distinguish & document that the

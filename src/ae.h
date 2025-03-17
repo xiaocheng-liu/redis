@@ -35,52 +35,51 @@
 
 #include "monotonic.h"
 
-
 /* aeResizeSetSize,aeCreateFileEvent,aeDeleteTimeEvent函数的可能返回值*/
 #define AE_OK 0
 /* 作为众多ae系列函数的返回值使用 */
 #define AE_ERR -1
 
 /* 没有事件注册上 */
-#define AE_NONE 0       /* No events registered. */
+#define AE_NONE 0 /* No events registered. */
 /* 有读事件注册上 */
-#define AE_READABLE 1   /* Fire when descriptor is readable. */
+#define AE_READABLE 1 /* Fire when descriptor is readable. */
 /* 有些事件注册上 */
-#define AE_WRITABLE 2   /* Fire when descriptor is writable. */
-/* 
+#define AE_WRITABLE 2 /* Fire when descriptor is writable. */
+/*
    一般情况先执行readable事件再执行writable事件，
-   这里的AE_BARRIER表示事件屏障，设置了AE_BARRIER之后,如果已经有了readable事件之后就不会触发 
+   这里的AE_BARRIER表示事件屏障，设置了AE_BARRIER之后,如果已经有了readable事件之后就不会触发
    writable事件,在如下场景下适用:
    例如：你想要的以批量的方式先将file同步到磁盘，然后再回复给客户端
    这种情况下先执行writable事件再执行readable事件.
    感觉这里还需要再多多理解,不是很明白.(本段解释可能不对，感觉这里的英文解释写的不是很好，据下面
    的说，应该就是如果设置了AE_BARRIER，就优先处理写事件）
 */
-#define AE_BARRIER 4    /* With WRITABLE, never fire the event if the
-                           READABLE event already fired in the same event
-                           loop iteration. Useful when you want to persist
-                           things to disk before sending replies, and want
-                           to do that in a group fashion. */
+#define AE_BARRIER 4 /* With WRITABLE, never fire the event if the      \
+                        READABLE event already fired in the same event  \
+                        loop iteration. Useful when you want to persist \
+                        things to disk before sending replies, and want \
+                        to do that in a group fashion. */
 
 /* 0001-表示文件事件 */
-#define AE_FILE_EVENTS (1<<0)  // redis将事件分为时间事件和文件事件，通过flag位来标识
+#define AE_FILE_EVENTS (1 << 0) // redis将事件分为时间事件和文件事件，通过flag位来标识
 /* 0010-表示时间事件 */
-#define AE_TIME_EVENTS (1<<1)
+#define AE_TIME_EVENTS (1 << 1)
 /* 0011-表示文件事件和时间事件 */
-#define AE_ALL_EVENTS (AE_FILE_EVENTS|AE_TIME_EVENTS)
+#define AE_ALL_EVENTS (AE_FILE_EVENTS | AE_TIME_EVENTS)
 /* 0100-表示函数处理完事件后直接返回，不阻塞等待 */
-#define AE_DONT_WAIT (1<<2)
+#define AE_DONT_WAIT (1 << 2)
 
-/* 
+/*
 1000-用于aeProcessEvents(aeEventLoop *eventLoop, int flags)等处,如果
 flags设置了AE_CALL_BEFORE_SLEEP,eventLoop->beforesleep回调函数会被调用
 */
-#define AE_CALL_BEFORE_SLEEP (1<<3)
-/* 
+#define AE_CALL_BEFORE_SLEEP (1 << 3)
+/*
 10000-用于aeProcessEvents(aeEventLoop *eventLoop, int flags)等处,如果
 flags设置了AE_CALL_BEFORE_SLEEP,eventLoop->aftersleep回调函数会被调用
 */
-#define AE_CALL_AFTER_SLEEP (1<<4)
+#define AE_CALL_AFTER_SLEEP (1 << 4)
 
 /* 表示没有事件了,在processTimeEvents中被用到 */
 #define AE_NOMORE -1
@@ -89,7 +88,7 @@ flags设置了AE_CALL_BEFORE_SLEEP,eventLoop->aftersleep回调函数会被调用
 
 /* Macros */
 /* 仅仅用作编译器处理，防止因为没有到相关变量而被当做错误 */
-#define AE_NOTUSED(V) ((void) V)
+#define AE_NOTUSED(V) ((void)V)
 
 struct aeEventLoop;
 
@@ -105,17 +104,19 @@ typedef void aeBeforeSleepProc(struct aeEventLoop *eventLoop);
 
 /* File event structure */
 // 文件事件结构
-typedef struct aeFileEvent {
+typedef struct aeFileEvent
+{
     /* 文件事件类型：是AE_READABLE,AE_WRITABLE和AE_BARRIER中的一个 */
-    int mask; /* one of AE_(READABLE|WRITABLE|BARRIER) */
-    aeFileProc *rfileProc;              /* 有可读IO事件时的处理函数 一般设置为readQueryFromClient*/
-    aeFileProc *wfileProc;              /* 有可写IO事件时的处理函数 一般设置为sendReplyToClient*/
-    void *clientData;                   /* 客户端传入的数据 多路复用库的私有数据 一般为redisClient(redis.h) 为客户端维护一个状态*/
+    int mask;              /* one of AE_(READABLE|WRITABLE|BARRIER) */
+    aeFileProc *rfileProc; /* 有可读IO事件时的处理函数 一般设置为readQueryFromClient*/
+    aeFileProc *wfileProc; /* 有可写IO事件时的处理函数 一般设置为sendReplyToClient*/
+    void *clientData;      /* 客户端传入的数据 多路复用库的私有数据 一般为redisClient(redis.h) 为客户端维护一个状态*/
 } aeFileEvent;
 
 /* Time event structure */
 // 时间事件结构
-typedef struct aeTimeEvent {
+typedef struct aeTimeEvent
+{
     /* 时间事件的唯一id */
     long long id; /* time event identifier. */
     /* timeEvent下次执行的时间 */
@@ -132,13 +133,14 @@ typedef struct aeTimeEvent {
     struct aeTimeEvent *next;
     /* 引用次数，防止时间事件在多次被调用后被释放*/
     int refcount; /* refcount to prevent timer events from being
-  		   * freed in recursive time event calls. */
+                   * freed in recursive time event calls. */
 } aeTimeEvent;
 
 /* A fired event */
 // 触发的事件
 /* 就绪事件 */
-typedef struct aeFiredEvent {
+typedef struct aeFiredEvent
+{
     /* 就绪事件的文件描述符 */
     int fd;
     /* 就绪事件类型，如AE_NONE，AE_READABLE，AE_WRITABLE等 */
@@ -147,9 +149,10 @@ typedef struct aeFiredEvent {
 
 /* State of an event based program */
 /* (事件循环)结构体的定义 */
-typedef struct aeEventLoop {
+typedef struct aeEventLoop
+{
     /* 当前已注册的最大的文件描述符 */
-    int maxfd;   /* highest file descriptor currently registered */
+    int maxfd; /* highest file descriptor currently registered */
     /* 最大文件描述符监听集合的大小 */
     /**
      * 指定事件循环要监听的文件描述符集合的大小。这个值与配置文件中的maxclients有关。
@@ -157,7 +160,7 @@ typedef struct aeEventLoop {
      * setsize参数表示了eventloop可以监听的网络事件fd的个数（不包含超时事件），
      * 如果当前监听的fd个数超过了setsize，eventloop将不能继续注册。
      */
-    int setsize; /* max number of file descriptors tracked */           // 跟踪的最大文件描述符数
+    int setsize; /* max number of file descriptors tracked */ // 跟踪的最大文件描述符数
     /* 下一个时间事件的ID */
     long long timeEventNextId;
     /* 已注册的事件 */
@@ -174,7 +177,7 @@ typedef struct aeEventLoop {
     /* 事件处理开关 */
     int stop;
     /* 多路复用库的事件状态数据 */
-    void *apidata; /* This is used for polling API specific data */     // 这用于轮询 API 特定数据
+    void *apidata; /* This is used for polling API specific data */ // 这用于轮询 API 特定数据
     /* 事件循环在每次迭代前执行处理事件之前的函数 */
     aeBeforeSleepProc *beforesleep;
     /* 执行处理事件之后的函数 */

@@ -32,6 +32,7 @@
 #include "cluster.h"
 #include "atomicvar.h"
 #include "t_list.h"
+#include "t_set.h"
 
 /* Database backup. */
 struct dbBackup

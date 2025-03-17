@@ -27,16 +27,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "server.h"
-#include "monotonic.h"
-#include "cluster.h"
-#include "slowlog.h"
-#include "bio.h"
-#include "latency.h"
-#include "atomicvar.h"
-#include "mt19937-64.h"
-#include "debugmacro.h"
-
 #include <time.h>
 #include <signal.h>
 #include <sys/wait.h>
@@ -63,6 +53,17 @@
 #ifdef __linux__
 #include <sys/mman.h>
 #endif
+
+#include "server.h"
+#include "monotonic.h"
+#include "cluster.h"
+#include "sentinel.h"
+#include "slowlog.h"
+#include "bio.h"
+#include "latency.h"
+#include "atomicvar.h"
+#include "mt19937-64.h"
+#include "debugmacro.h"
 
 /* Our shared "common" objects */
 
@@ -2810,18 +2811,17 @@ void createSharedObjects(void)
     shared.special_asterick = createStringObject("*", 1);
     shared.special_equals = createStringObject("=", 1);
 
+    // 共享整数初始化
     for (j = 0; j < OBJ_SHARED_INTEGERS; j++)
     {
-        shared.integers[j] =
-            makeObjectShared(createObject(OBJ_STRING, (void *)(long)j));
+        shared.integers[j] = makeObjectShared(createObject(OBJ_STRING, (void *)(long)j));
         shared.integers[j]->encoding = OBJ_ENCODING_INT;
     }
+    // 共享对象的批量头部长度
     for (j = 0; j < OBJ_SHARED_BULKHDR_LEN; j++)
     {
-        shared.mbulkhdr[j] = createObject(OBJ_STRING,
-                                          sdscatprintf(sdsempty(), "*%d\r\n", j));
-        shared.bulkhdr[j] = createObject(OBJ_STRING,
-                                         sdscatprintf(sdsempty(), "$%d\r\n", j));
+        shared.mbulkhdr[j] = createObject(OBJ_STRING, sdscatprintf(sdsempty(), "*%d\r\n", j));
+        shared.bulkhdr[j] = createObject(OBJ_STRING, sdscatprintf(sdsempty(), "$%d\r\n", j));
     }
     /* The following two shared objects, minstring and maxstrings, are not
      * actually used for their value but as a special object meaning
@@ -2984,8 +2984,6 @@ void initServerConfig(void)
     // 初始化配置默认值
     initConfigValues();
 }
-
-void memtest(size_t megabytes, int passes);
 
 // 解析命令行参数
 void parseArgv(int argc, char **argv)

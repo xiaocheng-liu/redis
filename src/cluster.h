@@ -366,6 +366,18 @@ typedef struct
 #define CLUSTERMSG_FLAG0_FORCEACK (1 << 1) /* Give ACK to AUTH_REQUEST even if \
                                               master is up. */
 
+/* Cluster */
+// 集群
+void clusterInit(void);
+unsigned short crc16(const char *buf, int len);
+unsigned int keyHashSlot(char *key, int keylen);
+void clusterCron(void);
+void clusterPropagatePublish(robj *channel, robj *message);
+void migrateCloseTimedoutSockets(void);
+void clusterBeforeSleep(void);
+int clusterSendModuleMessageToTarget(const char *target, uint64_t module_id, uint8_t type, unsigned char *payload,
+                                     uint32_t len);
+
 /* ---------------------- API exported outside cluster.c -------------------- */
 clusterNode *getNodeByQuery(client *c, struct redisCommand *cmd, robj **argv, int argc, int *hashslot, int *ask);
 int clusterRedirectBlockedClientIfNeeded(client *c);

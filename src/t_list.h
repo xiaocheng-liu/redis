@@ -6,6 +6,27 @@
 #define T_LIST_H
 
 #include "server.h"
+#include "quicklist.h"
+typedef struct redisObject robj;
+typedef struct client client;
+
+/* Structure to hold list iteration abstraction. */
+// 用于保存列表迭代抽象的结构。
+typedef struct
+{
+    robj *subject;
+    unsigned char encoding;
+    unsigned char direction; /* Iteration direction */ // 迭代方向
+    quicklistIter *iter;
+} listTypeIterator;
+
+/* Structure for an entry while iterating over a list. */
+// 循环访问列表时条目的结构。
+typedef struct
+{
+    listTypeIterator *li;
+    quicklistEntry entry; /* Entry in quicklist */ // 快速列表中的条目
+} listTypeEntry;
 
 /* List data type */
 // 列表数据类型
@@ -27,4 +48,4 @@ void pushGenericCommand(client *c, int where, int xx);
 void popGenericCommand(client *c, int where);
 void listElementsRemoved(client *c, robj *key, int where, robj *o, long count);
 
-#endif //T_LIST_H
+#endif // T_LIST_H

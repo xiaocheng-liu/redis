@@ -30,9 +30,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "ae.h"
-#include "anet.h"
-
 #include <stdio.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -43,6 +40,8 @@
 #include <time.h>
 #include <errno.h>
 
+#include "ae.h"
+#include "anet.h"
 #include "zmalloc.h"
 #include "config.h"
 

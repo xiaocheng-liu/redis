@@ -60,10 +60,11 @@
 typedef long long mstime_t; /* millisecond time type. */ // 毫秒时间类型
 typedef long long ustime_t; /* microsecond time type. */ // 微秒时间类型
 
-#include "ae.h"                                                                          /* Event driven programming library 事件驱动库*/
-#include "sds.h"                                                                         /* Dynamic safe strings 动态安全字符串*/
-#include "dict.h"                                                                        /* Hash tables 哈希表*/
-#include "adlist.h"                                                                      /* Linked lists 链表 */
+#include "ae.h"     /* Event driven programming library 事件驱动库*/
+#include "sds.h"    /* Dynamic safe strings 动态安全字符串*/
+#include "dict.h"   /* Hash tables 哈希表*/
+#include "adlist.h" /* Linked lists 链表 */
+#include "t_list.h"
 #include "zmalloc.h" /* total memory usage aware version of malloc/free */               // 该头文件提供了内存分配函数的替代版本（如 malloc 和 free）
 #include "anet.h" /* Networking the easy way */                                          // 网络编程
 #include "ziplist.h"                                                                     /* Compact list data structure 压缩列表数据结构*/
@@ -107,7 +108,9 @@ typedef long long ustime_t; /* microsecond time type. */ // 微秒时间类型
 #define CRON_DBS_PER_CALL 16
 #define NET_MAX_WRITES_PER_EVENT (1024 * 64)
 #define PROTO_SHARED_SELECT_CMDS 10
+// 共享整数对象的数量上限
 #define OBJ_SHARED_INTEGERS 10000
+// 共享对象的批量头部长度
 #define OBJ_SHARED_BULKHDR_LEN 32
 // 这段代码定义了一个宏 LOG_MAX_LEN，其值为1024，表示系统日志消息的最大默认长度。
 #define LOG_MAX_LEN 1024 /* Default maximum length of syslog messages.*/
@@ -777,6 +780,7 @@ typedef struct RedisModuleDigest
 // OBJ_FIRST_SPECIAL_REFCOUNT 是 OBJ_STATIC_REFCOUNT 的别名。
 #define OBJ_FIRST_SPECIAL_REFCOUNT OBJ_STATIC_REFCOUNT
 
+// 这段代码定义了一个名为 robj 的结构体，用于表示 Redis 中的对象
 typedef struct redisObject
 {
     unsigned type : 4;       // 数据类型  string  list  set  sortset  hash
@@ -802,6 +806,8 @@ typedef struct redisObject
 // 对于原生类型，它会检查对象是否属于预定义的类型（如字符串、列表等），并返回相应的名称；
 // 对于模块类型，则返回其注册的名称。
 char *getObjectTypeName(robj *);
+// 该代码定义了一个宏 sdsEncodedObject，用于判断对象指针 objptr 的编码是否为 OBJ_ENCODING_RAW 或 OBJ_ENCODING_EMBSTR。
+#define sdsEncodedObject(objptr) (objptr->encoding == OBJ_ENCODING_RAW || objptr->encoding == OBJ_ENCODING_EMBSTR)
 
 /* Macro used to initialize a Redis object allocated on the stack.
  * Note that this macro is taken near the structure definition to make sure
@@ -1144,7 +1150,8 @@ struct sentinelConfig
     list *post_monitor_cfg;
 };
 
-// 这段代码定义了一个名为 sharedObjectsStruct 的结构体，用于存储 Redis 中常用的对象和字符串。这些对象包括各种错误信息、命令关键字、常用整数对象等，旨在减少内存分配次数并提高性能。
+// 这段代码定义了一个名为 sharedObjectsStruct 的结构体，用于存储 Redis 中常用的对象和字符串。
+// 这些对象包括各种错误信息、命令关键字、常用整数对象等，旨在减少内存分配次数并提高性能。
 struct sharedObjectsStruct
 {
     robj *crlf, *ok, *err, *emptybulk, *czero, *cone, *pong, *space,
@@ -1164,7 +1171,7 @@ struct sharedObjectsStruct
         *lastid, *ping, *setid, *keepttl, *load, *createconsumer,
         *getack, *special_asterick, *special_equals, *default_username,
         *select[PROTO_SHARED_SELECT_CMDS],
-        *integers[OBJ_SHARED_INTEGERS],
+        *integers[OBJ_SHARED_INTEGERS],    // 共享整数对象
         *mbulkhdr[OBJ_SHARED_BULKHDR_LEN], /* "*<value>\r\n" */
         *bulkhdr[OBJ_SHARED_BULKHDR_LEN];  /* "$<value>\r\n" */
     sds minstring, maxstring;
@@ -2010,34 +2017,6 @@ typedef struct _redisSortOperation
     robj *pattern;
 } redisSortOperation;
 
-/* Structure to hold list iteration abstraction. */
-// 用于保存列表迭代抽象的结构。
-typedef struct
-{
-    robj *subject;
-    unsigned char encoding;
-    unsigned char direction; /* Iteration direction */ // 迭代方向
-    quicklistIter *iter;
-} listTypeIterator;
-
-/* Structure for an entry while iterating over a list. */
-// 循环访问列表时条目的结构。
-typedef struct
-{
-    listTypeIterator *li;
-    quicklistEntry entry; /* Entry in quicklist */ // 快速列表中的条目
-} listTypeEntry;
-
-/* Structure to hold set iteration abstraction. */
-// 用于保存集合迭代抽象的结构。
-typedef struct
-{
-    robj *subject;
-    int encoding;
-    int ii; /* intset iterator */ // 集成迭代器
-    dictIterator *di;
-} setTypeIterator;
-
 /* Structure to hold hash iteration abstraction. Note that iteration over
  * hashes involves both fields and values. Because it is possible that
  * not both are required, store pointers in the iterator to avoid
@@ -2336,8 +2315,6 @@ int equalStringObjects(robj *a, robj *b);
 unsigned long long estimateObjectIdleTime(robj *o);
 void trimStringObjectIfNeeded(robj *o);
 
-#define sdsEncodedObject(objptr) (objptr->encoding == OBJ_ENCODING_RAW || objptr->encoding == OBJ_ENCODING_EMBSTR)
-
 /* Synchronous I/O with timeout */
 // 带超时的同步 IO
 ssize_t syncWrite(int fd, char *ptr, ssize_t size, long long timeout);
@@ -2629,22 +2606,6 @@ robj *activeDefragStringOb(robj *ob, long *defragged);
 #define RESTART_SERVER_CONFIG_REWRITE (1 << 1) /* CONFIG REWRITE before restart.*/
 int restartServer(int flags, mstime_t delay);
 
-/* Set data type */
-// Set数据类型
-robj *setTypeCreate(sds value);
-int setTypeAdd(robj *subject, sds value);
-int setTypeRemove(robj *subject, sds value);
-int setTypeIsMember(robj *subject, sds value);
-setTypeIterator *setTypeInitIterator(robj *subject);
-void setTypeReleaseIterator(setTypeIterator *si);
-int setTypeNext(setTypeIterator *si, sds *sdsele, int64_t *llele);
-sds setTypeNextObject(setTypeIterator *si);
-int setTypeRandomElement(robj *setobj, sds *sdsele, int64_t *llele);
-unsigned long setTypeRandomElements(robj *set, unsigned long count, robj *aux_set);
-unsigned long setTypeSize(const robj *subject);
-void setTypeConvert(robj *subject, int enc);
-robj *setTypeDup(robj *o);
-
 /* Hash data type */
 // Hash数据类型
 #define HASH_SET_TAKE_FIELD (1 << 0)
@@ -2737,7 +2698,6 @@ robj *dbUnshareStringValue(redisDb *db, robj *key, robj *o);
 
 #define EMPTYDB_NO_FLAGS 0     /* No flags. */
 #define EMPTYDB_ASYNC (1 << 0) /* Reclaim memory in another thread. */
-
 long long emptyDb(int dbnum, int flags, void(callback)(void *));
 long long emptyDbStructure(redisDb *dbarray, int dbnum, int async, void(callback)(void *));
 void flushAllDataAndResetRDB(int flags);
@@ -2777,28 +2737,6 @@ int georadiusGetKeys(struct redisCommand *cmd, robj **argv, int argc, getKeysRes
 int xreadGetKeys(struct redisCommand *cmd, robj **argv, int argc, getKeysResult *result);
 int memoryGetKeys(struct redisCommand *cmd, robj **argv, int argc, getKeysResult *result);
 int lcsGetKeys(struct redisCommand *cmd, robj **argv, int argc, getKeysResult *result);
-
-/* Cluster */
-// 集群
-void clusterInit(void);
-unsigned short crc16(const char *buf, int len);
-unsigned int keyHashSlot(char *key, int keylen);
-void clusterCron(void);
-void clusterPropagatePublish(robj *channel, robj *message);
-void migrateCloseTimedoutSockets(void);
-void clusterBeforeSleep(void);
-int clusterSendModuleMessageToTarget(const char *target, uint64_t module_id, uint8_t type, unsigned char *payload,
-                                     uint32_t len);
-
-/* Sentinel */
-// 哨兵
-void initSentinelConfig(void);
-void initSentinel(void);
-void sentinelTimer(void);
-const char *sentinelHandleConfiguration(char **argv, int argc);
-void queueSentinelConfig(sds *argv, int argc, int linenum, sds line);
-void loadSentinelConfigFromQueue(void);
-void sentinelIsRunning(void);
 
 /* redis-check-rdb & aof */
 int redis_check_rdb(char *rdbfilename, FILE *fp);
@@ -2860,7 +2798,6 @@ void serverLogObjectDebugInfo(const robj *o);
 void sigsegvHandler(int sig, siginfo_t *info, void *secret);
 
 sds genRedisInfoString(const char *section);
-
 sds genModulesInfoString(sds info);
 
 void enableWatchdog(int period);
@@ -2871,6 +2808,8 @@ void mixDigest(unsigned char *digest, void *ptr, size_t len);
 void xorDigest(unsigned char *digest, void *ptr, size_t len);
 void debugDelay(int usec);
 
+// 内存测试
+void memtest(size_t megabytes, int passes);
 int memtest_preserving_test(unsigned long *m, size_t bytes, int passes);
 int populateCommandTableParseFlags(struct redisCommand *c, char *strflags);
 
