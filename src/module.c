@@ -31,12 +31,13 @@
 #include <sys/wait.h>
 
 #include "server.h"
+#include "t_hash.h"
+#include "t_list.h"
+#include "t_set.h"
 #include "cluster.h"
 #include "slowlog.h"
 #include "rdb.h"
 #include "monotonic.h"
-#include "t_list.h"
-#include "t_set.h"
 
 /* --------------------------------------------------------------------------
  * Private data structures used by the modules system. Those are data

@@ -124,7 +124,7 @@ static inline size_t sdsTypeMaxSize(char type)
  * end of the string. However the string is binary safe and can contain
  * \0 characters in the middle, as the length is stored in the sds header. */
 // 新建一个sds字符串，包含特殊的初始化指针和初始长度
-// 如果 NULL 用于“init”，则字符串初始化为零字节。
+// 如果 NULL 用于"init"，则字符串初始化为零字节。
 // 如果使用SDS_NOINIT，则缓冲区保持未初始化状态;
 sds _sdsnewlen(const void *init, size_t initlen, int trymalloc)
 {

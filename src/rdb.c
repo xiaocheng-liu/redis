@@ -37,12 +37,13 @@
 #include <sys/stat.h>
 #include <sys/param.h>
 #include "server.h"
+#include "t_hash.h"
+#include "t_list.h"
+#include "t_set.h"
 #include "lzf.h" /* LZF compression library */
 #include "zipmap.h"
 #include "endianconv.h"
 #include "stream.h"
-#include "t_list.h"
-#include "t_set.h"
 
 /* This macro is called when the internal RDB structure is corrupt */
 #define rdbReportCorruptRDB(...) rdbReportError(1, __LINE__, __VA_ARGS__)

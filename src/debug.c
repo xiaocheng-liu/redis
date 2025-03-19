@@ -29,6 +29,7 @@
  */
 
 #include "server.h"
+#include "t_hash.h"
 #include "sha1.h" /* SHA1 is used for DEBUG DIGEST */
 #include "crc64.h"
 #include "bio.h"

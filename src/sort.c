@@ -30,6 +30,7 @@
 
 #include <math.h> /* isnan() */
 #include "server.h"
+#include "t_hash.h"
 #include "pqsort.h" /* Partial qsort for SORT+LIMIT */
 #include "t_list.h"
 #include "t_set.h"

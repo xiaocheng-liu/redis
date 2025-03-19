@@ -29,6 +29,7 @@
 #include <signal.h>
 #include <ctype.h>
 #include "server.h"
+#include "t_hash.h"
 #include "cluster.h"
 #include "atomicvar.h"
 #include "t_list.h"

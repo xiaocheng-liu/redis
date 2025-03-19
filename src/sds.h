@@ -259,9 +259,9 @@ static inline void sdssetalloc(sds s, size_t newlen)
     }
 }
 
-sds sdsnewlen(const void *init, size_t initlen);       // 新建一个容量为initlen的sds
-sds sdstrynewlen(const void *init, size_t initlen);    // 尝试新建一个容量为initlen的sds
 sds sdsnew(const char *init);                          // 新建sds，字符串为null，默认长度0
+sds sdstrynewlen(const void *init, size_t initlen);    // 尝试新建一个容量为initlen的sds
+sds sdsnewlen(const void *init, size_t initlen);       // 新建一个容量为initlen的sds
 sds sdsempty(void);                                    // 新建空字符""，默认长度0
 sds sdsdup(const sds s);                               // 根据s的实际长度创建新的sds，目的是降低内存的占用
 void sdsfree(sds s);                                   // 释放sds
@@ -272,7 +272,6 @@ sds sdscatsds(sds s, const sds t);                     // 把两个sds拼接在�
 sds sdscpylen(sds s, const char *t, size_t len);       // 把字符串t指定长度的部分拷贝到sds上
 sds sdscpy(sds s, const char *t);                      // 把字符串t拷贝到sds上
 sds sdscatvprintf(sds s, const char *fmt, va_list ap); // 把用printf格式化后的字符拼接到sds上
-
 #ifdef __GNUC__
 sds sdscatprintf(sds s, const char *fmt, ...)
     __attribute__((format(printf, 2, 3)));

@@ -65,6 +65,7 @@ typedef long long ustime_t; /* microsecond time type. */ // 微秒时间类型
 #include "dict.h"   /* Hash tables 哈希表*/
 #include "adlist.h" /* Linked lists 链表 */
 #include "t_list.h"
+#include "t_zset.h"
 #include "zmalloc.h" /* total memory usage aware version of malloc/free */               // 该头文件提供了内存分配函数的替代版本（如 malloc 和 free）
 #include "anet.h" /* Networking the easy way */                                          // 网络编程
 #include "ziplist.h"                                                                     /* Compact list data structure 压缩列表数据结构*/
@@ -90,6 +91,8 @@ typedef long long ustime_t; /* microsecond time type. */ // 微秒时间类型
 #include "geo.h"
 #include "rdb.h"
 #include "tls.h"
+#include "pubsub.h"
+#include "multi.h"
 #include "server_cammand_define.h"
 
 /* Error codes */
@@ -859,31 +862,6 @@ typedef struct redisDb
 // 我们无法在此处定义它，因为我们定义了CLUSTER_SLOTS在cluster.h中。
 typedef struct dbBackup dbBackup;
 
-/* Client MULTI/EXEC state */
-// 客户端MULTI/EXEC状态
-typedef struct multiCmd
-{
-    robj **argv;
-    int argc;
-    struct redisCommand *cmd;
-} multiCmd;
-
-// 定义了一个名为 multiState 的结构体，用于存储 Redis 中 MULTI 命令执行状态。
-// 它包含命令数组、命令总数、命令标志位的累积、反向标志位累积、最小副本数以及同步复制超时时间。
-typedef struct multiState
-{
-    multiCmd *commands;         /* Array of MULTI commands */
-    int count;                  /* Total number of MULTI commands */
-    int cmd_flags;              /* The accumulated command flags OR-ed together.
-                               So if at least a command has a given flag, it
-                               will be set in this field. */
-    int cmd_inv_flags;          /* Same as cmd_flags, OR-ing the ~flags. so that it
-                               is possible to know if all the commands have a
-                               certain flag. */
-    int minreplicas;            /* MINREPLICAS for synchronous replication */
-    time_t minreplicas_timeout; /* MINREPLICAS timeout as unixtime. */
-} multiState;
-
 /* This structure holds the blocking operation state for a client.
  * The fields used depend on client->btype. */
 // 此结构保存客户端的阻塞操作状态。 使用的字段取决于 client->btype
@@ -1176,37 +1154,6 @@ struct sharedObjectsStruct
         *bulkhdr[OBJ_SHARED_BULKHDR_LEN];  /* "$<value>\r\n" */
     sds minstring, maxstring;
 };
-
-/* ZSETs use a specialized version of Skiplists
- * skiplist节点定义 */
-typedef struct zskiplistNode
-{
-    sds ele;                        // 成员对象
-    double score;                   // 分值
-    struct zskiplistNode *backward; // 前向指针
-    // 层
-    struct zskiplistLevel
-    {
-        struct zskiplistNode *forward; // 每一层的后向指针
-        unsigned long span;            // 下一个节点的跨度
-    } level[];
-} zskiplistNode;
-
-// skiplist定义
-// 跳跃表的定义
-typedef struct zskiplist
-{
-    struct zskiplistNode *header, *tail; // 跳表的头节点和尾节点
-    unsigned long length;                // 节点数量
-    int level;                           // 层数
-} zskiplist;
-
-// 有序集
-typedef struct zset
-{
-    dict *dict;     // 字典
-    zskiplist *zsl; // 跳跃表
-} zset;
 
 typedef struct clientBufferLimitsConfig
 {
@@ -1788,7 +1735,7 @@ struct redisServer
     /* Zip structure config, see redis.conf for more information  */
     // zip结构配置，更多信息见redis.conf
     size_t hash_max_ziplist_entries;
-    size_t hash_max_ziplist_value;
+    size_t hash_max_ziplist_value; // 表示哈希表中使用压缩列表的最大值限制
     size_t set_max_intset_entries;
     size_t zset_max_ziplist_entries;
     size_t zset_max_ziplist_value;
@@ -1924,14 +1871,6 @@ struct redisServer
     int target_replica_port;    /* Failover target port */
     int failover_state;         /* Failover state */
 };
-
-// 这段代码定义了一个名为 pubsubPattern 的结构体，用于表示发布/订阅模式中的模式匹配。
-// 结构体包含两个成员：一个指向 client 类型的指针，表示客户端；一个指向 robj 类型的指针，表示模式对象。
-typedef struct pubsubPattern
-{
-    client *client;
-    robj *pattern;
-} pubsubPattern;
 
 #define MAX_KEYS_BUFFER 256
 
@@ -2249,20 +2188,6 @@ uint64_t trackingGetTotalPrefixes(void);
 void trackingBroadcastInvalidationMessages(void);
 int checkPrefixCollisionsOrReply(client *c, robj **prefix, size_t numprefix);
 
-/* MULTI/EXEC/WATCH... */
-void unwatchAllKeys(client *c);
-void initClientMultiState(client *c);
-void freeClientMultiState(client *c);
-void queueMultiCommand(client *c);
-void touchWatchedKey(redisDb *db, robj *key);
-void touchAllWatchedKeysInDb(redisDb *emptied, redisDb *replaced_with);
-void discardTransaction(client *c);
-void flagTransaction(client *c);
-void execCommandAbort(client *c, sds error);
-void execCommandPropagateMulti(int dbid);
-void execCommandPropagateExec(int dbid);
-void beforePropagateMultiOrExec(int multi);
-
 /* Redis object implementation */
 // Redis 对象实现
 void decrRefCount(robj *o);
@@ -2378,7 +2303,6 @@ int writeCommandsDeniedByDiskError(void);
 
 /* RDB persistence */
 // RDB 持久性
-
 void killRDBChild(void);
 int bg_unlink(const char *filename);
 
@@ -2446,9 +2370,6 @@ user *ACLCreateUnlinkedUser(void);
 void ACLFreeUserAndKillClients(user *u);
 void addACLLogEntry(client *c, int reason, int keypos, sds username);
 
-/* Sorted sets data type */
-// 排序集数据类型
-
 /* Input flags. */
 #define ZADD_NONE 0
 #define ZADD_INCR (1 << 0) /* Increment the score instead of setting it. */
@@ -2465,57 +2386,6 @@ void addACLLogEntry(client *c, int reason, int keypos, sds username);
 
 /* Flags only used by the ZADD command but not by zsetAdd() API: */
 #define ZADD_CH (1 << 16) /* Return num of elements added or updated. */
-
-/* Struct to hold an inclusive/exclusive range spec by score comparison. */
-typedef struct
-{
-    double min, max;
-    int minex, maxex; /* are min or max exclusive? */
-} zrangespec;
-
-/* Struct to hold an inclusive/exclusive range spec by lexicographic comparison. */
-typedef struct
-{
-    sds min, max;     /* May be set to shared.(minstring|maxstring) */
-    int minex, maxex; /* are min or max exclusive? */
-} zlexrangespec;
-
-zskiplist *zslCreate(void);
-void zslFree(zskiplist *zsl);
-zskiplistNode *zslInsert(zskiplist *zsl, double score, sds ele);
-unsigned char *zzlInsert(unsigned char *zl, sds ele, double score);
-int zslDelete(zskiplist *zsl, double score, sds ele, zskiplistNode **node);
-zskiplistNode *zslFirstInRange(zskiplist *zsl, zrangespec *range);
-zskiplistNode *zslLastInRange(zskiplist *zsl, zrangespec *range);
-double zzlGetScore(unsigned char *sptr);
-void zzlNext(unsigned char *zl, unsigned char **eptr, unsigned char **sptr);
-void zzlPrev(unsigned char *zl, unsigned char **eptr, unsigned char **sptr);
-unsigned char *zzlFirstInRange(unsigned char *zl, zrangespec *range);
-unsigned char *zzlLastInRange(unsigned char *zl, zrangespec *range);
-unsigned long zsetLength(const robj *zobj);
-void zsetConvert(robj *zobj, int encoding);
-void zsetConvertToZiplistIfNeeded(robj *zobj, size_t maxelelen);
-int zsetScore(robj *zobj, sds member, double *score);
-unsigned long zslGetRank(zskiplist *zsl, double score, sds o);
-int zsetAdd(robj *zobj, double score, sds ele, int *flags, double *newscore);
-long zsetRank(robj *zobj, sds ele, int reverse);
-int zsetDel(robj *zobj, sds ele);
-robj *zsetDup(robj *o);
-int zsetZiplistValidateIntegrity(unsigned char *zl, size_t size, int deep);
-void genericZpopCommand(client *c, robj **keyv, int keyc, int where, int emitkey, robj *countarg);
-sds ziplistGetObject(unsigned char *sptr);
-int zslValueGteMin(double value, zrangespec *spec);
-int zslValueLteMax(double value, zrangespec *spec);
-void zslFreeLexRange(zlexrangespec *spec);
-int zslParseLexRange(robj *min, robj *max, zlexrangespec *spec);
-unsigned char *zzlFirstInLexRange(unsigned char *zl, zlexrangespec *range);
-unsigned char *zzlLastInLexRange(unsigned char *zl, zlexrangespec *range);
-zskiplistNode *zslFirstInLexRange(zskiplist *zsl, zlexrangespec *range);
-zskiplistNode *zslLastInLexRange(zskiplist *zsl, zlexrangespec *range);
-int zzlLexValueGteMin(unsigned char *p, zlexrangespec *spec);
-int zzlLexValueLteMax(unsigned char *p, zlexrangespec *spec);
-int zslLexValueGteMin(sds value, zlexrangespec *spec);
-int zslLexValueLteMax(sds value, zlexrangespec *spec);
 
 /* Core functions */
 // 核心函数
@@ -2605,41 +2475,6 @@ robj *activeDefragStringOb(robj *ob, long *defragged);
 #define RESTART_SERVER_GRACEFULLY (1 << 0)     /* Do proper shutdown. */
 #define RESTART_SERVER_CONFIG_REWRITE (1 << 1) /* CONFIG REWRITE before restart.*/
 int restartServer(int flags, mstime_t delay);
-
-/* Hash data type */
-// Hash数据类型
-#define HASH_SET_TAKE_FIELD (1 << 0)
-#define HASH_SET_TAKE_VALUE (1 << 1)
-#define HASH_SET_COPY 0
-void hashTypeConvert(robj *o, int enc);
-void hashTypeTryConversion(robj *subject, robj **argv, int start, int end);
-int hashTypeExists(robj *o, sds key);
-int hashTypeDelete(robj *o, sds key);
-unsigned long hashTypeLength(const robj *o);
-hashTypeIterator *hashTypeInitIterator(robj *subject);
-void hashTypeReleaseIterator(hashTypeIterator *hi);
-int hashTypeNext(hashTypeIterator *hi);
-void hashTypeCurrentFromZiplist(hashTypeIterator *hi, int what,
-                                unsigned char **vstr,
-                                unsigned int *vlen,
-                                long long *vll);
-sds hashTypeCurrentFromHashTable(hashTypeIterator *hi, int what);
-void hashTypeCurrentObject(hashTypeIterator *hi, int what, unsigned char **vstr, unsigned int *vlen, long long *vll);
-sds hashTypeCurrentObjectNewSds(hashTypeIterator *hi, int what);
-robj *hashTypeLookupWriteOrCreate(client *c, robj *key);
-robj *hashTypeGetValueObject(robj *o, sds field);
-int hashTypeSet(robj *o, sds field, sds value, int flags);
-robj *hashTypeDup(robj *o);
-int hashZiplistValidateIntegrity(unsigned char *zl, size_t size, int deep);
-
-/* Pub / Sub */
-// 发布/订阅
-int pubsubUnsubscribeAllChannels(client *c, int notify);
-int pubsubUnsubscribeAllPatterns(client *c, int notify);
-void freePubsubPattern(void *p);
-int listMatchPubsubPattern(void *a, void *b);
-int pubsubPublishMessage(robj *channel, robj *message);
-void addReplyPubsubMessage(client *c, robj *channel, robj *msg);
 
 /* Keyspace events notification */
 // Keyspace事件通知

@@ -27,9 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "server.h"
-#include "bio.h"
-#include "rio.h"
+
 
 #include <signal.h>
 #include <fcntl.h>
@@ -39,6 +37,10 @@
 #include <sys/resource.h>
 #include <sys/wait.h>
 #include <sys/param.h>
+#include "server.h"
+#include "t_hash.h"
+#include "bio.h"
+#include "rio.h"
 #include "aof.h"
 #include "t_list.h"
 #include "t_set.h"
