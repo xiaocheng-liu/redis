@@ -1,40 +1,5 @@
-/*
- * Copyright (c) 2009-2012, Salvatore Sanfilippo <antirez at gmail dot com>
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- *   * Redistributions of source code must retain the above copyright notice,
- *     this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above copyright
- *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution.
- *   * Neither the name of Redis nor the names of its contributors may be used
- *     to endorse or promote products derived from this software without
- *     specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
-
 #ifndef SERVER_H
 #define SERVER_H
-
-#include "fmacros.h"
-#include "config.h"
-#include "solarisfixes.h"
-#include "rio.h"
-#include "atomicvar.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -51,6 +16,12 @@
 #include <lua.h>
 #include <signal.h>
 
+#include "fmacros.h"
+#include "config.h"
+#include "solarisfixes.h"
+#include "rio.h"
+#include "atomicvar.h"
+
 #ifdef HAVE_LIBSYSTEMD
 #include <systemd/sd-daemon.h>
 #endif
@@ -60,14 +31,15 @@
 typedef long long mstime_t; /* millisecond time type. */ // 毫秒时间类型
 typedef long long ustime_t; /* microsecond time type. */ // 微秒时间类型
 
-#include "ae.h"     /* Event driven programming library 事件驱动库*/
+#include "ae.h"                                 /* Event driven programming library 事件驱动库*/
+#include "anet.h" /* Networking the easy way */ // 网络编程
+
 #include "sds.h"    /* Dynamic safe strings 动态安全字符串*/
 #include "dict.h"   /* Hash tables 哈希表*/
 #include "adlist.h" /* Linked lists 链表 */
 #include "t_list.h"
 #include "t_zset.h"
 #include "zmalloc.h" /* total memory usage aware version of malloc/free */               // 该头文件提供了内存分配函数的替代版本（如 malloc 和 free）
-#include "anet.h" /* Networking the easy way */                                          // 网络编程
 #include "ziplist.h"                                                                     /* Compact list data structure 压缩列表数据结构*/
 #include "intset.h"                                                                      /* Compact integer set structure 压缩整型结构*/
 #include "quicklist.h" /* Lists are encoded as linked lists of N-elements flat arrays */ // 列表被编码为包含n个元素的平面数组的链表
@@ -93,6 +65,7 @@ typedef long long ustime_t; /* microsecond time type. */ // 微秒时间类型
 #include "tls.h"
 #include "pubsub.h"
 #include "multi.h"
+#include "t_stream.h" /* Stream data type header file. */ // 流数据类型头文件。
 #include "server_cammand_define.h"
 
 /* Error codes */
@@ -757,13 +730,12 @@ typedef struct RedisModuleDigest
  * 但redis为了在各种情况下尽可能节约内存，对每种类型的数据在不同情况下有不同的编码格式，
  * 所以这里需要用额外的字段标识出来。
  */
-// 对象编码  对象编码(数据结构类型)。某些类型的对象（如字符串和哈希）可以通过多种方式在内部表示。ENCODING表明表示方式。
 #define OBJ_ENCODING_RAW 0 /* Raw representation */                        // 最原始的标识方式，只有string才会用到
 #define OBJ_ENCODING_INT 1 /* Encoded as integer */                        // 整数
 #define OBJ_ENCODING_HT 2 /* Encoded as hash table */                      // 哈希表
 #define OBJ_ENCODING_ZIPMAP 3 /* Encoded as zipmap */                      // ZIPMAP
-#define OBJ_ENCODING_LINKEDLIST 4 /* No longer used: old list encoding. */ // LINKEDLIST
-#define OBJ_ENCODING_ZIPLIST 5 /* Encoded as ziplist */                    // ziplist
+#define OBJ_ENCODING_LINKEDLIST 4 /* No longer used: old list encoding. */ // LINKEDLIST 不再使用
+#define OBJ_ENCODING_ZIPLIST 5 /* Encoded as ziplist */                    // 压缩列表
 #define OBJ_ENCODING_INTSET 6 /* Encoded as intset */                      // intset
 #define OBJ_ENCODING_SKIPLIST 7 /* Encoded as skiplist */                  // skiplist跳表
 #define OBJ_ENCODING_EMBSTR 8 /* Embedded sds string encoding */           // 嵌入式的sds
@@ -841,7 +813,8 @@ typedef struct clientReplyBlock
 /* Redis database representation. There are multiple databases identified
  * by integers from 0 (the default database) up to the max configured
  * database. The database number is the 'id' field in the structure. */
-// Redis数据库表示。已识别多个数据库从0（默认数据库）到配置的最大值的整数数据库。数据库编号是结构中的"id"字段。
+// Redis数据库表示。已识别多个数据库从0（默认数据库）到配置的最大值的整数数据库。
+// 数据库编号是结构中的"id"字段。
 typedef struct redisDb
 {
     dict *dict;                                                                             /* The keyspace for this DB                                           // 保存着数据库中的所有键值对数据, 这个属性也被称为键空间（key space）*/
@@ -854,13 +827,6 @@ typedef struct redisDb
     unsigned long expires_cursor; /* Cursor of the active expire cycle. */                  // 过期删除过程中的下标
     list *defrag_later; /* List of key names to attempt to defrag one by one, gradually. */ // 要尝试逐个碎片整理的键名称列表，逐渐。
 } redisDb;
-
-/* Declare database backup that include redis main DBs and slots to keys map.
- * Definition is in db.c. We can't define it here since we define CLUSTER_SLOTS
- * in cluster.h. */
-// 声明数据库备份，包括redis主DB和槽到键映射。定义在db.c中。
-// 我们无法在此处定义它，因为我们定义了CLUSTER_SLOTS在cluster.h中。
-typedef struct dbBackup dbBackup;
 
 /* This structure holds the blocking operation state for a client.
  * The fields used depend on client->btype. */
@@ -1972,8 +1938,6 @@ typedef struct
     dictEntry *de;
 } hashTypeIterator;
 
-#include "stream.h" /* Stream data type header file. */ // 流数据类型头文件。
-
 #define OBJ_HASH_KEY 1
 #define OBJ_HASH_VALUE 2
 
@@ -2537,9 +2501,17 @@ long long emptyDb(int dbnum, int flags, void(callback)(void *));
 long long emptyDbStructure(redisDb *dbarray, int dbnum, int async, void(callback)(void *));
 void flushAllDataAndResetRDB(int flags);
 long long dbTotalServerKeyCount(void);
+
+/* Declare database backup that include redis main DBs and slots to keys map.
+ * Definition is in db.c. We can't define it here since we define CLUSTER_SLOTS
+ * in cluster.h. */
+// 声明数据库备份，包括redis主DB和槽到键映射。定义在db.c中。
+// 我们无法在此处定义它，因为我们定义了CLUSTER_SLOTS在cluster.h中。
+typedef struct dbBackup dbBackup;
 dbBackup *backupDb(void);
 void restoreDbBackup(dbBackup *buckup);
 void discardDbBackup(dbBackup *buckup, int flags, void(callback)(void *));
+
 int selectDb(client *c, int id);
 void signalModifiedKey(client *c, redisDb *db, robj *key);
 void signalFlushedDb(int dbid, int async);

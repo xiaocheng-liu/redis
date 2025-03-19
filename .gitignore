@@ -43,3 +43,4 @@ redis.code-workspace
 sentinel
 redis_cli_history.txt
 /deps/
+tests/tmp
