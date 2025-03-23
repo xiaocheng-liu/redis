@@ -2,26 +2,25 @@
 #define SERVER_CAMMAND_DEFINE_H
 
 #include "server.h"
-
 typedef struct client client;
 
-/* Commands prototypes */
+/* Commands prototypes */ // 命令原型
+
 void pingCommand(client *c); // ping命令
 void echoCommand(client *c); // echo命令
 void timeCommand(client *c); // 获取当前时间
-void infoCommand(client *c);    // info命令
+void infoCommand(client *c); // info命令
 void monitorCommand(client *c);
 void latencyCommand(client *c);
 void moduleCommand(client *c);
 void debugCommand(client *c);
 
 // acl start
-void aclCommand(client *c);
+void aclCommand(client *c);  // acl命令
 void authCommand(client *c); // auth命令
 // acl end
 
 // t_string start
-void stralgoCommand(client *c);
 void commandCommand(client *c); // command命令
 void setCommand(client *c);     // set命令
 void setnxCommand(client *c);   // setnx命令
@@ -43,6 +42,7 @@ void msetCommand(client *c);
 void msetnxCommand(client *c);
 void appendCommand(client *c);
 void strlenCommand(client *c);
+void stralgoCommand(client *c);
 // t_string end
 
 // db start

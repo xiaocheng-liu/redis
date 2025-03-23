@@ -497,7 +497,7 @@ int checkAlreadyExpired(long long when) {
  *----------------------------------------------------------------------------*/
 
 /* 这是EXPIRE命令的通用实现，因为命令的第二个参数可能是相对的，也可能是绝对的，
- * 所以“basetime”参数被用来表示基准时间是多少(对于这个命令的各种变体，参数要么是0，要么当前时间)
+ * 所以"basetime"参数被用来表示基准时间是多少(对于这个命令的各种变体，参数要么是0，要么当前时间)
  * 
  * 时间单位有秒UNIT_SECONDS 和 毫秒UNIT_MILLISECONDS两种，basetime参数的时间单位始终是秒 */
 void expireGenericCommand(client *c, long long basetime, int unit) {

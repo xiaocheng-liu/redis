@@ -2991,7 +2991,7 @@ void parseArgv(int argc, char **argv)
     int j = 0;
     /* Store the executable path and arguments in a safe place in order
      * to be able to restart the server later. */
-    // 【3】记录Redis程序可执行路径及启动参数，以便后续重启服务器。
+    // 记录Redis程序可执行路径及启动参数，以便后续重启服务器。
     server.executable = getAbsolutePath(argv[0]);
 
     server.exec_argv = zmalloc(sizeof(char *) * (argc + 1));
@@ -7108,10 +7108,10 @@ int main(int argc, char **argv)
     // 设置哈希种子
     dictSetHashFunctionSeed(hashseed);
 
-    // 【1】检查该Redis服务器是否以sentinel模式启动。
+    // 检查该Redis服务器是否以sentinel模式启动。
     server.sentinel_mode = checkForSentinelMode(argc, argv);
 
-    // 【2】initServerConfig函数将redisServer中记录配置项的属性初始化为默认值。
+    // initServerConfig函数将redisServer中记录配置项的属性初始化为默认值。
     initServerConfig();
     // ACLInit函数初始化ACL机制。
     // ACL 子系统必须尽快初始化，因为基本网络代码和客户端创建依赖于它。ASAP: as soon as possible
@@ -7122,9 +7122,17 @@ int main(int argc, char **argv)
     moduleInitModulesSystem();
     tlsInit();
 
+    /* Check if we need to start in redis-check-rdb/aof mode. We just execute
+     * the program main. However, the program is part of the Redis executable
+     * so that we can easily execute an RDB check on loading errors. */
+    // 如果启动程序是redis-check-rdb或redis-check-aof，
+    // 则执行redis_check_rdb_main或redis_check_aof_main函数，
+    // 它们尝试检验并修复RDB、AOF文件后便退出程序。
+    checkRdbOrAof(argc, argv);
+
     /* Store the executable path and arguments in a safe place in order
      * to be able to restart the server later. */
-    // 【3】记录Redis程序可执行路径及启动参数，以便后续重启服务器。
+    // 记录Redis程序可执行路径及启动参数，以便后续重启服务器。
     parseArgv(argc, argv);
 
     /* We need to init sentinel right now as parsing the configuration file
@@ -7132,18 +7140,10 @@ int main(int argc, char **argv)
      * data structures with master nodes to monitor.
      */
     // 我们现在需要初始化 sentinel，因为在 sentinel 模式下解析配置文件将具有使用要监控的主节点填充 sentinel 数据结构的效果。
-    // 【4】如果以Sentinel模式启动，则初始化Sentinel机制。
+    // 如果以Sentinel模式启动，则初始化Sentinel机制。
     checkAndInitSentenel();
 
-    /* Check if we need to start in redis-check-rdb/aof mode. We just execute
-     * the program main. However, the program is part of the Redis executable
-     * so that we can easily execute an RDB check on loading errors. */
-    // 【5】如果启动程序是redis-check-rdb或redis-check-aof，
-    // 则执行redis_check_rdb_main或redis_check_aof_main函数，
-    // 它们尝试检验并修复RDB、AOF文件后便退出程序。
-    checkRdbOrAof(argc, argv);
-
-    // 【11】server.supervised属性指定是否以upstart服务或systemd服务启动Redis。
+    // server.supervised属性指定是否以upstart服务或systemd服务启动Redis。
     //  如果配置了server.daemonize且没有配置server.supervised，则以守护进程的方式启动Redis。
     server.supervised = redisIsSupervised(server.supervised_mode);
     // 守护进程
@@ -7154,7 +7154,7 @@ int main(int argc, char **argv)
         daemonize();
     }
 
-    // 【12】打印启动日志。
+    // 打印启动日志。
     printStartLog(argc, argv);
     // 打印启动ascii_logo
     redisAsciiArt();
@@ -7162,7 +7162,7 @@ int main(int argc, char **argv)
     // readOOMScoreAdj() 是一个函数调用，其功能是读取系统的 OOM（Out of Memory）调整值。该值用于控制进程在内存不足时被操作系统杀死的优先级。
     readOOMScoreAdj();
 
-    // 【13】initServer函数初始化Redis运行时数据，aeCreateEventLoop函数创建事件循环器，createPidFile函数创建pid文件。
+    // initServer函数初始化Redis运行时数据，aeCreateEventLoop函数创建事件循环器，createPidFile函数创建pid文件。
     initServer();
 
     // 如果设置了后台运行模式或PID文件路径，则创建PID文件
@@ -7187,13 +7187,13 @@ int main(int argc, char **argv)
     // 检查最大内存是否小于1M，并给与警告提示
     checkMaxmemory();
 
-    // 【16】尽可能将Redis主线程绑定到server.server_cpulist配置的CPU列表上，
+    // 尽可能将Redis主线程绑定到server.server_cpulist配置的CPU列表上，
     //  Redis 4开始使用多线程，该操作可以减少不必要的线程切换，提高性能。
     redisSetCpuAffinity(server.server_cpulist);
     setOOMScoreAdj(-1);
-    // 【17】启动事件循环器。事件循环器是Redis中的重要组件。在Redis运行期间，由事件循环器提供服务。启动eventLoop开始接受请求
+    // 启动事件循环器。事件循环器是Redis中的重要组件。在Redis运行期间，由事件循环器提供服务。启动eventLoop开始接受请求
     aeMain(server.el);
-    // 【18】执行到这里，说明Redis服务已停止，aeDeleteEventLoop函数清除事件循环器中的事件，最后退出程序。
+    // 执行到这里，说明Redis服务已停止，aeDeleteEventLoop函数清除事件循环器中的事件，最后退出程序。
     aeDeleteEventLoop(server.el);
     return 0;
 }

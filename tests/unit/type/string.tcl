@@ -4,11 +4,6 @@ start_server {tags {"string"}} {
         r get x
     } {foobar}
 
-    test {my test 1} {
-       r set a a
-       r get a
-    } {a}
-
     test {SET and GET an empty item} {
         r set x {}
         r get x

@@ -775,7 +775,7 @@ loaderr:
  * empty. This way loadServerConfig can be used to just load a file or
  * just load a string. */
 // 从指定的文件名加载服务配置
-// 该函数在加载之前将存储在“选项”字符串中的其他配置指令附加到配置文件中。
+// 该函数在加载之前将存储在"选项"字符串中的其他配置指令附加到配置文件中。
 // 文件名和选项都可以为 NULL，在这种情况下被视为空。这样，loadServerConfig 可以只用于加载文件或只加载字符串。
 void loadServerConfig(char *filename, char config_from_stdin, char *options)
 {
