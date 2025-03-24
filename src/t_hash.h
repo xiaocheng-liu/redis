@@ -3,6 +3,9 @@
 
 #include "server.h"
 
+#define OBJ_HASH_KEY 1
+#define OBJ_HASH_VALUE 2
+
 /* Hash data type */
 // Hash数据类型
 #define HASH_SET_TAKE_FIELD (1 << 0)

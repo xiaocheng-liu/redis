@@ -10,6 +10,9 @@
 typedef struct redisObject robj;
 typedef struct client client;
 
+#define LIST_HEAD 0
+#define LIST_TAIL 1
+
 /* Structure to hold list iteration abstraction. */
 // 用于保存列表迭代抽象的结构。
 typedef struct

@@ -1970,7 +1970,8 @@ void databasesCron(void)
     /* Perform hash tables rehashing if needed, but only if there are no
      * other processes saving the DB on disk. Otherwise rehashing is bad
      * as will cause a lot of copy-on-write of memory pages. */
-    // 如果需要，执行哈希表重新哈希，但前提是没有其他进程将数据库保存在磁盘上。否则，重新散列是不好的，因为会导致大量内存页的写入复制。
+    // 如果需要，执行哈希表重新哈希，但前提是没有其他进程将数据库保存在磁盘上。
+    // 否则，重新散列是不好的，因为会导致大量内存页的写入复制。
     if (!hasActiveChildProcess())
     {
         /* We use global counters so if we stop the computation at a given
@@ -2296,8 +2297,7 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData)
     /* Start a scheduled AOF rewrite if this was requested by the user while
      * a BGSAVE was in progress.
      * 如果没有活跃的子进程，启动的AOF后台重写 */
-    if (!hasActiveChildProcess() &&
-        server.aof_rewrite_scheduled)
+    if (!hasActiveChildProcess() && server.aof_rewrite_scheduled)
     {
         rewriteAppendOnlyFileBackground();
     }
@@ -2837,8 +2837,14 @@ void initServerConfig(void)
     int j;
 
     updateCachedTime(1);
+
+    // 生成runid
     getRandomHexChars(server.runid, CONFIG_RUN_ID_SIZE);
     server.runid[CONFIG_RUN_ID_SIZE] = '\0';
+    redisDebugMark();
+    redisDebug("runid = %s", server.runid);
+    redisDebugMark();
+
     changeReplicationId();
     clearReplicationId2();
     server.hz = CONFIG_DEFAULT_HZ;                                 /* Initialize it ASAP, even if it may get
@@ -3010,7 +3016,7 @@ void parseArgv(int argc, char **argv)
         sds options = sdsempty();
 
         /* Handle special options --help and --version */
-        // 【6】对-v、--version、--help、-h、--test-memory等命令进行优先处理。
+        // 对-v、--version、--help、-h、--test-memory等命令进行优先处理。
         // strcmp函数比较两个字符串str1、str2，若str1=str2，则返回零；若str1 != str2，则返回正数。
         if (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0)
         {
@@ -3022,14 +3028,13 @@ void parseArgv(int argc, char **argv)
         }
         if (strcmp(argv[1], "--test-memory") == 0)
         {
-            if (argc == 3)
-            { // 如果参数个数为3个
-                // 进行内存测试
+            if (argc == 3) // 如果参数个数为3个, 进行内存测试
+            {
                 memtest(atoi(argv[2]), 50);
                 exit(0);
             }
-            else
-            { // 参数不是3个，给错误提示
+            else // 参数不是3个，给错误提示
+            {
                 fprintf(stderr, "Please specify the amount of memory to test in megabytes.\n");
                 fprintf(stderr, "Example: ./redis-server --test-memory 4096\n\n");
                 exit(1);
@@ -3040,7 +3045,7 @@ void parseArgv(int argc, char **argv)
          * Precedence wise, File, stdin, explicit options -- last config is the one that matters.
          *
          * First argument is the config file name? */
-        // 【7】如果启动命令的第二个参数不是以"-"开头的，则是配置文件参数，将配置文件路径转化为绝对路径，存入server.configfile中
+        // 如果启动命令的第二个参数不是以"-"开头的，则是配置文件参数，将配置文件路径转化为绝对路径，存入server.configfile中
         if (argv[1][0] != '-')
         {
             /* Replace the config file in server.exec_argv with its absolute path. */
@@ -3767,7 +3772,7 @@ void initServer(void)
      * no explicit limit in the user provided configuration we set a limit
      * at 3 GB using maxmemory with 'noeviction' policy'. This avoids
      * useless crashes of the Redis instance for out of memory. */
-    // 【14】如果Redis运行在32位操作系统上，由于32位操作系统内存空间限制为4GB，所以将Redis使用内存限制为3GB，避免Redis服务器因内存不足而崩溃。
+    // 如果Redis运行在32位操作系统上，由于32位操作系统内存空间限制为4GB，所以将Redis使用内存限制为3GB，避免Redis服务器因内存不足而崩溃。
     if (server.arch_bits == 32 && server.maxmemory == 0)
     {
         serverLog(LL_WARNING, "Warning: 32 bit instance detected but no memory limit set. Setting 3 GB maxmemory limit with 'noeviction' policy now.");
@@ -4555,7 +4560,10 @@ int processCommand(client *c)
         args = sdscatprintf(args, "%.*s ", 128 - (int)sdslen(args), (char *)c->argv[i]->ptr);
         // printf("command `%s`, with args is: %s \n", (char *)c->argv[0]->ptr, args);
     }
-    printf("接收到的命令: %s %s \n", (char *)c->argv[0]->ptr, args);
+    redisDebugMark();
+    redisDebug("received command is: %s %s \n", (char *)c->argv[0]->ptr, args);
+    redisDebugMark();
+
     sdsfree(args);
 
     // 这段代码用于判断当前命令是否为写命令。
@@ -5183,6 +5191,7 @@ void commandCommand(client *c)
     }
     else if (!strcasecmp(c->argv[1]->ptr, "count") && c->argc == 2)
     {
+        // 命令表命令的个数
         addReplyLongLong(c, dictSize(server.commands));
     }
     else if (!strcasecmp(c->argv[1]->ptr, "getkeys") && c->argc >= 3)

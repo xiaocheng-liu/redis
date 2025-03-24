@@ -35,6 +35,8 @@
 #include "t_list.h"
 #include "t_set.h"
 
+#define SORT_OP_GET 0
+
 zskiplistNode *zslGetElementByRank(zskiplist *zsl, unsigned long rank);
 
 redisSortOperation *createSortOperation(int type, robj *pattern)

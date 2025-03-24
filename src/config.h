@@ -29,6 +29,7 @@
 
 #ifndef CONFIG_H
 #define CONFIG_H
+#include "macro.h"
 
 #ifdef __APPLE__
 #include <AvailabilityMacros.h>
@@ -275,6 +276,32 @@ int pthread_setname_np(const char *name);
 #if (defined __linux || defined __NetBSD__ || defined __FreeBSD__ || defined __DragonFly__)
 #define USE_SETCPUAFFINITY
 void setcpuaffinity(const char *cpulist);
+#endif
+
+#ifdef HAVE_LIBSYSTEMD
+#include <systemd/sd-daemon.h>
+#endif
+
+extern int configOOMScoreAdjValuesDefaults[CONFIG_OOM_COUNT];
+
+#if defined(__GNUC__)
+void *calloc(size_t count, size_t size) __attribute__((deprecated));
+void free(void *ptr) __attribute__((deprecated));
+void *malloc(size_t size) __attribute__((deprecated));
+void *realloc(void *ptr, size_t size) __attribute__((deprecated));
+#endif
+
+#ifdef __GNUC__
+void _serverPanic(const char *file, int line, const char *msg, ...)
+    __attribute__((format(printf, 3, 4)));
+#else
+void _serverPanic(const char *file, int line, const char *msg, ...);
+#endif
+
+/* AIX defines hz to __hz, we don't use this define and in order to allow
+ * Redis build on AIX we need to undef it. */
+#ifdef _AIX
+#undef hz
 #endif
 
 #endif // CONFIG_H

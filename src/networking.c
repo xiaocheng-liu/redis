@@ -597,7 +597,7 @@ void afterErrorReply(client *c, const char *s, size_t len)
 
 /* The 'err' object is expected to start with -ERRORCODE and end with \r\n.
  * Unlike addReplyErrorSds and others alike which rely on addReplyErrorLength. */
-// “err”对象应以 -ERRORCODE 开头，以 \r\n 结尾。与addReplyErrorSds和其他依赖于addReplyErrorLength的类似产品不同。
+// "err"对象应以 -ERRORCODE 开头，以 \r\n 结尾。与addReplyErrorSds和其他依赖于addReplyErrorLength的类似产品不同。
 void addReplyErrorObject(client *c, robj *err)
 {
     addReply(c, err);
@@ -1091,7 +1091,7 @@ void addReplyVerbatim(client *c, const char *s, size_t len, const char *ext)
  * This function is typically invoked by from commands that support
  * subcommands in response to the 'help' subcommand. The help array
  * is terminated by NULL sentinel. */
-// 添加 C 字符串数组作为带有标题的状态回复。此函数通常由支持子命令的命令调用，以响应“help”子命令。帮助数组由 NULL 哨兵终止。
+// 添加 C 字符串数组作为带有标题的状态回复。此函数通常由支持子命令的命令调用，以响应"help"子命令。帮助数组由 NULL 哨兵终止。
 void addReplyHelp(client *c, const char **help)
 {
     sds cmd = sdsnew((char *)c->argv[0]->ptr);
@@ -2177,7 +2177,7 @@ static void setProtocolError(const char *errstr, client *c)
  * This function is called if processInputBuffer() detects that the next
  * command is in RESP format, so the first byte in the command is found
  * to be '*'. Otherwise for inline commands processInlineBuffer() is called. */
-// 处理客户端“c”的查询缓冲区，为命令执行设置客户端参数向量。
+// 处理客户端"c"的查询缓冲区，为命令执行设置客户端参数向量。
 // 如果运行函数后客户端有一个格式良好的命令可供处理，则返回C_OK，否则C_ERR是否仍有读取更多缓冲区才能获取完整命令。
 // 当出现协议错误时，该函数还会返回C_ERR：在这种情况下，客户端结构设置为回复错误并关闭连接。
 // 如果 processInputBuffer（） 检测到下一个命令是 RESP 格式，则调用此函数，因此发现命令中的第一个字节为 ''。
@@ -2370,8 +2370,7 @@ void commandProcessed(client *c)
      * module blocking command, so that the reply callback will
      * still be able to access the client argv and argc field.
      * The client will be reset in unblockClientFromModule(). */
-    /* 不要重置在
-     * 模块阻塞命令，使应答回调
+    /* 不要重置在模块阻塞命令，使应答回调
      * 仍然能够访问客户端 argv 和 argc 字段。
      * 客户端将在 unblockClientFromModule（） 中重置。*/
     if (!(c->flags & CLIENT_BLOCKED) ||
@@ -2425,7 +2424,9 @@ int processCommandAndResetClient(client *c)
         commandProcessed(c);
     }
     if (server.current_client == NULL)
+    {
         deadclient = 1;
+    }
     server.current_client = NULL;
     /* performEvictions may flush slave output buffers. This may
      * result in a slave, that may be the active client, to be
@@ -2622,7 +2623,7 @@ void readQueryFromClient(connection *conn)
 
         /* Note that the 'remaining' variable may be zero in some edge case,
          * for example once we resume a blocked client after CLIENT PAUSE. */
-        // 请注意，在某些边缘情况下，“剩余”变量可能为零，例如在客户端暂停后恢复被阻止的客户端时。
+        // 请注意，在某些边缘情况下，"剩余"变量可能为零，例如在客户端暂停后恢复被阻止的客户端时。
         if (remaining > 0 && remaining < readlen)
             readlen = remaining;
     }

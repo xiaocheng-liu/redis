@@ -5,6 +5,9 @@
 typedef struct redisObject robj;
 typedef struct client client;
 
+#define ZSET_MIN 0
+#define ZSET_MAX 1
+
 /* ZSETs use a specialized version of Skiplists
  * skiplist节点定义 */
 typedef struct zskiplistNode
