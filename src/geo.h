@@ -24,17 +24,4 @@ typedef struct geoArray
     size_t used;
 } geoArray;
 
-void geoencodeCommand(client *c);
-void geodecodeCommand(client *c);
-void georadiusbymemberCommand(client *c);
-void georadiusbymemberroCommand(client *c);
-void georadiusCommand(client *c);
-void georadiusroCommand(client *c);
-void geoaddCommand(client *c);
-void geohashCommand(client *c);
-void geoposCommand(client *c);
-void geodistCommand(client *c);
-void geosearchCommand(client *c);
-void geosearchstoreCommand(client *c);
-
 #endif // GEO_H

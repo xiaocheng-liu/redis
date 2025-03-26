@@ -9,29 +9,30 @@
 
 rax *Users; /* Table mapping usernames to user structures. */
 
-user *DefaultUser;  /* Global reference to the default user.
-                       Every new connection is associated to it, if no
-                       AUTH or HELLO is used to authenticate with a
-                       different user. */
+user *DefaultUser; /* Global reference to the default user.
+                      Every new connection is associated to it, if no
+                      AUTH or HELLO is used to authenticate with a
+                      different user. */
 
 // 这是在配置文件中找到的用户列表，我们需要在Redis初始化的最后阶段加载，在所有模块都已经加载之后。
 // 每个列表元素都是一个以NULL结尾的SDS指针数组：第一个是用户名，其余所有指针都是ACL规则，格式与ACLSetUser（）相同。
-list *UsersToLoad;  /* This is a list of users found in the configuration file
-                       that we'll need to load in the final stage of Redis
-                       initialization, after all the modules are already
-                       loaded. Every list element is a NULL terminated
-                       array of SDS pointers: the first is the user name,
-                       all the remaining pointers are ACL rules in the same
-                       format as ACLSetUser(). */
+list *UsersToLoad; /* This is a list of users found in the configuration file
+                      that we'll need to load in the final stage of Redis
+                      initialization, after all the modules are already
+                      loaded. Every list element is a NULL terminated
+                      array of SDS pointers: the first is the user name,
+                      all the remaining pointers are ACL rules in the same
+                      format as ACLSetUser(). */
 // 我们的安全日志，用户可以使用ACL log命令检查它。
-list *ACLLog;       /* Our security log, the user is able to inspect that
-                       using the ACL LOG command. */
+list *ACLLog; /* Our security log, the user is able to inspect that
+                 using the ACL LOG command. */
 
 static rax *commandId = NULL; /* Command name to id mapping */
 
 static unsigned long nextid = 0; /* Next command id that has not been assigned */
 
-struct ACLCategoryItem {
+struct ACLCategoryItem
+{
     const char *name;
     uint64_t flag;
 } ACLCommandCategories[] = {
@@ -56,10 +57,11 @@ struct ACLCategoryItem {
     {"connection", CMD_CATEGORY_CONNECTION},
     {"transaction", CMD_CATEGORY_TRANSACTION},
     {"scripting", CMD_CATEGORY_SCRIPTING},
-    {NULL,0} /* Terminator. */
+    {NULL, 0} /* Terminator. */
 };
 
-struct ACLUserFlag {
+struct ACLUserFlag
+{
     const char *name;
     uint64_t flag;
 } ACLUserFlags[] = {
@@ -72,8 +74,28 @@ struct ACLUserFlag {
     {"nopass", USER_FLAG_NOPASS},
     {"skip-sanitize-payload", USER_FLAG_SANITIZE_PAYLOAD_SKIP},
     {"sanitize-payload", USER_FLAG_SANITIZE_PAYLOAD},
-    {NULL,0} /* Terminator. */
+    {NULL, 0} /* Terminator. */
 };
+
+/* =============================================================================
+ * ACL log
+ * ==========================================================================*/
+#define ACL_LOG_CTX_TOPLEVEL 0
+#define ACL_LOG_CTX_LUA 1
+#define ACL_LOG_CTX_MULTI 2
+#define ACL_LOG_GROUPING_MAX_TIME_DELTA 60000
+
+/* This structure defines an entry inside the ACL log. */
+typedef struct ACLLogEntry
+{
+    uint64_t count; /* Number of times this happened recently. */
+    int reason;     /* Reason for denying the command. ACL_DENIED_*. */
+    int context;    /* Toplevel, Lua or MULTI/EXEC? ACL_LOG_CTX_*. */
+    sds object;     /* The key name or command name. */
+    sds username;   /* User the client is authenticated with. */
+    mstime_t ctime; /* Milliseconds time of last update to this entry. */
+    sds cinfo;      /* Client info (last client if updated). */
+} ACLLogEntry;
 
 void ACLResetSubcommandsForCommand(user *u, unsigned long id);
 void ACLResetSubcommands(user *u);
@@ -81,6 +103,6 @@ void ACLAddAllowedSubcommand(user *u, unsigned long id, const char *sub);
 void ACLFreeLogEntry(void *le);
 
 /* The length of the string representation of a hashed password. */
-#define HASH_PASSWORD_LEN SHA256_BLOCK_SIZE*2
+#define HASH_PASSWORD_LEN SHA256_BLOCK_SIZE * 2
 
-#endif //ACL_H
+#endif // ACL_H

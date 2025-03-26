@@ -258,6 +258,21 @@ void pfmergeCommand(client *c);
 void pfdebugCommand(client *c);
 // hyperloglog end
 
+// geo start
+// void geoencodeCommand(client *c);
+// void geodecodeCommand(client *c);
+void georadiusbymemberCommand(client *c);
+void georadiusbymemberroCommand(client *c);
+void georadiusCommand(client *c);
+void georadiusroCommand(client *c);
+void geoaddCommand(client *c);
+void geohashCommand(client *c);
+void geoposCommand(client *c);
+void geodistCommand(client *c);
+void geosearchCommand(client *c);
+void geosearchstoreCommand(client *c);
+// geo end
+
 // t_stream start
 void xaddCommand(client *c);
 void xrangeCommand(client *c);

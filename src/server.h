@@ -357,7 +357,8 @@ typedef struct blockingState
  * also called ready_keys in every structure representing a Redis database,
  * where we make sure to remember if a given key was already added in the
  * server.ready_keys list. */
-// 定义了一个名为 readyList 的结构体，包含两个成员：redisDb *db 和 robj *key。该结构体用于存储与 Redis 数据库和键对象相关的引用。
+// 定义了一个名为 readyList 的结构体，包含两个成员：redisDb *db 和 robj *key。
+// 该结构体用于存储与 Redis 数据库和键对象相关的引用。
 typedef struct readyList
 {
     redisDb *db;
@@ -424,7 +425,8 @@ typedef struct client
                                                                               // cmd: 待执行的客户端命令；解析命令请求后，会根据命令名称查找该命令对应的命令对象，存储在客户端cmd字段，
                                                                               // 可以看到其类型为struct redisCommand。
 
-    // 义了一个指向用户结构体的指针user，用于表示与当前连接关联的用户。如果 user 指针为 NULL，则表示该连接具有管理员权限，可以执行任何操作
+    // 定义了一个指向用户结构体的指针user，用于表示与当前连接关联的用户。
+    // 如果 user 指针为 NULL，则表示该连接具有管理员权限，可以执行任何操作
     user *user;                                                                   /* User associated with this connection. If the
                                                                                       user is set to NULL the connection can do
                                                                                       anything (admin). */

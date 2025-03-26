@@ -1132,6 +1132,7 @@ void ACLInit(void)
  *  EINVAL: if the username-password do not match.
  *  ENONENT: if the specified user does not exist at all.
  */
+// 验证用户名密码
 int ACLCheckUserCredentials(robj *username, robj *password)
 {
     user *u = ACLGetUserByName(username->ptr, sdslen(username->ptr));
@@ -1182,6 +1183,7 @@ int ACLCheckUserCredentials(robj *username, robj *password)
  *
  * The return value is C_OK or C_ERR with the same meaning as
  * ACLCheckUserCredentials(). */
+// 验证用户名密码，如果验证成功，则将连接设置为已认证状态，并设置连接的用户引用。
 int ACLAuthenticateUser(client *c, robj *username, robj *password)
 {
     if (ACLCheckUserCredentials(username, password) == C_OK)
@@ -1885,27 +1887,6 @@ void ACLLoadUsersAtStartup(void)
     }
 }
 
-/* =============================================================================
- * ACL log
- * ==========================================================================*/
-
-#define ACL_LOG_CTX_TOPLEVEL 0
-#define ACL_LOG_CTX_LUA 1
-#define ACL_LOG_CTX_MULTI 2
-#define ACL_LOG_GROUPING_MAX_TIME_DELTA 60000
-
-/* This structure defines an entry inside the ACL log. */
-typedef struct ACLLogEntry
-{
-    uint64_t count; /* Number of times this happened recently. */
-    int reason;     /* Reason for denying the command. ACL_DENIED_*. */
-    int context;    /* Toplevel, Lua or MULTI/EXEC? ACL_LOG_CTX_*. */
-    sds object;     /* The key name or command name. */
-    sds username;   /* User the client is authenticated with. */
-    mstime_t ctime; /* Milliseconds time of last update to this entry. */
-    sds cinfo;      /* Client info (last client if updated). */
-} ACLLogEntry;
-
 /* This function will check if ACL entries 'a' and 'b' are similar enough
  * that we should actually update the existing entry in our ACL log instead
  * of creating a new one. */
@@ -2223,6 +2204,7 @@ void aclCommand(client *c)
     else if ((!strcasecmp(sub, "list") || !strcasecmp(sub, "users")) &&
              c->argc == 2)
     {
+        // users 命令仅仅显示用户名
         int justnames = !strcasecmp(sub, "users");
         addReplyArrayLen(c, raxSize(Users));
         raxIterator ri;
@@ -2498,7 +2480,8 @@ void addReplyCommandCategories(client *c, struct redisCommand *cmd)
  * against the default user. */
 void authCommand(client *c)
 {
-    /* Only two or three argument forms are allowed. */ // 仅仅支持两个或者三个参数
+    /* Only two or three argument forms are allowed. */
+    // 仅仅支持两个或者三个参数
     if (c->argc > 3)
     {
         addReplyErrorObject(c, shared.syntaxerr);

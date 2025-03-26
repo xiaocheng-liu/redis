@@ -193,7 +193,6 @@ struct redisServer server; /* Server global state */
  *    specific data structures, such as: DEL, RENAME, MOVE, SELECT,
  *    TYPE, EXPIRE*, PEXPIRE*, TTL, PTTL, ...
  */
-
 // redis的命令表
 struct redisCommand redisCommandTable[] = {
     {"module", moduleCommand, -2,
@@ -808,7 +807,7 @@ struct redisCommand redisCommandTable[] = {
      "write fast @keyspace",
      0, NULL, 1, 1, 1, 0, 0, 0},
 
-    /* 注意噢 slaveof和replicaof这两个命令调用同一个函数 */
+    /* slaveof和replicaof这两个命令调用同一个函数 */
     {"slaveof", replicaofCommand, 3,
      "admin no-script ok-stale",
      0, NULL, 0, 0, 0, 0, 0, 0},
