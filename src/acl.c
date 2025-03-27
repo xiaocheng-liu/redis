@@ -1611,6 +1611,12 @@ int ACLLoadConfiguredUsers(void)
  * At the end of the process, if no errors were found in the whole file then
  * NULL is returned. Otherwise an SDS string describing in a single line
  * a description of all the issues found is returned. */
+// 该函数用于从指定文件加载ACL（访问控制列表），功能如下：
+// 每行数据需为空或符合user <username> ... rules ...格式。
+// 不允许以#开头的注释行，但允许空行。
+// 在加载每个用户前验证规则，若发现错误则收集错误信息。
+// 若文件中存在任何错误，则不加载任何内容，保持原有规则不变。
+// 返回值：无错误返回NULL，有错误返回描述所有问题的SDS字符串。
 sds ACLLoadFromFile(const char *filename)
 {
     FILE *fp;
@@ -1779,6 +1785,8 @@ sds ACLLoadFromFile(const char *filename)
 /* Generate a copy of the ACLs currently in memory in the specified filename.
  * Returns C_OK on success or C_ERR if there was an error during the I/O.
  * When C_ERR is returned a log is produced with hints about the issue. */
+// 该代码功能是将当前内存中的ACL（访问控制列表）生成副本并保存到指定文件中。
+// 返回值为C_OK表示成功，C_ERR表示I/O错误，错误时会记录日志提示问题原因。
 int ACLSaveToFile(const char *filename)
 {
     sds acl = sdsempty();
@@ -2242,6 +2250,7 @@ void aclCommand(client *c)
             addReplyNull(c);
         }
     }
+    // 当没有配置acl文件时，不允许使用load和save命令
     else if (server.acl_filename[0] == '\0' &&
              (!strcasecmp(sub, "load") || !strcasecmp(sub, "save")))
     {
