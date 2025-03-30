@@ -196,7 +196,8 @@
 
 /* Static server configuration */
 // 静态服务器配置
-// 这段代码定义了三个宏，用于配置系统的时间中断频率。CONFIG_DEFAULT_HZ 设置默认时间为每秒 10 次中断，CONFIG_MIN_HZ 和 CONFIG_MAX_HZ 分别设置最小和最大时间中断频率为每秒 1 次和 500 次。
+// 这段代码定义了三个宏，用于配置系统的时间中断频率。
+// CONFIG_DEFAULT_HZ 设置默认时间为每秒 10 次中断，CONFIG_MIN_HZ 和 CONFIG_MAX_HZ 分别设置最小和最大时间中断频率为每秒 1 次和 500 次。
 #define CONFIG_DEFAULT_HZ 10 /* Time interrupt calls/sec. */
 #define CONFIG_MIN_HZ 1
 #define CONFIG_MAX_HZ 500

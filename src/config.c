@@ -2045,6 +2045,7 @@ void configSetCommand(client *c)
         rewriteConfigOOMScoreAdjValuesOption(state);
 
         /* Rewrite Sentinel config if in Sentinel mode. */
+        // 如果是哨兵模式，重写哨兵配置
         if (server.sentinel_mode)
             rewriteConfigSentinelOption(state);
 

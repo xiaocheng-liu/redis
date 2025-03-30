@@ -1,32 +1,3 @@
-/* Redis Sentinel implementation
- *
- * Copyright (c) 2009-2012, Salvatore Sanfilippo <antirez at gmail dot com>
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- *   * Redistributions of source code must retain the above copyright notice,
- *     this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above copyright
- *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution.
- *   * Neither the name of Redis nor the names of its contributors may be used
- *     to endorse or promote products derived from this software without
- *     specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
 #include "sentinel.h"
 #include "server.h"
 #include "hiredis.h"
@@ -588,16 +559,19 @@ void initSentinel(void)
 
 /* This function gets called when the server is in Sentinel mode, started,
  * loaded the configuration, and is ready for normal operations. */
+// 检查并初始化 Sentinel 的运行环境，确保其能够正常工作。
 void sentinelIsRunning(void)
 {
     int j;
 
+    // 检查配置文件是否存在，如果不存在则退出程序。
     if (server.configfile == NULL)
     {
         serverLog(LL_WARNING,
                   "Sentinel started without a config file. Exiting...");
         exit(1);
     }
+    // 检查配置文件是否可写，如果不可写则退出程序。
     else if (access(server.configfile, W_OK) == -1)
     {
         serverLog(LL_WARNING,
@@ -609,6 +583,7 @@ void sentinelIsRunning(void)
     /* If this Sentinel has yet no ID set in the configuration file, we
      * pick a random one and persist the config on disk. From now on this
      * will be this Sentinel ID across restarts. */
+    // 如果 Sentinel 的 ID 尚未设置，则生成一个随机 ID 并保存到配置文件中。
     for (j = 0; j < CONFIG_RUN_ID_SIZE; j++)
         if (sentinel.myid[j] != 0)
             break;
@@ -2623,6 +2598,7 @@ void sentinelFlushConfig(void)
     int rewrite_status;
 
     server.hz = CONFIG_DEFAULT_HZ;
+    // 重写配置文件
     rewrite_status = rewriteConfig(server.configfile, 0);
     server.hz = saved_hz;
 

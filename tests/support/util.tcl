@@ -1,3 +1,4 @@
+# 用于生成随机字符串，参数包括最小长度 min、最大长度 max 和字符串类型 type（默认为 binary）。
 proc randstring {min max {type binary}} {
     set len [expr {$min+int(rand()*($max-$min+1))}]
     set output {}

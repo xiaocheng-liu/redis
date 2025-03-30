@@ -2,6 +2,7 @@ set ::global_overrides {}
 set ::tags {}
 set ::valgrind_errors {}
 
+# 处理Redis服务器启动失败时的错误信息，并将错误信息发送给测试服务器。
 proc start_server_error {config_file error} {
     set err {}
     append err "Can't start the Redis server\n"
@@ -12,6 +13,7 @@ proc start_server_error {config_file error} {
     send_data_packet $::test_server_fd err $err
 }
 
+# 检查Valgrind错误并发送错误信息。
 proc check_valgrind_errors stderr {
     set res [find_valgrind_errors $stderr true]
     if {$res != ""} {
@@ -19,6 +21,7 @@ proc check_valgrind_errors stderr {
     }
 }
 
+# 清理持久化文件
 proc clean_persistence config {
     # we may wanna keep the logs for later, but let's clean the persistence
     # files right away, since they can accumulate and take up a lot of space
@@ -98,6 +101,7 @@ proc kill_server config {
     send_data_packet $::test_server_fd server-killed $pid
 }
 
+# 检查进程是否存活
 proc is_alive config {
     set pid [dict get $config pid]
     if {[catch {exec kill -0 $pid} err]} {
@@ -107,6 +111,7 @@ proc is_alive config {
     }
 }
 
+# 测试与指定主机和端口的连接
 proc ping_server {host port} {
     set retval 0
     if {[catch {
@@ -139,6 +144,7 @@ proc ping_server {host port} {
 # Return 1 if the server at the specified addr is reachable by PING, otherwise
 # returns 0. Performs a try every 50 milliseconds for the specified number
 # of retries.
+# 检查服务器是否可用。
 proc server_is_up {host port retrynum} {
     after 10 ;# Use a small delay to make likely a first-try success.
     set retval 0

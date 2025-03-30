@@ -42,6 +42,7 @@ if {[catch {cd tmp}]} {
 
 # Execute the specified instance of the server specified by 'type', using
 # the provided configuration file. Returns the PID of the process.
+# 根据类型启动 Redis 或 Sentinel 实例，并返回进程 ID。
 proc exec_instance {type dirname cfgfile} {
     if {$type eq "redis"} {
         set prgname redis-server
@@ -52,6 +53,7 @@ proc exec_instance {type dirname cfgfile} {
     }
 
     set errfile [file join $dirname err.txt]
+    # 如果全局变量 ::valgrind 为真，则使用 Valgrind 启动程序；否则直接启动程序。
     if {$::valgrind} {
         set pid [exec valgrind --track-origins=yes --suppressions=../../../src/valgrind.sup --show-reachable=no --show-possibly-lost=no --leak-check=full ../../../src/${prgname} $cfgfile 2>> $errfile &]
     } else {
@@ -61,6 +63,7 @@ proc exec_instance {type dirname cfgfile} {
 }
 
 # Spawn a redis or sentinel instance, depending on 'type'.
+# 根据参数type的值，启动一个Redis实例或Sentinel实例。
 proc spawn_instance {type base_port count {conf {}} {base_conf_file ""}} {
     for {set j 0} {$j < $count} {incr j} {
         set port [find_available_port $base_port $::redis_port_count]
@@ -106,7 +109,7 @@ proc spawn_instance {type base_port count {conf {}} {base_conf_file ""}} {
         close $cfg
 
         # Finally exec it and remember the pid for later cleanup.
-        set retry 100
+        set retry 1
         while {$retry} {
             set pid [exec_instance $type $dirname $cfgfile]
 
@@ -176,6 +179,7 @@ proc log_crashes {} {
     }
 }
 
+# 用于检查指定进程ID（pid）是否存活。
 proc is_alive pid {
     if {[catch {exec ps -p $pid} err]} {
         return 0
@@ -184,6 +188,7 @@ proc is_alive pid {
     }
 }
 
+# 用于停止指定的进程（由PID标识）
 proc stop_instance pid {
     catch {exec kill $pid}
     if {$::valgrind} {
@@ -228,6 +233,7 @@ proc abort_sentinel_test msg {
     exit 1
 }
 
+# 解析命令行参数
 proc parse_options {} {
     for {set j 0} {$j < [llength $::argv]} {incr j} {
         set opt [lindex $::argv $j]

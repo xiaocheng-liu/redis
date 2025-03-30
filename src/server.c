@@ -2840,9 +2840,9 @@ void initServerConfig(void)
     // 生成runid
     getRandomHexChars(server.runid, CONFIG_RUN_ID_SIZE);
     server.runid[CONFIG_RUN_ID_SIZE] = '\0';
-    redisDebugMark();
-    redisDebug("runid = %s", server.runid);
-    redisDebugMark();
+    // redisDebugMark();
+    // redisDebug("runid = %s", server.runid);
+    // redisDebugMark();
 
     changeReplicationId();
     clearReplicationId2();
@@ -4559,9 +4559,9 @@ int processCommand(client *c)
         args = sdscatprintf(args, "%.*s ", 128 - (int)sdslen(args), (char *)c->argv[i]->ptr);
         // printf("command `%s`, with args is: %s \n", (char *)c->argv[0]->ptr, args);
     }
-    redisDebugMark();
-    redisDebug("received command is: %s %s \n", (char *)c->argv[0]->ptr, args);
-    redisDebugMark();
+    // redisDebugMark();
+    // redisDebug("received command is: %s %s \n", (char *)c->argv[0]->ptr, args);
+    // redisDebugMark();
 
     sdsfree(args);
 
@@ -7138,11 +7138,6 @@ int main(int argc, char **argv)
     // 它们尝试检验并修复RDB、AOF文件后便退出程序。
     checkRdbOrAof(argc, argv);
 
-    /* Store the executable path and arguments in a safe place in order
-     * to be able to restart the server later. */
-    // 记录Redis程序可执行路径及启动参数，以便后续重启服务器。
-    parseArgv(argc, argv);
-
     /* We need to init sentinel right now as parsing the configuration file
      * in sentinel mode will have the effect of populating the sentinel
      * data structures with master nodes to monitor.
@@ -7150,6 +7145,11 @@ int main(int argc, char **argv)
     // 我们现在需要初始化 sentinel，因为在 sentinel 模式下解析配置文件将具有使用要监控的主节点填充 sentinel 数据结构的效果。
     // 如果以Sentinel模式启动，则初始化Sentinel机制。
     checkAndInitSentenel();
+
+    /* Store the executable path and arguments in a safe place in order
+     * to be able to restart the server later. */
+    // 记录Redis程序可执行路径及启动参数，以便后续重启服务器。
+    parseArgv(argc, argv);
 
     // server.supervised属性指定是否以upstart服务或systemd服务启动Redis。
     //  如果配置了server.daemonize且没有配置server.supervised，则以守护进程的方式启动Redis。
