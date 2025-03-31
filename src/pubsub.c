@@ -1,36 +1,6 @@
-/*
- * Copyright (c) 2009-2012, Salvatore Sanfilippo <antirez at gmail dot com>
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- *   * Redistributions of source code must retain the above copyright notice,
- *     this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above copyright
- *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution.
- *   * Neither the name of Redis nor the names of its contributors may be used
- *     to endorse or promote products derived from this software without
- *     specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
-
 #include "server.h"
 #include "cluster.h"
-
-int clientSubscriptionsCount(client *c);
+#include "pubsub.h"
 
 /*-----------------------------------------------------------------------------
  * Pubsub client replies API    Pubsub 客户端回复 API
@@ -192,7 +162,7 @@ int listMatchPubsubPattern(void *a, void *b)
 }
 
 /* Return the number of channels + patterns a client is subscribed to. */
-// 返回客户端订阅的通道数 + 模式。
+// 返回客户端订阅的频道订阅数 + 模式订阅数。
 int clientSubscriptionsCount(client *c)
 {
     return dictSize(c->pubsub_channels) +
@@ -209,7 +179,7 @@ int pubsubSubscribeChannel(client *c, robj *channel)
     int retval = 0;
 
     /* Add the channel to the client -> channels hash table */
-    // 将 channels 填接到 c->pubsub_channels 的集合中（值为 NULL 的字典视为集合）
+    // 将 channels 填加到 c->pubsub_channels 的集合中（值为 NULL 的字典视为集合）
     if (dictAdd(c->pubsub_channels, channel, NULL) == DICT_OK)
     {
         retval = 1;

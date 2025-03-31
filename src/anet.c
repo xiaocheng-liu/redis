@@ -692,6 +692,11 @@ int anetUnixServer(char *err, char *path, mode_t perm, int backlog)
     return s;
 }
 
+// 该函数 anetGenericAccept 的功能是处理套接字的接受操作，具体逻辑如下：
+// 循环调用 accept 系统调用，尝试接受一个新的连接。
+// 如果 accept 返回 -1 且错误码为 EINTR（中断错误），则继续循环重试。
+// 如果其他错误发生，则记录错误信息并返回错误标识 ANET_ERR。
+// 如果成功接受连接，则返回新创建的文件描述符 fd。
 static int anetGenericAccept(char *err, int s, struct sockaddr *sa, socklen_t *len)
 {
     int fd;

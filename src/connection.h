@@ -70,20 +70,20 @@ typedef void (*ConnectionCallbackFunc)(connection *conn);
 // 它包含多个函数指针，每个函数指针对应一种特定的操作，如事件处理、连接、读写、关闭、接受连接、设置读写处理器、获取错误信息、阻塞连接、同步读写等。
 typedef struct ConnectionType
 {
-    void (*ae_handler)(aeEventLoop *el, int fd, void *clientData, int mask);
-    int (*connect)(connection *conn, const char *addr, int port, const char *source_addr, ConnectionCallbackFunc connect_handler);
-    int (*write)(connection *conn, const void *data, size_t data_len);
-    int (*read)(connection *conn, void *buf, size_t buf_len);
-    void (*close)(connection *conn);
-    int (*accept)(connection *conn, ConnectionCallbackFunc accept_handler);
-    int (*set_write_handler)(connection *conn, ConnectionCallbackFunc handler, int barrier);
-    int (*set_read_handler)(connection *conn, ConnectionCallbackFunc handler);
-    const char *(*get_last_error)(connection *conn);
-    int (*blocking_connect)(connection *conn, const char *addr, int port, long long timeout);
-    ssize_t (*sync_write)(connection *conn, char *ptr, ssize_t size, long long timeout);
-    ssize_t (*sync_read)(connection *conn, char *ptr, ssize_t size, long long timeout);
-    ssize_t (*sync_readline)(connection *conn, char *ptr, ssize_t size, long long timeout);
-    int (*get_type)(connection *conn);
+    void (*ae_handler)(aeEventLoop *el, int fd, void *clientData, int mask);                                                       // 事件处理函数
+    int (*connect)(connection *conn, const char *addr, int port, const char *source_addr, ConnectionCallbackFunc connect_handler); // 连接函数
+    int (*write)(connection *conn, const void *data, size_t data_len);                                                             // 写函数
+    int (*read)(connection *conn, void *buf, size_t buf_len);                                                                      // 读函数
+    void (*close)(connection *conn);                                                                                               // 关闭函数
+    int (*accept)(connection *conn, ConnectionCallbackFunc accept_handler);                                                        // 接受连接函数
+    int (*set_write_handler)(connection *conn, ConnectionCallbackFunc handler, int barrier);                                       // 设置写回调函数
+    int (*set_read_handler)(connection *conn, ConnectionCallbackFunc handler);                                                     // 设置读回调函数
+    const char *(*get_last_error)(connection *conn);                                                                               // 获取错误码
+    int (*blocking_connect)(connection *conn, const char *addr, int port, long long timeout);                                      // 阻塞式连接函数
+    ssize_t (*sync_write)(connection *conn, char *ptr, ssize_t size, long long timeout);                                           // 同步写函数
+    ssize_t (*sync_read)(connection *conn, char *ptr, ssize_t size, long long timeout);                                            // 同步读函数
+    ssize_t (*sync_readline)(connection *conn, char *ptr, ssize_t size, long long timeout);                                        // 同步读行函数
+    int (*get_type)(connection *conn);                                                                                             // 获取连接类型函数
 } ConnectionType;
 
 // 这段代码定义了一个名为 connection 的结构体，用于表示网络连接。

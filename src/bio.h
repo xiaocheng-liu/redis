@@ -1,31 +1,4 @@
-/*
- * Copyright (c) 2009-2012, Salvatore Sanfilippo <antirez at gmail dot com>
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- *   * Redistributions of source code must retain the above copyright notice,
- *     this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above copyright
- *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution.
- *   * Neither the name of Redis nor the names of its contributors may be used
- *     to endorse or promote products derived from this software without
- *     specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
+
 
 #ifndef BIO_H
 #define BIO_H
@@ -47,10 +20,10 @@ void bioCreateFsyncJob(int fd);
 void bioCreateLazyFreeJob(lazy_free_fn free_fn, int arg_count, ...);
 
 /* Background job opcodes */
-#define BIO_CLOSE_FILE    0 /* Deferred close(2) syscall. */    // 关闭文件任务
-#define BIO_AOF_FSYNC     1 /* Deferred AOF fsync. */           // AOF新增数据刷盘任务
-#define BIO_LAZY_FREE     2 /* Deferred objects freeing. */     // 惰性删除任务
-#define BIO_NUM_OPS       3                                     // BIO线程数量，也就是任务类型数量
+#define BIO_CLOSE_FILE 0 /* Deferred close(2) syscall. */ // 关闭文件任务
+#define BIO_AOF_FSYNC 1 /* Deferred AOF fsync. */         // AOF新增数据刷盘任务
+#define BIO_LAZY_FREE 2 /* Deferred objects freeing. */   // 惰性删除任务
+#define BIO_NUM_OPS 3                                     // BIO线程数量，也就是任务类型数量
 
 // 保存线程的数组
 static pthread_t bio_threads[BIO_NUM_OPS];
@@ -74,12 +47,13 @@ static unsigned long long bio_pending[BIO_NUM_OPS];
 
 /* This structure represents a background Job. It is only used locally to this
  * file as the API does not expose the internals at all. */
-struct bio_job {
-    time_t time; /* Time at which the job was created. */   // 任务创建时间
+struct bio_job
+{
+    time_t time; /* Time at which the job was created. */ // 任务创建时间
     /* Job specific arguments.*/
-    int fd; /* Fd for file based background jobs */
+    int fd;                /* Fd for file based background jobs */
     lazy_free_fn *free_fn; /* Function that will free the provided arguments */
-    void *free_args[]; /* List of arguments to be passed to the free function */
+    void *free_args[];     /* List of arguments to be passed to the free function */
 };
 
 void *bioProcessBackgroundJobs(void *arg);
@@ -87,6 +61,6 @@ void *bioProcessBackgroundJobs(void *arg);
 /* Make sure we have enough stack to perform all the things we do in the
  * main thread. */
 // 确保我们有足够的堆栈来执行我们在主线程中执行的所有操作。
-#define REDIS_THREAD_STACK_SIZE (1024*1024*4)
+#define REDIS_THREAD_STACK_SIZE (1024 * 1024 * 4)
 
 #endif // BIO_H

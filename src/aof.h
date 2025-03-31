@@ -1,7 +1,3 @@
-//
-// Created by 刘晓成 on 2025-02-13.
-//
-
 #ifndef AOF_H
 #define AOF_H
 
@@ -22,11 +18,12 @@ void aofClosePipes(void);
  * AOF_RW_BUF_BLOCK_SIZE bytes.
  * ------------------------------------------------------------------------- */
 
-#define AOF_RW_BUF_BLOCK_SIZE (1024*1024*10)    /* 10 MB per block */
+#define AOF_RW_BUF_BLOCK_SIZE (1024 * 1024 * 10) /* 10 MB per block */
 
-typedef struct aofrwblock {
+typedef struct aofrwblock
+{
     unsigned long used, free;
     char buf[AOF_RW_BUF_BLOCK_SIZE];
 } aofrwblock;
 
-#endif //AOF_H
+#endif // AOF_H

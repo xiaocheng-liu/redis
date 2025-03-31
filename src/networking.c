@@ -1,31 +1,3 @@
-/*
- * Copyright (c) 2009-2012, Salvatore Sanfilippo <antirez at gmail dot com>
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- *   * Redistributions of source code must retain the above copyright notice,
- *     this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above copyright
- *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution.
- *   * Neither the name of Redis nor the names of its contributors may be used
- *     to endorse or promote products derived from this software without
- *     specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
 #include <math.h>
 #include <ctype.h>
 #include <stdarg.h>
@@ -149,8 +121,8 @@ client *createClient(connection *conn)
     // 传入空的连接可能是为了创建一个没有连接的客户端。
     // 这有时候会非常有用，因为所有命令都需要在客户机的上下文中执行。
     // 当在其他上下文中执行命令（例如Lua脚本）时，我们需要一个未连接的客户端。
-    if (conn)
-    {                       // 连接非空
+    if (conn) // 连接存在
+    {
         connNonBlock(conn); // 设置非阻塞
         // 禁用 Nagle 算法 因为服务器这个需要高性能的地方不需要禁止小包 Nagle还可能导致网络上的死锁 使得时延增加
         connEnableTcpNoDelay(conn); // 设置不延迟发送
@@ -159,7 +131,6 @@ client *createClient(connection *conn)
             connKeepAlive(conn, server.tcpkeepalive); // 设置网络存活判断
 
         // 绑定读事件到事件 loop （开始接收命令请求）
-        // 设置readHandler ,readQueryFromClient
         connSetReadHandler(conn, readQueryFromClient); // 设置读取回调函数，当客户端准备好就可以读数据
         connSetPrivateData(conn, c);                   // 将客户端数据指针同连接关联在一起
     }
@@ -169,21 +140,21 @@ client *createClient(connection *conn)
     uint64_t client_id;
     // 设置client的ID
     atomicGetIncr(server.next_client_id, client_id, 1);
-    c->id = client_id; // 客户端唯一ID
-    c->resp = 2;       // 协议版本
-    c->conn = conn;    // 连接
-    c->name = NULL;    // 客户端的名字
-    c->bufpos = 0;     // 回复固定(静态)缓冲区的偏移量
-    c->qb_pos = 0;
-    c->querybuf = sdsempty(); // 输入缓存区
-    c->pending_querybuf = sdsempty();
-    c->querybuf_peak = 0; // 输入缓存区的峰值
-    c->reqtype = 0;       // 请求协议类型，内联或者多条命令，初始化为0
-    c->argc = 0;          // 参数个数
-    c->argv = NULL;       // 参数列表
-    c->argv_len_sum = 0;
-    c->original_argc = 0;
-    c->original_argv = NULL;
+    c->id = client_id;                               // 客户端唯一ID
+    c->resp = 2;                                     // 协议版本
+    c->conn = conn;                                  // 连接
+    c->name = NULL;                                  // 客户端的名字
+    c->bufpos = 0;                                   // 回复固定(静态)缓冲区的偏移量
+    c->qb_pos = 0;                                   // 回复动态缓冲区的偏移量
+    c->querybuf = sdsempty();                        // 输入缓存区
+    c->pending_querybuf = sdsempty();                // 输入缓存区
+    c->querybuf_peak = 0;                            // 输入缓存区的峰值
+    c->reqtype = 0;                                  // 请求协议类型，内联或者多条命令，初始化为0
+    c->argc = 0;                                     // 参数个数
+    c->argv = NULL;                                  // 参数列表
+    c->argv_len_sum = 0;                             // 参数列表长度
+    c->original_argc = 0;                            // 原始参数个数
+    c->original_argv = NULL;                         // 原始参数列表
     c->cmd = c->lastcmd = NULL;                      // 当前执行的命令和最近一次执行的命令
     c->multibulklen = 0;                             // 查询缓冲区剩余未读取命令的数量
     c->bulklen = -1;                                 // 读入参数的长度
@@ -194,11 +165,11 @@ client *createClient(connection *conn)
     c->replstate = REPL_STATE_NONE;                  // replication复制的状态，初始为无
     c->repl_put_online_on_ack = 0;                   // 设置从节点的写处理器为ack，是否在slave向master发送ack
     c->reploff = 0;                                  // replication复制的偏移量
-    c->read_reploff = 0;
-    c->repl_ack_off = 0;
-    c->repl_ack_time = 0;
-    c->slave_listening_port = 0;
-    c->slave_ip[0] = '\0';
+    c->read_reploff = 0;                             // 从节点的偏移量
+    c->repl_ack_off = 0;                             // 从节点的ack偏移量
+    c->repl_ack_time = 0;                            // 从节点的ack时间
+    c->slave_listening_port = 0;                     // 从节点的监听端口
+    c->slave_ip[0] = '\0';                           // 从节点的IP
     c->slave_capa = SLAVE_CAPA_NONE;
     c->reply = listCreate();
     c->reply_bytes = 0;
@@ -216,8 +187,8 @@ client *createClient(connection *conn)
     c->bpop.reploffset = 0;
     c->woff = 0;
     c->watched_keys = listCreate();
-    c->pubsub_channels = dictCreate(&objectKeyPointerValueDictType, NULL);
-    c->pubsub_patterns = listCreate();
+    c->pubsub_channels = dictCreate(&objectKeyPointerValueDictType, NULL); // 订阅的频道
+    c->pubsub_patterns = listCreate();                                     // 订阅的patterns
     c->peerid = NULL;
     c->sockname = NULL;
     c->client_list_node = NULL;
@@ -229,8 +200,8 @@ client *createClient(connection *conn)
     c->auth_callback = NULL;
     c->auth_callback_privdata = NULL;
     c->auth_module = NULL;
-    listSetFreeMethod(c->pubsub_patterns, decrRefCountVoid);
-    listSetMatchMethod(c->pubsub_patterns, listMatchObjects);
+    listSetFreeMethod(c->pubsub_patterns, decrRefCountVoid);  // 设置c->pubsub_patterns的释放函数
+    listSetMatchMethod(c->pubsub_patterns, listMatchObjects); // 设置c->pubsub_patterns的匹配函数
     // 如果不是伪客户端，那么添加到服务器的客户端链表中
     if (conn)
         linkClient(c);
@@ -1262,6 +1233,7 @@ static void acceptCommonHandler(connection *conn, int flags, char *ip)
     char conninfo[100];
     UNUSED(ip);
 
+    // 检查连接状态是否为接受状态（CONN_STATE_ACCEPTING），如果不是，则记录错误日志并关闭连接。
     if (connGetState(conn) != CONN_STATE_ACCEPTING)
     {
         serverLog(LL_VERBOSE,
