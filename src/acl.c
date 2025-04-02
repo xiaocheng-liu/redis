@@ -4,6 +4,43 @@
 #include "sha256.h"
 #include "acl.h"
 
+struct ACLCategoryItem ACLCommandCategories[] = {
+    {"keyspace", CMD_CATEGORY_KEYSPACE},
+    {"read", CMD_CATEGORY_READ},
+    {"write", CMD_CATEGORY_WRITE},
+    {"set", CMD_CATEGORY_SET},
+    {"sortedset", CMD_CATEGORY_SORTEDSET},
+    {"list", CMD_CATEGORY_LIST},
+    {"hash", CMD_CATEGORY_HASH},
+    {"string", CMD_CATEGORY_STRING},
+    {"bitmap", CMD_CATEGORY_BITMAP},
+    {"hyperloglog", CMD_CATEGORY_HYPERLOGLOG},
+    {"geo", CMD_CATEGORY_GEO},
+    {"stream", CMD_CATEGORY_STREAM},
+    {"pubsub", CMD_CATEGORY_PUBSUB},
+    {"admin", CMD_CATEGORY_ADMIN},
+    {"fast", CMD_CATEGORY_FAST},
+    {"slow", CMD_CATEGORY_SLOW},
+    {"blocking", CMD_CATEGORY_BLOCKING},
+    {"dangerous", CMD_CATEGORY_DANGEROUS},
+    {"connection", CMD_CATEGORY_CONNECTION},
+    {"transaction", CMD_CATEGORY_TRANSACTION},
+    {"scripting", CMD_CATEGORY_SCRIPTING},
+    {NULL, 0} /* Terminator. */
+};
+
+struct ACLUserFlag ACLUserFlags[] = {
+    {"on", USER_FLAG_ENABLED},
+    {"off", USER_FLAG_DISABLED},
+    {"allkeys", USER_FLAG_ALLKEYS},
+    {"allchannels", USER_FLAG_ALLCHANNELS},
+    {"allcommands", USER_FLAG_ALLCOMMANDS},
+    {"nopass", USER_FLAG_NOPASS},
+    {"skip-sanitize-payload", USER_FLAG_SANITIZE_PAYLOAD_SKIP},
+    {"sanitize-payload", USER_FLAG_SANITIZE_PAYLOAD},
+    {NULL, 0} /* Terminator. */
+};
+
 /* =============================================================================
  * Helper functions for the rest of the ACL implementation
  * ==========================================================================*/
@@ -1350,6 +1387,8 @@ int ACLCheckCommandPerm(client *c, int *keyidxptr)
 /* Check if the provided channel is whitelisted by the given allowed channels
  * list. Glob-style pattern matching is employed, unless the literal flag is
  * set. Returns ACL_OK if access is granted or ACL_DENIED_CHANNEL otherwise. */
+// 检查 Redis 用户是否有权限访问指定的发布/订阅（Pub/Sub）频道。
+// 它是 Redis 访问控制列表（ACL）机制的一部分，专门用于验证频道访问权限。
 int ACLCheckPubsubChannelPerm(sds channel, list *allowed, int literal)
 {
     listIter li;
@@ -1363,6 +1402,8 @@ int ACLCheckPubsubChannelPerm(sds channel, list *allowed, int literal)
         sds pattern = listNodeValue(ln);
         size_t plen = sdslen(pattern);
 
+        // sdscmp 用于比较两个 sds 字符串是否相等（严格匹配）。
+        // stringmatchlen 用于模式匹配（支持通配符，如 * 和 ?）。
         if ((literal && !sdscmp(pattern, channel)) ||
             (!literal && stringmatchlen(pattern, plen, channel, clen, 0)))
         {
@@ -1453,11 +1494,13 @@ int ACLCheckPubsubPerm(client *c, int idx, int count, int literal, int *idxptr)
     user *u = c->user;
 
     /* If there is no associated user, the connection can run anything. */
+    // 如果客户端没有关联用户(即 c->user 为 NULL),函数直接返回 ACL_OK, 表示允许执行命令。
     if (u == NULL)
         return ACL_OK;
 
     /* Check if the user can access the channels mentioned in the command's
      * arguments. */
+    // 如果用户没有设置 USER_FLAG_ALLCHANNELS 标志（表示可以访问所有频道），则需要逐一检查用户是否有权限访问指定的频道。
     if (!(c->user->flags & USER_FLAG_ALLCHANNELS))
     {
         for (int j = idx; j < idx + count; j++)

@@ -1,54 +1,26 @@
-/*
- * Copyright (c) 2016, Salvatore Sanfilippo <antirez at gmail dot com>
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- *   * Redistributions of source code must retain the above copyright notice,
- *     this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above copyright
- *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution.
- *   * Neither the name of Redis nor the names of its contributors may be used
- *     to endorse or promote products derived from this software without
- *     specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
+#include <stdarg.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 #include "mt19937-64.h"
 #include "server.h"
 #include "rdb.h"
 
-#include <stdarg.h>
-#include <sys/time.h>
-#include <unistd.h>
-
-void createSharedObjects(void);
 void rdbLoadProgressCallback(rio *r, const void *buf, size_t len);
 int rdbCheckMode = 0;
 
+// 用于读取RDB文件的状态信息和错误信息的字段，包括当前读取的键、键的类型、处理的键数量、
+// 带有过期时间的键数量、已过期的键数量、读取状态、错误标志以及错误信息。
 struct
 {
     rio *rio;
-    robj *key;                     /* Current key we are reading. */
-    int key_type;                  /* Current key type if != -1. */
-    unsigned long keys;            /* Number of keys processed. */
-    unsigned long expires;         /* Number of keys with an expire. */
-    unsigned long already_expired; /* Number of keys already expired. */
-    int doing;                     /* The state while reading the RDB. */
-    int error_set;                 /* True if error is populated. */
+    robj *key; /* Current key we are reading. */                         // 当前正在读取的键
+    int key_type; /* Current key type if != -1. */                       // 键的类型
+    unsigned long keys; /* Number of keys processed. */                  // 键的数量
+    unsigned long expires; /* Number of keys with an expire. */          // 带有过期时间的键数量
+    unsigned long already_expired; /* Number of keys already expired. */ // 已过期的键数量
+    int doing; /* The state while reading the RDB. */                    // 当前正在读取的RDB文件的状态
+    int error_set; /* True if error is populated. */                     // 错误标志
     char error[1024];
 } rdbstate;
 
@@ -93,6 +65,7 @@ char *rdb_type_string[] = {
     "stream"};
 
 /* Show a few stats collected into 'rdbstate' */
+// 打印 RDB（Redis Database）状态中的三个统计信息：
 void rdbShowGenericInfo(void)
 {
     printf("[info] %lu keys read\n", rdbstate.keys);
@@ -102,6 +75,7 @@ void rdbShowGenericInfo(void)
 
 /* Called on RDB errors. Provides details about the RDB and the offset
  * we were when the error was detected. */
+// 用于在RDB（Redis Database）文件解析过程中检测并报告错误
 void rdbCheckError(const char *fmt, ...)
 {
     char msg[1024];
@@ -187,6 +161,7 @@ void rdbCheckSetupSignals(void)
  * 1 is returned.
  * The file is specified as a filename in 'rdbfilename' if 'fp' is not NULL,
  * otherwise the already open file 'fp' is checked. */
+// 检查 Redis RDB 文件的完整性和正确性
 int redis_check_rdb(char *rdbfilename, FILE *fp)
 {
     uint64_t dbid;
@@ -205,12 +180,16 @@ int redis_check_rdb(char *rdbfilename, FILE *fp)
     if (rioRead(&rdb, buf, 9) == 0)
         goto eoferr;
     buf[9] = '\0';
+
+    // 检查文件头是否为 "REDIS" 并验证版本号是否在支持范围内。
     if (memcmp(buf, "REDIS", 5) != 0)
     {
         rdbCheckError("Wrong signature trying to load DB from file");
         goto err;
     }
+    // 解析 RDB 文件版本号
     rdbver = atoi(buf + 5);
+    // 验证版本号范围
     if (rdbver < 1 || rdbver > RDB_VERSION)
     {
         rdbCheckError("Can't handle RDB format version %d", rdbver);
@@ -438,8 +417,10 @@ int redis_check_rdb_main(int argc, char **argv, FILE *fp)
      * integer objects, however since this function may be called from
      * an already initialized Redis instance, check if we really need to. */
     if (shared.integers[0] == NULL)
+    {
         // 创建共享对象
         createSharedObjects();
+    }
     server.loading_process_events_interval_bytes = 0;
     server.sanitize_dump_payload = SANITIZE_DUMP_YES;
     rdbCheckMode = 1;
@@ -452,6 +433,8 @@ int redis_check_rdb_main(int argc, char **argv, FILE *fp)
         rdbShowGenericInfo();
     }
     if (fp)
+    {
         return (retval == 0) ? C_OK : C_ERR;
+    }
     exit(retval);
 }

@@ -105,7 +105,7 @@
 #define CLIENT_SLAVE (1 << 0) /* This client is a replica */                        // 此客户端是副本
 #define CLIENT_MASTER (1 << 1) /* This client is a master */                        // 此客户端是主客户端
 #define CLIENT_MONITOR (1 << 2) /* This client is a slave monitor, see MONITOR */   // 此客户端是从属监视器，请参阅监视器
-#define CLIENT_MULTI (1 << 3) /* This client is in a MULTI context */               // 此客户端位于多上下文中
+#define CLIENT_MULTI (1 << 3) /* This client is in a MULTI context */               // CLIENT_MULTI 是一个标志位，表示客户端当前是否已经处于事务模式。
 #define CLIENT_BLOCKED (1 << 4) /* The client is waiting in a blocking operation */ // 客户端正在阻止操作中等待
 #define CLIENT_DIRTY_CAS (1 << 5) /* Watched keys modified. EXEC will fail. */      // 监视的键已修改。执行将失败。
 #define CLIENT_CLOSE_AFTER_REPLY (1 << 6) /* Close after writing entire reply. */   // 写完整个回复后关闭。

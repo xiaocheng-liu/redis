@@ -33,7 +33,7 @@ void addReplyPubsubMessage(client *c, robj *channel, robj *msg)
  * with the "message" type delivered by addReplyPubsubMessage() is that
  * this message format also includes the pattern that matched the message. */
 // 向客户端发送类型为"pmessage"的 pubsub 消息。
-// 与 addReplyPubsubMessage（） 传递的"消息"类型的区别在于，此消息格式还包括与消息匹配的模式。
+// 与 addReplyPubsubMessage() 传递的"消息"类型的区别在于，此消息格式还包括与消息匹配的模式。
 void addReplyPubsubPatMessage(client *c, robj *pat, robj *channel, robj *msg)
 {
     if (c->resp == 2)
@@ -144,19 +144,25 @@ void addReplyPubsubPatUnsubscribed(client *c, robj *pattern)
 /*-----------------------------------------------------------------------------
  * Pubsub low level API
  *----------------------------------------------------------------------------*/
-
+// 清理和释放与 pubsubPattern 结构体相关的内存资源，防止内存泄漏。
 void freePubsubPattern(void *p)
 {
     pubsubPattern *pat = p;
 
+    // 释放模式字符串的引用计数
     decrRefCount(pat->pattern);
+    // 释放 pubsubPattern 结构体本身
     zfree(pat);
 }
 
+// 比较两个 pubsubPattern 对象是否相等。
 int listMatchPubsubPattern(void *a, void *b)
 {
+    // 将 void 指针转换为 pubsubPattern 指针
     pubsubPattern *pa = a, *pb = b;
 
+    // 比较两个 pubsubPattern 对象的 client 指针是否相同
+    // 比较两个 pubsubPattern 对象的 pattern 字符串是否相同
     return (pa->client == pb->client) &&
            (equalStringObjects(pa->pattern, pb->pattern));
 }
@@ -461,6 +467,7 @@ int pubsubCheckACLPermissionsOrReply(client *c, int idx, int count, int literal)
 void subscribeCommand(client *c)
 {
     int j;
+    // 检查客户端是否有权限订阅指定的频道。
     if (pubsubCheckACLPermissionsOrReply(c, 1, c->argc - 1, 0) != ACL_OK)
         return;
     if ((c->flags & CLIENT_DENY_BLOCKING) && !(c->flags & CLIENT_MULTI))
@@ -548,7 +555,7 @@ void punsubscribeCommand(client *c)
         c->flags &= ~CLIENT_PUBSUB;
 }
 
-// publish命令， 将 message 发送到所有订阅频道 channel 的客户端，
+// publish命令, 将 message 发送到所有订阅频道 channel 的客户端，
 void publishCommand(client *c)
 {
     if (pubsubCheckACLPermissionsOrReply(c, 1, 1, 0) != ACL_OK)
@@ -566,7 +573,8 @@ void publishCommand(client *c)
 }
 
 /* PUBSUB command for Pub/Sub introspection. */
-// pubsub 命令
+// PUBSUB 是 Redis 发布/订阅（Pub/Sub）机制中的一个多功能命令，允许用户查询系统的状态，
+// 例如当前活跃的频道、订阅者数量和模式订阅的数量。
 void pubsubCommand(client *c)
 {
     // C语言中判断字符串是否相等的函数，忽略大小写。 返回0相等
@@ -609,7 +617,7 @@ void pubsubCommand(client *c)
         setDeferredArrayLen(c, replylen, mblen);
     }
     else if (!strcasecmp(c->argv[1]->ptr, "numsub") && c->argc >= 2)
-    {
+    { // 返回指定频道的订阅者数量。
         /* PUBSUB NUMSUB [Channel_1 ... Channel_N] */
         int j;
 
@@ -623,12 +631,12 @@ void pubsubCommand(client *c)
         }
     }
     else if (!strcasecmp(c->argv[1]->ptr, "numpat") && c->argc == 2)
-    {
+    { // 返回当前模式订阅的数量。
         /* PUBSUB NUMPAT */
         addReplyLongLong(c, listLength(server.pubsub_patterns));
     }
     else
-    {
+    { // 如果客户端发送的子命令无效或参数不正确，函数会调用 addReplySubcommandSyntaxError 返回错误信息。
         addReplySubcommandSyntaxError(c);
     }
 }

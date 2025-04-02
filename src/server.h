@@ -58,6 +58,7 @@
 #include "pubsub.h"
 #include "multi.h"
 #include "server_cammand_define.h"
+#include "acl.h"
 
 /* Slave replication state. Used in server.repl_state for slaves to remember
  * what to do next. */
@@ -366,7 +367,7 @@ typedef struct readyList
 } readyList;
 
 // 用于存储 Redis 用户的权限和相关信息。
-typedef struct
+typedef struct user
 {
     sds name; /* The username as an SDS string. */ // 作为 SDS 字符串的用户名。
     uint64_t flags; /* See USER_FLAG_* */          // 请参阅USER_FLAG_* 权限标志，如是否可以访问所有键或频道。
@@ -1718,39 +1719,6 @@ void resetChildState(void);
 int isMutuallyExclusiveChildType(int type);
 void sendChildCOWInfo(int ptype, int on_exit, char *pname);
 
-/* acl.c -- Authentication related prototypes. */
-// acl.c -- 与身份验证相关的原型。
-extern rax *Users;
-extern user *DefaultUser;
-void ACLInit(void);
-/* Return values for ACLCheckCommandPerm() and ACLCheckPubsubPerm(). */
-// 返回 ACLCheckCommandPerm（） 和 ACLCheckPubsubPerm（） 的值。
-#define ACL_OK 0
-#define ACL_DENIED_CMD 1
-#define ACL_DENIED_KEY 2
-#define ACL_DENIED_AUTH 3 /* Only used for ACL LOG entries. */    // 仅用于 ACL 日志条目。
-#define ACL_DENIED_CHANNEL 4 /* Only used for pub/sub commands */ // 仅用于发布订阅命令
-
-int ACLCheckUserCredentials(robj *username, robj *password);
-int ACLAuthenticateUser(client *c, robj *username, robj *password);
-unsigned long ACLGetCommandID(const char *cmdname);
-void ACLClearCommandID(void);
-user *ACLGetUserByName(const char *name, size_t namelen);
-int ACLCheckCommandPerm(client *c, int *keyidxptr);
-int ACLCheckPubsubPerm(client *c, int idx, int count, int literal, int *idxptr);
-int ACLSetUser(user *u, const char *op, ssize_t oplen);
-sds ACLDefaultUserFirstPassword(void);
-uint64_t ACLGetCommandCategoryFlagByName(const char *name);
-int ACLAppendUserForLoading(sds *argv, int argc, int *argc_err);
-const char *ACLSetUserStringError(void);
-int ACLLoadConfiguredUsers(void);
-sds ACLDescribeUser(user *u);
-void ACLLoadUsersAtStartup(void);
-void addReplyCommandCategories(client *c, struct redisCommand *cmd);
-user *ACLCreateUnlinkedUser(void);
-void ACLFreeUserAndKillClients(user *u);
-void addACLLogEntry(client *c, int reason, int keypos, sds username);
-
 /* Input flags. */
 #define ZADD_NONE 0
 #define ZADD_INCR (1 << 0) /* Increment the score instead of setting it. */
@@ -2046,4 +2014,6 @@ int iAmMaster(void);
 void _serverAssertWithInfo(const client *c, const robj *o, const char *estr, const char *file, int line);
 void _serverAssert(const char *estr, const char *file, int line);
 
+// 该函数用于创建共享对象
+void createSharedObjects(void);
 #endif

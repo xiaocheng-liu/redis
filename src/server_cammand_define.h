@@ -201,8 +201,10 @@ void subscribeCommand(client *c);    // subscribe命令
 void unsubscribeCommand(client *c);  // unsubscribe命令
 void psubscribeCommand(client *c);   // psubscribe命令
 void punsubscribeCommand(client *c); // punsubscribe命令
-void publishCommand(client *c);      // publish命令
-void pubsubCommand(client *c);       // pubsub命令
+// 将消息发布到指定的频道。所有订阅了该频道的客户端都会接收到这条消息。
+void publishCommand(client *c); // publish命令
+// 用于查询发布/订阅系统的状态，例如列出当前的频道、查看频道的订阅者数量或列出客户端订阅的模式。
+void pubsubCommand(client *c); // pubsub命令
 // pubsub end
 
 // multi start

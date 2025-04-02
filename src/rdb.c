@@ -2765,8 +2765,8 @@ void stopSaving(int success)
 {
     /* Fire the persistence modules end event. */
     moduleFireServerEvent(REDISMODULE_EVENT_PERSISTENCE,
-                          success ? REDISMODULE_SUBEVENT_PERSISTENCE_ENDED : REDISMODULE_SUBEVENT_PERSISTENCE_FAILED,
-                          NULL);
+                            success ? REDISMODULE_SUBEVENT_PERSISTENCE_ENDED : REDISMODULE_SUBEVENT_PERSISTENCE_FAILED,
+                            NULL);
 }
 
 /* Track loading progress in order to serve client's from time to time

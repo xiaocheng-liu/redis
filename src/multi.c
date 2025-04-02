@@ -12,7 +12,8 @@ void initClientMultiState(client *c)
     c->mstate.cmd_inv_flags = 0;
 }
 
-/* Release all the resources associated with MULTI/EXEC state 释放客户端事务状态*/
+/* Release all the resources associated with MULTI/EXEC state */
+// 用于释放 Redis 客户端事务状态（mstate）中分配的内存资源。
 void freeClientMultiState(client *c)
 {
     int j;
@@ -74,7 +75,7 @@ void flagTransaction(client *c)
         c->flags |= CLIENT_DIRTY_EXEC;
 }
 
-// 执行multi命令
+// MULTI 是 Redis 事务机制的起点命令，用于开启一个事务块，允许客户端将多个命令打包为一个原子操作。
 void multiCommand(client *c)
 {
     if (c->flags & CLIENT_MULTI)
@@ -151,6 +152,7 @@ void execCommandAbort(client *c, sds error)
         replicationFeedMonitors(c, server.monitors, c->db->id, c->argv, c->argc);
 }
 
+// EXEC 是 Redis 事务机制的核心命令之一，用于执行客户端通过 MULTI 命令开启的事务块中积累的所有命令。
 void execCommand(client *c)
 {
     int j;
@@ -285,24 +287,6 @@ handle_monitor:
         replicationFeedMonitors(c, server.monitors, c->db->id, c->argv, c->argc);
 }
 
-/* ===================== WATCH (CAS alike for MULTI/EXEC) ===================
- *
- * The implementation uses a per-DB hash table mapping keys to list of clients
- * WATCHing those keys, so that given a key that is going to be modified
- * we can mark all the associated clients as dirty.
- *
- * Also every client contains a list of WATCHed keys so that's possible to
- * un-watch such keys when the client is freed or when UNWATCH is called. */
-
-/* In the client->watched_keys list we need to use watchedKey structures
- * as in order to identify a key in Redis we need both the key name and the
- * DB */
-typedef struct watchedKey
-{
-    robj *key;
-    redisDb *db;
-} watchedKey;
-
 /* Watch for the specified key */
 void watchForKey(client *c, robj *key)
 {
@@ -432,6 +416,7 @@ void touchAllWatchedKeysInDb(redisDb *emptied, redisDb *replaced_with)
     dictReleaseIterator(di);
 }
 
+// WATCH 是 Redis 事务机制中的一个重要命令，用于监视一个或多个键的变化，以便在事务执行时检测到这些键是否被其他客户端修改。
 void watchCommand(client *c)
 {
     int j;
@@ -446,6 +431,7 @@ void watchCommand(client *c)
     addReply(c, shared.ok);
 }
 
+// UNWATCH 是 Redis 事务机制中的一个命令，用于取消客户端对所有被 WATCH 命令监视的键的监视。
 void unwatchCommand(client *c)
 {
     unwatchAllKeys(c);

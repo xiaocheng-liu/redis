@@ -1088,6 +1088,7 @@ void addReplyHelp(client *c, const char **help)
 /* Add a suggestive error reply.
  * This function is typically invoked by from commands that support
  * subcommands in response to an unknown subcommand or argument error. */
+// 如果客户端发送的子命令无效或参数不正确，函数会调用 addReplySubcommandSyntaxError 返回错误信息。
 void addReplySubcommandSyntaxError(client *c)
 {
     sds cmd = sdsnew((char *)c->argv[0]->ptr);
