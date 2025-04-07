@@ -23,18 +23,18 @@ void bioCreateLazyFreeJob(lazy_free_fn free_fn, int arg_count, ...);
 #define BIO_CLOSE_FILE 0 /* Deferred close(2) syscall. */ // 关闭文件任务
 #define BIO_AOF_FSYNC 1 /* Deferred AOF fsync. */         // AOF新增数据刷盘任务
 #define BIO_LAZY_FREE 2 /* Deferred objects freeing. */   // 惰性删除任务
-#define BIO_NUM_OPS 3                                     // BIO线程数量，也就是任务类型数量
+#define BIO_NUM_OPS 3                                     // BIO线程数量, 也就是任务类型数量
 
 // 保存线程的数组
 static pthread_t bio_threads[BIO_NUM_OPS];
-// 保存互斥锁的数组，针对bio_jobs的锁
+// 保存互斥锁的数组, 针对bio_jobs的锁
 static pthread_mutex_t bio_mutex[BIO_NUM_OPS];
 // 保存条件变量的两个数组
-// 用于BIO线程等待任务：每创建一个任务(bioCreateBackgroundJob)则唤醒线程；在bioProcessBackgroundJobs中如果没有任务则等待
+// 用于BIO线程等待任务: 每创建一个任务(bioCreateBackgroundJob)则唤醒线程；在bioProcessBackgroundJobs中如果没有任务则等待
 static pthread_cond_t bio_newjob_cond[BIO_NUM_OPS];
-// 用于其它线程等待BIO线程：当其他线程等待某任务执行完成，可以调用bioWaitStepOfType进行等待，在bioProcessBackgroundJobs中最后会取消阻塞在
+// 用于其它线程等待BIO线程: 当其他线程等待某任务执行完成，可以调用bioWaitStepOfType进行等待，在bioProcessBackgroundJobs中最后会取消阻塞在
 static pthread_cond_t bio_step_cond[BIO_NUM_OPS];
-// 以后台线程方式运行的任务列表，每个数组元素是一个list
+// 以后台线程方式运行的任务列表,每个数组元素是一个list
 static list *bio_jobs[BIO_NUM_OPS];
 /* The following array is used to hold the number of pending jobs for every
  * OP type. This allows us to export the bioPendingJobsOfType() API that is
@@ -47,6 +47,8 @@ static unsigned long long bio_pending[BIO_NUM_OPS];
 
 /* This structure represents a background Job. It is only used locally to this
  * file as the API does not expose the internals at all. */
+// 表示 Redis 后台 I/O（Background I/O）子系统中的任务。
+// 后台 I/O 子系统通常用于处理耗时的操作，例如文件 I/O 或延迟释放内存，以避免阻塞主线程。
 struct bio_job
 {
     time_t time; /* Time at which the job was created. */ // 任务创建时间

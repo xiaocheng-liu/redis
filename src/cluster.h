@@ -1,5 +1,6 @@
 #ifndef CLUSTER_H
 #define CLUSTER_H
+#include "macro.h"
 
 /*-----------------------------------------------------------------------------
  * Redis cluster data structures, defines, exported API.
@@ -46,7 +47,7 @@ typedef struct clusterLink
 } clusterLink;
 
 /* Cluster node flags and macros. */
-/* 群集节点标志和宏。*/
+/* 集群节点标志和宏。*/
 #define CLUSTER_NODE_MASTER 1       /* The node is a master */
 #define CLUSTER_NODE_SLAVE 2        /* The node is a slave */
 #define CLUSTER_NODE_PFAIL 4        /* Failure? Need acknowledge */
@@ -80,7 +81,7 @@ typedef struct clusterLink
 #define CLUSTER_CANT_FAILOVER_RELOG_PERIOD (60 * 5) /* seconds. */
 
 /* clusterState todo_before_sleep flags. */
-/* 群集状态todo_before_sleep标志。*/
+/* 集群状态todo_before_sleep标志。*/
 #define CLUSTER_TODO_HANDLE_FAILOVER (1 << 0)
 #define CLUSTER_TODO_UPDATE_STATE (1 << 1)
 #define CLUSTER_TODO_SAVE_CONFIG (1 << 2)
