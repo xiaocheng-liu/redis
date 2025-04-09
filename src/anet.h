@@ -1,31 +1,5 @@
-/* anet.c -- Basic TCP socket stuff made a bit less boring
- *
- * Copyright (c) 2006-2012, Salvatore Sanfilippo <antirez at gmail dot com>
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- *   * Redistributions of source code must retain the above copyright notice,
- *     this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above copyright
- *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution.
- *   * Neither the name of Redis nor the names of its contributors may be used
- *     to endorse or promote products derived from this software without
- *     specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+/*
+ * Basic TCP socket stuff made a bit less boring
  */
 
 #ifndef ANET_H
@@ -53,26 +27,41 @@
 #define FD_TO_PEER_NAME 0
 #define FD_TO_SOCK_NAME 1
 
+// 创建一个TCP连接
 int anetTcpConnect(char *err, const char *addr, int port);
+// 创建一个非阻塞的TCP连接。
 int anetTcpNonBlockConnect(char *err, const char *addr, int port);
 int anetTcpNonBlockBindConnect(char *err, const char *addr, int port, const char *source_addr);
 int anetTcpNonBlockBestEffortBindConnect(char *err, const char *addr, int port, const char *source_addr);
 int anetUnixConnect(char *err, const char *path);
 int anetUnixNonBlockConnect(char *err, const char *path);
+
+// 从给定的文件描述符 fd 中读取数据。
 int anetRead(int fd, char *buf, int count);
-int anetResolve(char *err, char *host, char *ipbuf, size_t ipbuf_len, int flags);
-int anetTcpServer(char *err, int port, char *bindaddr, int backlog);
-int anetTcp6Server(char *err, int port, char *bindaddr, int backlog);
-int anetUnixServer(char *err, char *path, mode_t perm, int backlog);
-int anetTcpAccept(char *err, int serversock, char *ip, size_t ip_len, int *port);
-int anetUnixAccept(char *err, int serversock);
+// 向指定的文件描述符中写入数据。
 int anetWrite(int fd, char *buf, int count);
+
+int anetResolve(char *err, char *host, char *ipbuf, size_t ipbuf_len, int flags);
+// 创建一个TCP服务器
+int anetTcpServer(char *err, int port, char *bindaddr, int backlog);
+// 创建一个基于 IPv6 的 TCP 服务器
+int anetTcp6Server(char *err, int port, char *bindaddr, int backlog);
+// 创建并配置一个基于 Unix 域套接字的服务器。
+int anetUnixServer(char *err, char *path, mode_t perm, int backlog);
+// 用于在 TCP 服务器端接受新的连接请求，并将客户端的 IP 地址和端口返回给调用者。
+int anetTcpAccept(char *err, int serversock, char *ip, size_t ip_len, int *port);
+// 用于接受基于 Unix 域套接字建立的连接。
+int anetUnixAccept(char *err, int serversock);
+
 // 该函数 anetNonBlock 用于将文件描述符设置为非阻塞模式。它接受两个参数：一个错误信息字符串指针 err 和一个文件描述符 fd。如果设置成功返回 0，否则返回 -1 并设置错误信息。
 int anetNonBlock(char *err, int fd);
+// 该函数用于将文件描述符设置为阻塞模式。参数err用于返回错误信息，fd为文件描述符。函数返回值为0表示成功，非0表示失败。
 int anetBlock(char *err, int fd);
+// 为给定的文件描述符设置 close-on-exec 标志（FD_CLOEXEC）
 int anetCloexec(int fd);
 // 该函数用于启用TCP_NODELAY选项，禁用Nagle算法，减少网络延迟。参数err用于返回错误信息，fd为文件描述符。函数返回值为0表示成功，非0表示失败。
 int anetEnableTcpNoDelay(char *err, int fd);
+// 该函数用于禁用TCP_NODELAY选项，启用Nagle算法。参数err用于返回错误信息，fd为文件描述符。函数返回值为0表示成功，非0表示失败。
 int anetDisableTcpNoDelay(char *err, int fd);
 int anetTcpKeepAlive(char *err, int fd);
 int anetSendTimeout(char *err, int fd, long long ms);

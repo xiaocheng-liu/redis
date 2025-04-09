@@ -502,7 +502,7 @@ const char *preMonitorCfgName[] = {
 
 /* This function overwrites a few normal Redis config default with Sentinel
  * specific defaults. */
-// 覆盖哨兵模式的默认配置
+// 此函数使用哨兵特定的默认值覆盖一些正常的 Redis 配置默认值。
 void initSentinelConfig(void)
 {
     server.port = REDIS_SENTINEL_PORT;                         // 哨兵默认端口

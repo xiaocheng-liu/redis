@@ -1,34 +1,6 @@
-/* anet.c -- Basic TCP socket stuff made a bit less boring
- *
- * Copyright (c) 2006-2012, Salvatore Sanfilippo <antirez at gmail dot com>
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- *   * Redistributions of source code must retain the above copyright notice,
- *     this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above copyright
- *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution.
- *   * Neither the name of Redis nor the names of its contributors may be used
- *     to endorse or promote products derived from this software without
- *     specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+/*
+ * anet.c -- Basic TCP socket stuff made a bit less boring
  */
-
-#include "fmacros.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -45,6 +17,7 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include "fmacros.h"
 #include "anet.h"
 
 static void anetSetError(char *err, const char *fmt, ...)
@@ -664,16 +637,19 @@ end:
     return s;
 }
 
+// 创建一个TCP 服务器
 int anetTcpServer(char *err, int port, char *bindaddr, int backlog)
 {
     return _anetTcpServer(err, port, bindaddr, AF_INET, backlog);
 }
 
+// 创建一个基于 IPv6 的 TCP 服务器
 int anetTcp6Server(char *err, int port, char *bindaddr, int backlog)
 {
     return _anetTcpServer(err, port, bindaddr, AF_INET6, backlog);
 }
 
+// 创建并配置一个基于 Unix 域套接字的服务器。
 int anetUnixServer(char *err, char *path, mode_t perm, int backlog)
 {
     int s;
@@ -718,6 +694,7 @@ static int anetGenericAccept(char *err, int s, struct sockaddr *sa, socklen_t *l
     return fd;
 }
 
+// 用于在 TCP 服务器端接受新的连接请求，并将客户端的 IP 地址和端口返回给调用者。
 int anetTcpAccept(char *err, int s, char *ip, size_t ip_len, int *port)
 {
     int fd;
@@ -745,6 +722,7 @@ int anetTcpAccept(char *err, int s, char *ip, size_t ip_len, int *port)
     return fd;
 }
 
+// 用于接受基于 Unix 域套接字建立的连接。
 int anetUnixAccept(char *err, int s)
 {
     int fd;
