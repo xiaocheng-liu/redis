@@ -30,15 +30,15 @@
 #include "ae.h" /* Event driven programming library */ //事件驱动库
 #include "anet.h" /* Networking the easy way */        // 网络编程
 
-#include "sds.h" /* Dynamic safe strings */ //动态安全字符串
-#include "dict.h" /* Hash tables */         //哈希表
-#include "adlist.h" /* Linked lists  */     //链表
-#include "t_list.h"
+#include "sds.h" /* Dynamic safe strings */           //动态安全字符串
+#include "dict.h" /* Hash tables */                   //哈希表
+#include "adlist.h" /* Linked lists  */               //双端链表
+#include "t_list.h" /* List data type header file. */ // 链表数据类型头文件
 #include "t_zset.h"
 #include "t_stream.h" /* Stream data type header file. */                                // 流数据类型头文件。
 #include "zmalloc.h" /* total memory usage aware version of malloc/free */               // 该头文件提供了内存分配函数的替代版本(如 malloc 和 free)
-#include "ziplist.h" /* Compact list data structure */                                   //压缩列表数据结构
-#include "intset.h" /* Compact integer set structure */                                  //压缩整型结构
+#include "ziplist.h" /* Compact list data structure */                                   // 压缩列表数据结构
+#include "intset.h" /* Compact integer set structure */                                  // 整型集合结构
 #include "quicklist.h" /* Lists are encoded as linked lists of N-elements flat arrays */ // 列表被编码为包含n个元素的平面数组的链表
 #include "rax.h" /* Radix tree */                                                        // 基数树
 
@@ -592,9 +592,9 @@ extern clientBufferLimitsConfig clientBufferLimitsDefaults[CLIENT_TYPE_OBUF_COUN
 // cmd:指向 Redis 命令的指针。
 typedef struct redisOp
 {
-    robj **argv;
-    int argc, dbid, target;
-    struct redisCommand *cmd;
+    robj **argv;              // 指向参数数组的指针
+    int argc, dbid, target;   // 参数个数、数据库 ID 和目标标识
+    struct redisCommand *cmd; // 指向 Redis 命令的指针
 } redisOp;
 
 /* Defines an array of Redis operations. There is an API to add to this
@@ -608,8 +608,8 @@ typedef struct redisOp
 // 其中 ops 是指向 redisOp 类型的指针,表示操作数组；numops 是整数类型,表示操作数组中元素的数量。
 typedef struct redisOpArray
 {
-    redisOp *ops;
-    int numops;
+    redisOp *ops; // 指向操作数组的指针
+    int numops;   // 数量
 } redisOpArray;
 
 /* This structure is returned by the getMemoryOverheadData() function in
@@ -619,14 +619,14 @@ typedef struct redisOpArray
 // 此外,还包含一个嵌套结构体 db,用于存储每个数据库的哈希表开销。
 struct redisMemOverhead
 {
-    size_t peak_allocated;
-    size_t total_allocated;
-    size_t startup_allocated;
-    size_t repl_backlog;
-    size_t clients_slaves;
-    size_t clients_normal;
-    size_t aof_buffer;
-    size_t lua_caches;
+    size_t peak_allocated;    // 内存分配峰值
+    size_t total_allocated;   // 总内存分配
+    size_t startup_allocated; // 启动时分配的内存
+    size_t repl_backlog;      // 复制积压缓冲区大小
+    size_t clients_slaves;    // 从节点连接数
+    size_t clients_normal;    // 普通连接数
+    size_t aof_buffer;        // AOF 缓冲区大小
+    size_t lua_caches;        // Lua 缓存大小
     size_t overhead_total;
     size_t dataset;
     size_t total_keys;
@@ -661,12 +661,12 @@ struct redisMemOverhead
 typedef struct rdbSaveInfo
 {
     /* Used saving and loading. */
-    int repl_stream_db; /* DB to select in server.master client. */
+    int repl_stream_db; /* DB to select in server.master client. */ // 指定当前复制流中服务器客户端应选择的数据库（DB）。
 
     /* Used only loading. */
-    int repl_id_is_set;                   /* True if repl_id field is set. */
-    char repl_id[CONFIG_RUN_ID_SIZE + 1]; /* Replication ID. */
-    long long repl_offset;                /* 副本偏移量. */
+    int repl_id_is_set;                                         /* True if repl_id field is set. */
+    char repl_id[CONFIG_RUN_ID_SIZE + 1]; /* Replication ID. */ // 复制 ID，其大小由宏 CONFIG_RUN_ID_SIZE 定义，再加上一个额外的字节用于字符串结束符，确保 ID 可以作为字符串使用。
+    long long repl_offset;                                      // 复制过程中的偏移量，也称为副本偏移量，用于在数据复制或恢复过程中定位数据的传输进度。
 } rdbSaveInfo;
 
 // 这段代码定义了一个名为 malloc_stats 的结构体,用于存储与内存分配相关的统计信息。具体字段包括:
@@ -749,7 +749,7 @@ struct redisServer
     int port; /* TCP listening port */                                        // TCP 侦听端口
     int tls_port; /* TLS listening port */                                    // TLS 侦听端口
     int tcp_backlog; /* TCP listen() backlog */                               // TCP 侦听() 积压工作
-    char *bindaddr[CONFIG_BINDADDR_MAX]; /* Addresses we should bind to */    // 我们应该绑定到的地址
+    char *bindaddr[CONFIG_BINDADDR_MAX]; /* Addresses we should bind to */    // 绑定的地址
     int bindaddr_count; /* Number of addresses in server.bindaddr[] */        // 绑定的地址数
     char *unixsocket; /* UNIX socket path */                                  // UNIX 套接字路径
     mode_t unixsocketperm; /* UNIX socket permission */                       // UNIX 套接字权限
@@ -787,15 +787,17 @@ struct redisServer
 
     /* RDB / AOF loading information */
     // RDB AOF 加载信息
-    volatile sig_atomic_t loading; /* We are loading data from disk if true */ // 如果为 true,我们正在从磁盘加载数据
-    off_t loading_total_bytes;
-    off_t loading_rdb_used_mem;
-    off_t loading_loaded_bytes;
-    time_t loading_start_time;
-    off_t loading_process_events_interval_bytes;
+    volatile sig_atomic_t loading; /* We are loading data from disk if true */      // 如果为 true,我们正在从磁盘加载数据
+    off_t loading_total_bytes;                                                      // 加载的总字节数
+    off_t loading_rdb_used_mem; /* Memory used by the RDB file */                   // RDB 文件使用的内存
+    off_t loading_loaded_bytes; /* Bytes loaded so far */                           // 到目前为止加载的字节数
+    time_t loading_start_time;                                                      // 加载开始时间
+    off_t loading_process_events_interval_bytes; /* Process events every N bytes */ // 每N个字节处理事件
 
     /* Fast pointers to often looked up command */
-    // 指向经常查找命令的快速指针
+    // 这段代码定义了一些指向 redisCommand 结构体的指针变量,用于存储常用命令的指针。
+    // 这些命令包括 ping、set、get、del、multi、lpush、lpop、rpop、zpopmin、zpopmax、srem、exec、expire、pexpire、
+    // xclaim、xgroup、rpoplpush 和 lmove 等。
     struct redisCommand *delCommand, *multiCommand, *lpushCommand,
         *lpopCommand, *rpopCommand, *zpopminCommand,
         *zpopmaxCommand, *sremCommand, *execCommand,
