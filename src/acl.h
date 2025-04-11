@@ -1,7 +1,8 @@
 #ifndef ACL_H
 #define ACL_H
-#include "rax.h"
+
 #include "server.h"
+#include "rax.h"
 
 typedef struct user user;
 

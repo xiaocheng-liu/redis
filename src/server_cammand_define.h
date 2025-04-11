@@ -4,8 +4,7 @@
 #include "server.h"
 typedef struct client client;
 
-/* Commands prototypes */ // 命令原型
-
+/* Commands prototypes */    // 命令原型
 void pingCommand(client *c); // ping命令
 void echoCommand(client *c); // echo命令
 void timeCommand(client *c); // 获取当前时间

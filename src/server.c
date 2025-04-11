@@ -6629,6 +6629,7 @@ void loadDataFromDisk(void)
     if (server.aof_state == AOF_ON)
     {
         // 加载AOF文件
+        serverLog(LL_NOTICE, "Starting AOF loading from '%s'", server.aof_filename);
         if (loadAppendOnlyFile(server.aof_filename) == C_OK)
         {
             serverLog(LL_NOTICE, "DB loaded from append only file: %.3f seconds", (float)(ustime() - start) / 1000000);
@@ -6639,6 +6640,7 @@ void loadDataFromDisk(void)
         rdbSaveInfo rsi = RDB_SAVE_INFO_INIT;
         errno = 0; /* Prevent a stale value from affecting error checking */
         // 加载RDB文件
+        serverLog(LL_NOTICE, "Starting RDB loading from '%s'", server.rdb_filename);
         if (rdbLoad(server.rdb_filename, &rsi, RDBFLAGS_NONE) == C_OK)
         {
             serverLog(LL_NOTICE, "DB loaded from disk: %.3f seconds", (float)(ustime() - start) / 1000000);

@@ -1,5 +1,6 @@
 #include "server.h"
-#include "connhelpers.h"
+#include "syncio.h"
+#include "connection_helper.h"
 
 /* The connections module provides a lean abstraction of network connections
  * to avoid direct socket and async event management across the Redis code base.

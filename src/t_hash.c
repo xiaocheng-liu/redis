@@ -1,5 +1,3 @@
-
-
 #include <math.h>
 #include "server.h"
 #include "t_hash.h"

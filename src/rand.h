@@ -1,5 +1,3 @@
-
-
 #ifndef REDIS_RANDOM_H
 #define REDIS_RANDOM_H
 

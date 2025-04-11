@@ -1,5 +1,3 @@
-
-
 #ifndef SLOWLOG_H
 #define SLOWLOG_H
 
@@ -16,8 +14,8 @@ typedef struct slowlogEntry
     long long id; /* Unique entry identifier. */                        /* 日志ID */
     long long duration; /* Time spent by the query, in microseconds. */ /* 命令执行时间 */
     time_t time; /* Unix time at which the query was executed. */       /* 日志创建时间 */
-    sds cname; /* Client name. */                                       /*客户端名称*/
-    sds peerid; /* Client network address. */                           /*客户端地址*/
+    sds cname; /* Client name. */                                       /* 客户端名称*/
+    sds peerid; /* Client network address. */                           /* 客户端地址*/
 } slowlogEntry;
 
 /* Exported API */

@@ -47,6 +47,11 @@ typedef struct list
 #define listGetFreeMethod(l) ((l)->free)   // 获取节点值释放函数
 #define listGetMatchMethod(l) ((l)->match) // 获取节点值匹配函数
 
+/* Directions for iterators */
+// 迭代器方向
+#define AL_START_HEAD 0 // 向前
+#define AL_START_TAIL 1 // 向后
+
 /* Prototypes */
 // 函数原型
 list *listCreate(void);                                                       // 创建
@@ -67,10 +72,5 @@ void listRewindTail(list *list, listIter *li);                                //
 void listRotateTailToHead(list *list);                                        // 把list的尾节点放到头部
 void listRotateHeadToTail(list *list);                                        // 把list的头节点放到尾部
 void listJoin(list *l, list *o);
-
-/* Directions for iterators */
-// 迭代器方向
-#define AL_START_HEAD 0 // 向前
-#define AL_START_TAIL 1 // 向后
 
 #endif /* ADLIST_H */

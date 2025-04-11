@@ -1,7 +1,3 @@
-//
-// Created by 刘晓成 on 2025-02-14.
-//
-
 #ifndef T_LIST_H
 #define T_LIST_H
 

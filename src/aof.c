@@ -7,6 +7,7 @@
 #include <sys/wait.h>
 #include <sys/param.h>
 #include "server.h"
+#include "syncio.h"
 #include "t_hash.h"
 #include "bio.h"
 #include "rio.h"
