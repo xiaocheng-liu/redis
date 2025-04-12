@@ -1,17 +1,17 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.0.0)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.27.8)
 
-OPTION(BUILD_SHARED_LIBS "Build shared libraries" ON)
-OPTION(ENABLE_SSL "Build hiredis_ssl for SSL support" OFF)
-OPTION(DISABLE_TESTS "If tests should be compiled or not" OFF)
+OPTION(BUILD_SHARED_LIBS "Build shared libraries" OFF)
+OPTION(ENABLE_SSL "Build hiredis_ssl for SSL support" ON)
+OPTION(DISABLE_TESTS "If tests should be compiled or not" ON)
 OPTION(ENABLE_SSL_TESTS "Should we test SSL connections" OFF)
-OPTION(ENABLE_EXAMPLES "Enable building hiredis examples" ON)
-OPTION(ENABLE_ASYNC_TESTS "Should we run all asynchronous API tests" ON)
+OPTION(ENABLE_EXAMPLES "Enable building hiredis examples" OFF)
+OPTION(ENABLE_ASYNC_TESTS "Should we run all asynchronous API tests" OFF)
 
 MACRO(getVersionBit name)
-  SET(VERSION_REGEX "^#define ${name} (.+)$")
-  FILE(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/hiredis.h"
-    VERSION_BIT REGEX ${VERSION_REGEX})
-  STRING(REGEX REPLACE ${VERSION_REGEX} "\\1" ${name} "${VERSION_BIT}")
+    SET(VERSION_REGEX "^#define ${name} (.+)$")
+    FILE(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/hiredis.h"
+        VERSION_BIT REGEX ${VERSION_REGEX})
+    STRING(REGEX REPLACE ${VERSION_REGEX} "\\1" ${name} "${VERSION_BIT}")
 ENDMACRO(getVersionBit)
 
 getVersionBit(HIREDIS_MAJOR)
@@ -51,10 +51,12 @@ set_target_properties(hiredis PROPERTIES EXPORT_NAME ${hiredis_export_name})
 SET_TARGET_PROPERTIES(hiredis
     PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS TRUE
     VERSION "${HIREDIS_SONAME}")
+
 IF(MSVC)
     SET_TARGET_PROPERTIES(hiredis
         PROPERTIES COMPILE_FLAGS /Z7)
 ENDIF()
+
 IF(WIN32)
     TARGET_LINK_LIBRARIES(hiredis PUBLIC ws2_32 crypt32)
 ELSEIF(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
@@ -99,7 +101,7 @@ INSTALL(TARGETS hiredis
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
-if (MSVC AND BUILD_SHARED_LIBS)
+if(MSVC AND BUILD_SHARED_LIBS)
     INSTALL(FILES $<TARGET_PDB_FILE:hiredis>
         DESTINATION ${CMAKE_INSTALL_BINDIR}
         CONFIGURATIONS Debug RelWithDebInfo)
@@ -127,37 +129,38 @@ if(WIN32)
 else()
     SET(CMAKE_CONF_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/hiredis)
 endif()
+
 SET(INCLUDE_INSTALL_DIR include)
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/hiredis-config-version.cmake"
-                                 COMPATIBILITY SameMajorVersion)
+    COMPATIBILITY SameMajorVersion)
 configure_package_config_file(hiredis-config.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/hiredis-config.cmake
-                              INSTALL_DESTINATION ${CMAKE_CONF_INSTALL_DIR}
-                              PATH_VARS INCLUDE_INSTALL_DIR)
+    INSTALL_DESTINATION ${CMAKE_CONF_INSTALL_DIR}
+    PATH_VARS INCLUDE_INSTALL_DIR)
 
 INSTALL(EXPORT hiredis-targets
-        FILE hiredis-targets.cmake
-        NAMESPACE hiredis::
-        DESTINATION ${CMAKE_CONF_INSTALL_DIR})
+    FILE hiredis-targets.cmake
+    NAMESPACE hiredis::
+    DESTINATION ${CMAKE_CONF_INSTALL_DIR})
 
 INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/hiredis-config.cmake
-              ${CMAKE_CURRENT_BINARY_DIR}/hiredis-config-version.cmake
-        DESTINATION ${CMAKE_CONF_INSTALL_DIR})
-
+    ${CMAKE_CURRENT_BINARY_DIR}/hiredis-config-version.cmake
+    DESTINATION ${CMAKE_CONF_INSTALL_DIR})
 
 IF(ENABLE_SSL)
-    IF (NOT OPENSSL_ROOT_DIR)
-        IF (APPLE)
+    IF(NOT OPENSSL_ROOT_DIR)
+        IF(APPLE)
             SET(OPENSSL_ROOT_DIR "/usr/local/opt/openssl")
         ENDIF()
     ENDIF()
+
     FIND_PACKAGE(OpenSSL REQUIRED)
     SET(hiredis_ssl_sources
         ssl.c)
     ADD_LIBRARY(hiredis_ssl ${hiredis_ssl_sources})
     ADD_LIBRARY(hiredis::hiredis_ssl ALIAS hiredis_ssl)
 
-    IF (APPLE AND BUILD_SHARED_LIBS)
+    IF(APPLE AND BUILD_SHARED_LIBS)
         SET_PROPERTY(TARGET hiredis_ssl PROPERTY LINK_FLAGS "-Wl,-undefined -Wl,dynamic_lookup")
     ENDIF()
 
@@ -165,14 +168,18 @@ IF(ENABLE_SSL)
         PROPERTIES
         WINDOWS_EXPORT_ALL_SYMBOLS TRUE
         VERSION "${HIREDIS_SONAME}")
+
     IF(MSVC)
         SET_TARGET_PROPERTIES(hiredis_ssl
             PROPERTIES COMPILE_FLAGS /Z7)
     ENDIF()
+
     TARGET_LINK_LIBRARIES(hiredis_ssl PRIVATE OpenSSL::SSL)
+
     IF(WIN32)
         TARGET_LINK_LIBRARIES(hiredis_ssl PRIVATE hiredis)
     ENDIF()
+
     CONFIGURE_FILE(hiredis_ssl.pc.in hiredis_ssl.pc @ONLY)
 
     INSTALL(TARGETS hiredis_ssl
@@ -181,7 +188,7 @@ IF(ENABLE_SSL)
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
-    if (MSVC AND BUILD_SHARED_LIBS)
+    if(MSVC AND BUILD_SHARED_LIBS)
         INSTALL(FILES $<TARGET_PDB_FILE:hiredis_ssl>
             DESTINATION ${CMAKE_INSTALL_BINDIR}
             CONFIGURATIONS Debug RelWithDebInfo)
@@ -194,17 +201,18 @@ IF(ENABLE_SSL)
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
     export(EXPORT hiredis_ssl-targets
-           FILE "${CMAKE_CURRENT_BINARY_DIR}/hiredis_ssl-targets.cmake"
-           NAMESPACE hiredis::)
+        FILE "${CMAKE_CURRENT_BINARY_DIR}/hiredis_ssl-targets.cmake"
+        NAMESPACE hiredis::)
 
     if(WIN32)
         SET(CMAKE_CONF_INSTALL_DIR share/hiredis_ssl)
     else()
         SET(CMAKE_CONF_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/hiredis_ssl)
     endif()
+
     configure_package_config_file(hiredis_ssl-config.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/hiredis_ssl-config.cmake
-                                  INSTALL_DESTINATION ${CMAKE_CONF_INSTALL_DIR}
-                                  PATH_VARS INCLUDE_INSTALL_DIR)
+        INSTALL_DESTINATION ${CMAKE_CONF_INSTALL_DIR}
+        PATH_VARS INCLUDE_INSTALL_DIR)
 
     INSTALL(EXPORT hiredis_ssl-targets
         FILE hiredis_ssl-targets.cmake
@@ -219,14 +227,17 @@ IF(NOT DISABLE_TESTS)
     ENABLE_TESTING()
     ADD_EXECUTABLE(hiredis-test test.c)
     TARGET_LINK_LIBRARIES(hiredis-test hiredis)
+
     IF(ENABLE_SSL_TESTS)
         ADD_DEFINITIONS(-DHIREDIS_TEST_SSL=1)
         TARGET_LINK_LIBRARIES(hiredis-test hiredis_ssl)
     ENDIF()
+
     IF(ENABLE_ASYNC_TESTS)
         ADD_DEFINITIONS(-DHIREDIS_TEST_ASYNC=1)
         TARGET_LINK_LIBRARIES(hiredis-test event)
     ENDIF()
+
     ADD_TEST(NAME hiredis-test
         COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test.sh)
 ENDIF()

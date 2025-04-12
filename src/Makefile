@@ -1,6 +1,4 @@
 # Redis Makefile
-# Copyright (C) 2009 Salvatore Sanfilippo <antirez at gmail dot com>
-# This file is released under the BSD license, see the COPYING file
 #
 # The Makefile composes the final FINAL_CFLAGS and FINAL_LDFLAGS using
 # what is needed for Redis plus the standard CFLAGS and LDFLAGS passed.
@@ -12,6 +10,7 @@
 # Dependencies are stored in the Makefile.dep file. To rebuild this file
 # Just use 'make dep', but this is only needed by developers.
 
+# 定义了一个变量 release_hdr，并通过 GNU Make 的 $(shell …) 函数将其值设置为运行外部脚本 mkreleasehdr.sh 后的输出结果。
 release_hdr := $(shell sh -c './mkreleasehdr.sh')
 # uname -s 获取操作系统的类型 Linux
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
@@ -31,6 +30,7 @@ ifneq (,$(findstring FreeBSD,$(uname_S)))
   STD+=-Wno-c11-extensions
 endif
 endif
+
 # 输出所有编译警告信息 ，Wno-missing-field-initializers 不输出missing-的警告信息 
 WARN=-Wall -W -Wno-missing-field-initializers -Wno-macro-redefined -Wno-strict-prototypes
 OPT=$(OPTIMIZATION)
@@ -92,6 +92,8 @@ ifeq ($(USE_JEMALLOC),no)
 endif
 
 # Override default settings if possible
+# 这段代码的功能是尝试包含并加载名为.make-settings的文件，以覆盖Makefile中的默认设置。
+# 如果该文件不存在，则不会报错，继续执行后续逻辑。
 -include .make-settings
 
 # 最终的编译选项CFLAGS是-c的选项，LDFLAGS是链接的选项
@@ -397,7 +399,8 @@ DEP = $(REDIS_SERVER_OBJ:%.o=%.d) $(REDIS_CLI_OBJ:%.o=%.d) $(REDIS_BENCHMARK_OBJ
 
 # 删除编译产物
 clean:
-	rm -rf $(REDIS_SERVER_NAME) $(REDIS_SENTINEL_NAME) $(REDIS_CLI_NAME) $(REDIS_BENCHMARK_NAME) $(REDIS_CHECK_RDB_NAME) $(REDIS_CHECK_AOF_NAME) *.o *.d *.gcda *.gcno *.gcov redis.info lcov-html Makefile.dep dict-benchmark
+	rm -rf $(REDIS_SERVER_NAME) $(REDIS_SENTINEL_NAME) $(REDIS_CLI_NAME) $(REDIS_BENCHMARK_NAME) $(REDIS_CHECK_RDB_NAME) $(REDIS_CHECK_AOF_NAME) 
+	rm -rf *.o *.d *.gcda *.gcno *.gcov redis.info lcov-html Makefile.dep dict-benchmark
 	rm -f $(DEP)
 
 .PHONY: clean
@@ -411,6 +414,10 @@ distclean: clean
 # 测试编译产物redis-server redis-cli等
 test: $(REDIS_SERVER_NAME) $(REDIS_CHECK_AOF_NAME) $(REDIS_CLI_NAME) $(REDIS_BENCHMARK_NAME)
 	@(cd ..; ./runtest)
+
+# 测试集群
+test-cluster: $(REDIS_SERVER_NAME) $(REDIS_CLI_NAME)
+	@(cd ..; ./runtest-cluster)
 
 # 测试哨兵
 test-sentinel: $(REDIS_SENTINEL_NAME) $(REDIS_CLI_NAME)

@@ -1,5 +1,6 @@
 #ifndef INTSET_H
 #define INTSET_H
+
 #include <stdint.h>
 #include <stdio.h>
 
