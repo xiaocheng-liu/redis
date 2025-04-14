@@ -27,7 +27,7 @@ STD=-pedantic -DREDIS_STATIC=''
 # Makefile的findstring函数的使用格式为$(findstring FIND, IN)，表示在IN中查找FIND，如果查找到了就返回FIND，找不到就返回空
 ifneq (,$(findstring clang,$(CC)))
 ifneq (,$(findstring FreeBSD,$(uname_S)))
-  STD+=-Wno-c11-extensions
+	STD+=-Wno-c11-extensions
 endif
 endif
 
@@ -99,7 +99,9 @@ endif
 # 最终的编译选项CFLAGS是-c的选项，LDFLAGS是链接的选项
 FINAL_CFLAGS=$(STD) $(WARN) $(OPT) $(DEBUG) $(CFLAGS) $(REDIS_CFLAGS)
 FINAL_LDFLAGS=$(LDFLAGS) $(REDIS_LDFLAGS) $(DEBUG)
+# 这通常用于指定链接阶段需要链接的库，-lm 表示链接数学库（math library），以便使用数学函数。
 FINAL_LIBS=-lm
+# 定义了一个变量DEBUG，其值为-g -ggdb，用于在编译时启用调试信息生成，其中-g表示生成调试信息，-ggdb表示为GDB调试器生成更详细的调试信息。
 DEBUG=-g -ggdb
 
 # Linux ARM needs -latomic at linking time
@@ -151,20 +153,20 @@ ifeq ($(uname_S),OpenBSD)
 	# OpenBSD
 	FINAL_LIBS+= -lpthread
 	ifeq ($(USE_BACKTRACE),yes)
-	    FINAL_CFLAGS+= -DUSE_BACKTRACE -I/usr/local/include
-	    FINAL_LDFLAGS+= -L/usr/local/lib
-	    FINAL_LIBS+= -lexecinfo
-    	endif
+		FINAL_CFLAGS+= -DUSE_BACKTRACE -I/usr/local/include
+		FINAL_LDFLAGS+= -L/usr/local/lib
+		FINAL_LIBS+= -lexecinfo
+	endif
 
 else
 ifeq ($(uname_S),NetBSD)
 	# NetBSD
 	FINAL_LIBS+= -lpthread
 	ifeq ($(USE_BACKTRACE),yes)
-	    FINAL_CFLAGS+= -DUSE_BACKTRACE -I/usr/pkg/include
-	    FINAL_LDFLAGS+= -L/usr/pkg/lib
-	    FINAL_LIBS+= -lexecinfo
-    	endif
+		FINAL_CFLAGS+= -DUSE_BACKTRACE -I/usr/pkg/include
+		FINAL_LDFLAGS+= -L/usr/pkg/lib
+		FINAL_LIBS+= -lexecinfo
+	endif
 else
 ifeq ($(uname_S),FreeBSD)
 	# FreeBSD
@@ -346,17 +348,17 @@ persist-settings: distclean
 .PHONY: persist-settings
 
 # Prerequisites target
+# 定义了一个名为.make-prerequisites的Makefile目标，使用@touch $@命令创建或更新目标文件的时间戳。$@是Makefile中的自动变量，表示当前目标名称，即.make-prerequisites。
 .make-prerequisites:
 	@touch $@
 
 # Clean everything, persist settings and build dependencies if anything changed
 # 当设置有变化的时候清除并重新持久化设置
 ifneq ($(strip $(PREV_FINAL_CFLAGS)), $(strip $(FINAL_CFLAGS)))
-.make-prerequisites: persist-settings
+	.make-prerequisites: persist-settings
 endif
-
 ifneq ($(strip $(PREV_FINAL_LDFLAGS)), $(strip $(FINAL_LDFLAGS)))
-.make-prerequisites: persist-settings
+	.make-prerequisites: persist-settings
 endif
 
 # 下面生成redis-server redis-cli等可执行程序
@@ -445,6 +447,7 @@ bench: $(REDIS_BENCHMARK_NAME)
 gcov:
 	$(MAKE) REDIS_CFLAGS="-fprofile-arcs -ftest-coverage -DCOVERAGE_TEST" REDIS_LDFLAGS="-fprofile-arcs -ftest-coverage"
 
+# 用于禁用编译优化。
 noopt:
 	$(MAKE) OPTIMIZATION="-O0"
 

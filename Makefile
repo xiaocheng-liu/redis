@@ -9,7 +9,4 @@ default: all
 install:
 	cd src && $(MAKE) $@
 
-hello:
-	cd src && $(MAKE) $@
-
 .PHONY: install

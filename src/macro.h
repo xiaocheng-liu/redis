@@ -541,10 +541,11 @@ need more reserved IDs use UINT64_MAX-1,                                     \
     {                      \
         -1, 0, "0000000000000000000000000000000000000000", -1}
 
-#define CHILD_TYPE_NONE 0
-#define CHILD_TYPE_RDB 1
-#define CHILD_TYPE_AOF 2
-#define CHILD_TYPE_LDB 3
-#define CHILD_TYPE_MODULE 4
+// 这段代码定义了几个宏，用于表示不同类型的子进程状态。
+#define CHILD_TYPE_NONE 0   // 表示没有启动任何子进程或当前状态为“无”。
+#define CHILD_TYPE_RDB 1    // 通常用于标识负责 RDB 持久化操作的子进程。
+#define CHILD_TYPE_AOF 2    // 用来表示进行 AOF（Append Only File）持久化的子进程。
+#define CHILD_TYPE_LDB 3    // 可能用来标识与 LDB（例如 LevelDB 或其他类似数据库）相关的子进程。
+#define CHILD_TYPE_MODULE 4 // 用来标识正在执行模块加载或模块相关操作的子进程。
 
 #endif

@@ -2,10 +2,9 @@
 #define RDB_H
 
 #include <stdio.h>
+#include "server.h"
 #include "rio.h"
 
-/* TBD: include only necessary headers. */
-#include "server.h"
 typedef struct redisObject robj;
 typedef struct rdbSaveInfo rdbSaveInfo;
 typedef struct RedisModuleType moduleType;

@@ -1458,11 +1458,12 @@ ssize_t rdbSaveSingleModuleAux(rio *rdb, int when, moduleType *mt)
  * Redis I/O channel. On success C_OK is returned, otherwise C_ERR
  * is returned and part of the output, or all the output, can be
  * missing because of I/O errors.
- * 把Redis中的数据dump下来并传给特定的io通道
+ *
  *
  * When the function returns C_ERR and if 'error' is not NULL, the
  * integer pointed by 'error' is set to the value of errno just after the I/O
  * error. */
+// 把Redis中的数据dump下来并传给特定的io通道
 int rdbSaveRio(rio *rdb, int *error, int rdbflags, rdbSaveInfo *rsi)
 {
     dictIterator *di = NULL;
@@ -3512,7 +3513,8 @@ void bgsaveCommand(client *c)
  * pointer if the instance has a valid master client, otherwise NULL
  * is returned, and the RDB saving will not persist any replication related
  * information.
- * 填充rdb保存信息，包含选取的dbid，rdb保存时的数据偏移量。*/
+ */
+// 填充rdb保存信息，包含选取的dbid，rdb保存时的数据偏移量。
 rdbSaveInfo *rdbPopulateSaveInfo(rdbSaveInfo *rsi)
 {
     rdbSaveInfo rsi_init = RDB_SAVE_INFO_INIT;
@@ -3525,8 +3527,9 @@ rdbSaveInfo *rdbPopulateSaveInfo(rdbSaveInfo *rsi)
      * connects to us, the NULL repl_backlog will trigger a full
      * synchronization, at the same time we will use a new replid and clear
      * replid2.
-     * 如果当前实例是master时，需要看下repl_backlong是否是空，如果repl_backlog是空，
-     * 意味着当前实例不在任何副本链中，副本信息是无用的，后续可能从其他节点全量同步一次。*/
+     * */
+    // 如果当前实例是master时，需要看下repl_backlong是否是空，如果repl_backlog是空，
+    // 意味着当前实例不在任何副本链中，副本信息是无用的，后续可能从其他节点全量同步一次。
     if (!server.masterhost && server.repl_backlog)
     {
         /* Note that when server.slaveseldb is -1, it means that this master
@@ -3540,7 +3543,9 @@ rdbSaveInfo *rdbPopulateSaveInfo(rdbSaveInfo *rsi)
 
     /* If the instance is a slave we need a connected master
      * in order to fetch the currently selected DB.
-     * 如果当前实例是slave，必须和master同步当前选取的dbid*/
+     */
+    // 检查全局变量 server.master 是否存在，表示当前服务器是否作为一个副本
+    // 如果当前实例是slave，必须和master同步当前选取的dbid
     if (server.master)
     {
         rsi->repl_stream_db = server.master->db->id;

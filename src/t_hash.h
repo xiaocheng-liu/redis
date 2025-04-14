@@ -11,6 +11,7 @@
 #define HASH_SET_TAKE_FIELD (1 << 0)
 #define HASH_SET_TAKE_VALUE (1 << 1)
 #define HASH_SET_COPY 0
+// 将对象编码类型为ziplist转为dict
 void hashTypeConvert(robj *o, int enc);
 void hashTypeTryConversion(robj *subject, robj **argv, int start, int end);
 int hashTypeExists(robj *o, sds key);
