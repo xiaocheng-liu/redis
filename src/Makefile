@@ -11,6 +11,7 @@
 # Just use 'make dep', but this is only needed by developers.
 
 # 定义了一个变量 release_hdr，并通过 GNU Make 的 $(shell …) 函数将其值设置为运行外部脚本 mkreleasehdr.sh 后的输出结果。
+# := 是一种变量赋值操作符，称为“立即求值赋值”或“简单赋值”。与 = 不同，:= 在定义变量时会立即计算右侧的表达式，并将结果存储为变量的值。
 release_hdr := $(shell sh -c './mkreleasehdr.sh')
 # uname -s 获取操作系统的类型 Linux
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
@@ -45,9 +46,9 @@ else
 	STD+=-std=c99
 endif
 
-# 默认目录
+# 默认目录,如果变量 PREFIX 尚未被定义，则将其设置为默认值 /usr/local
 PREFIX?=/usr/local
-# 安装的默认目录
+# 安装的默认目录, 与 ?= 不同，= 会覆盖之前定义的值（如果存在）
 INSTALL_BIN=$(PREFIX)/bin
 INSTALL=install
 PKG_CONFIG?=pkg-config
@@ -292,6 +293,10 @@ QUIET_LINK = @printf '    %b %b\n' $(LINKCOLOR)LINK$(ENDCOLOR) $(BINCOLOR)$@$(EN
 QUIET_INSTALL = @printf '    %b %b\n' $(LINKCOLOR)INSTALL$(ENDCOLOR) $(BINCOLOR)$@$(ENDCOLOR) 1>&2;
 endif
 
+# $(PROG_SUFFIX) 是一个变量引用，在 Makefile 中用于表示程序名称的后缀。
+# 这个变量可以在编译和链接过程中动态地添加到程序名称的末尾。
+# 如果 PROG_SUFFIX 未被显式定义，则默认为空字符串。
+# 因此，REDIS_SERVER_NAME=redis-server$(PROG_SUFFIX) 的默认值为 redis-server。
 REDIS_SERVER_NAME=redis-server$(PROG_SUFFIX)
 REDIS_SENTINEL_NAME=redis-sentinel$(PROG_SUFFIX)
 REDIS_SERVER_OBJ=adlist.o quicklist.o ae.o anet.o dict.o server.o sds.o zmalloc.o lzf_c.o lzf_d.o pqsort.o \

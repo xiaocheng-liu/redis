@@ -1,15 +1,12 @@
-
-
-#include "server.h"
-#include "sha1.h"
-#include "rand.h"
-#include "cluster.h"
-
 #include <lua.h>
 #include <lauxlib.h>
 #include <lualib.h>
 #include <ctype.h>
 #include <math.h>
+#include "server.h"
+#include "sha1.h"
+#include "rand.h"
+#include "cluster.h"
 
 char *redisProtocolToLuaType_Int(lua_State *lua, char *reply);
 char *redisProtocolToLuaType_Bulk(lua_State *lua, char *reply);
