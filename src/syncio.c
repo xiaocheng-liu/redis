@@ -4,6 +4,10 @@
 #include "server.h"
 #include "syncio.h"
 
+#include <sys/errno.h>
+
+#include "ae.h"
+
 /* ----------------- Blocking sockets I/O with timeouts --------------------- */
 
 /* Redis performs most of the I/O in a nonblocking way, with the exception

@@ -4,6 +4,8 @@
  * the terminal.
  */
 
+#include "sparkline.h"
+
 #include <math.h>
 #include "server.h"
 

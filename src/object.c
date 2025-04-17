@@ -3,7 +3,13 @@
 
 #include <math.h>
 #include <ctype.h>
+
+#include "evict.h"
+#include "intset.h"
 #include "server.h"
+#include "util.h"
+#include "ziplist.h"
+#include "t_zset.h"
 
 #ifdef __CYGWIN__
 #define strtold(a, b) ((long double)strtod((a), (b)))

@@ -7,6 +7,8 @@
 #include "sha1.h"
 #include "rand.h"
 #include "cluster.h"
+#include "server_cammand_define.h"
+#include "util.h"
 
 char *redisProtocolToLuaType_Int(lua_State *lua, char *reply);
 char *redisProtocolToLuaType_Bulk(lua_State *lua, char *reply);

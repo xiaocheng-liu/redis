@@ -22,6 +22,9 @@
  * pointed by 'output'.
  */
 #include <stdio.h>
+
+#include "version.h"
+
 void lwTranslatePixelsGroup(int byte, char *output)
 {
     int code = 0x2800 + byte;

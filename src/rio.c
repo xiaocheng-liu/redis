@@ -18,6 +18,9 @@
 #include <stdio.h>
 #include <unistd.h>
 #include "rio.h"
+
+#include <sys/errno.h>
+
 #include "util.h"
 #include "crc64.h"
 #include "config.h"

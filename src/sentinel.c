@@ -12,6 +12,13 @@
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <fcntl.h>
+#include <sys/errno.h>
+
+#include "ae.h"
+#include "pubsub.h"
+#include "server_cammand_define.h"
+#include "util.h"
+#include "version.h"
 
 extern char **environ;
 

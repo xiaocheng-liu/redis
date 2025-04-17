@@ -1,4 +1,6 @@
+#include "pubsub.h"
 #include "server.h"
+#include "util.h"
 
 /* This file implements keyspace events notification via Pub/Sub and
  * described at https://redis.io/topics/notifications. */

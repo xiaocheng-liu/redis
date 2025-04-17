@@ -1,4 +1,5 @@
 #include "server.h"
+#include "server_cammand_define.h"
 
 /* ================================ MULTI/EXEC ============================== */
 

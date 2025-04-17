@@ -2,60 +2,36 @@
 #define SERVER_H
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <limits.h>
 #include <unistd.h>
-#include <errno.h>
-#include <inttypes.h>
 #include <pthread.h>
-#include <syslog.h>
 #include <netinet/in.h>
-#include <sys/socket.h>
 #include <lua.h>
 #include <signal.h>
 
 #include "macro.h"
-#include "util.h" /* Misc functions useful in many places */ //工具函数
-#include "latency.h" /* Latency monitor API */               // 延迟监视器API,通过包含此头文件,程序可以调用其中定义的函数和宏来监测系统的延迟情况。
-#include "sparkline.h" /* ASCII graphs API */                // ASCII 图表的 API。通过包含这个头文件, 程序可以调用其中定义的函数来绘制简单的文本图表。
-#include "version.h"
-#include "fmacros.h"
 #include "config.h"
 #include "solarisfixes.h"
 #include "rio.h"
 #include "atomicvar.h"
 
-#include "ae.h" /* Event driven programming library */ //事件驱动库
 #include "anet.h" /* Networking the easy way */        // 网络编程
 
 #include "sds.h" /* Dynamic safe strings */           //动态安全字符串
 #include "dict.h" /* Hash tables */                   //哈希表
 #include "adlist.h" /* Linked lists  */               //双端链表
 #include "t_list.h" /* List data type header file. */ // 链表数据类型头文件
-#include "t_zset.h"
 #include "t_stream.h" /* Stream data type header file. */                                // 流数据类型头文件。
 #include "zmalloc.h" /* total memory usage aware version of malloc/free */               // 该头文件提供了内存分配函数的替代版本(如 malloc 和 free)
-#include "ziplist.h" /* Compact list data structure */                                   // 压缩列表数据结构
-#include "intset.h" /* Compact integer set structure */                                  // 整型集合结构
-#include "quicklist.h" /* Lists are encoded as linked lists of N-elements flat arrays */ // 列表被编码为包含n个元素的平面数组的链表
 #include "rax.h" /* Radix tree */                                                        // 基数树
 
 #include "connection.h" /* Connection abstraction */      // 连接抽象的接口或实现。通过包含此头文件,程序可以使用其中定义的与连接相关的功能和数据结构。
 #include "redismodule.h" /* Redis modules API defines. */ // 模块开发接口。这为后续编写 Redis 模块提供了必要的函数和数据结构支持。
 
-#include "zipmap.h"
-#include "sha1.h"
-#include "endianconv.h"
-#include "crc64.h"
-#include "evict.h"
-#include "geo.h"
 #include "rdb.h"
 #include "tls.h"
-#include "pubsub.h"
 #include "multi.h"
-#include "server_cammand_define.h"
 #include "acl.h"
 
 /* Slave replication state. Used in server.repl_state for slaves to remember

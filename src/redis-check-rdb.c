@@ -1,7 +1,7 @@
-#include <stdarg.h>
 #include <sys/time.h>
 #include <unistd.h>
 
+#include "endianconv.h"
 #include "mt19937-64.h"
 #include "server.h"
 #include "rdb.h"

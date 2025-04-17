@@ -37,6 +37,9 @@
 #include <math.h>
 #include "evict.h"
 
+#include "ae.h"
+#include "latency.h"
+
 /* ----------------------------------------------------------------------------
  * Implementation of eviction, aging and LRU
  * --------------------------------------------------------------------------*/

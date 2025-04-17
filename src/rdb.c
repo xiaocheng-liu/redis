@@ -5,8 +5,11 @@
 #include <sys/resource.h>
 #include <sys/wait.h>
 #include <arpa/inet.h>
+#include <sys/errno.h>
 #include <sys/stat.h>
 #include <sys/param.h>
+
+#include "ae.h"
 #include "server.h"
 #include "t_hash.h"
 #include "t_list.h"
@@ -15,6 +18,13 @@
 #include "lzf.h" /* LZF compression library */
 #include "zipmap.h"
 #include "endianconv.h"
+#include "evict.h"
+#include "intset.h"
+#include "latency.h"
+#include "t_zset.h"
+#include "util.h"
+#include "version.h"
+#include "ziplist.h"
 
 /* This macro is called when the internal RDB structure is corrupt */
 #define rdbReportCorruptRDB(...) rdbReportError(1, __LINE__, __VA_ARGS__)

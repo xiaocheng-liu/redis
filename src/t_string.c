@@ -1,6 +1,8 @@
 #include "server.h"
 #include <math.h> /* isnan(), isinf() */
 
+#include "util.h"
+
 /* Forward declarations */
 int getGenericCommand(client *c);
 

@@ -1,15 +1,26 @@
 #include <dlfcn.h>
+#include <sys/errno.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 
+#include "ae.h"
 #include "server.h"
 #include "t_hash.h"
 #include "t_list.h"
 #include "t_set.h"
 #include "cluster.h"
+#include "endianconv.h"
+#include "evict.h"
+#include "intset.h"
+#include "latency.h"
 #include "slowlog.h"
 #include "rdb.h"
 #include "monotonic.h"
+#include "pubsub.h"
+#include "t_zset.h"
+#include "util.h"
+#include "version.h"
+#include "ziplist.h"
 
 /* --------------------------------------------------------------------------
  * Private data structures used by the modules system. Those are data

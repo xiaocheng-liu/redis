@@ -19,7 +19,7 @@
  * In other cases where we don't want to prematurely lose the connection,
  * it can go beyond 1 as well; currently it is only done by connAccept().
  */
-static inline void connIncrRefs(connection *conn)
+static void connIncrRefs(connection *conn)
 {
     conn->refs++;
 }
@@ -32,12 +32,12 @@ static inline void connIncrRefs(connection *conn)
  * that.
  */
 
-static inline void connDecrRefs(connection *conn)
+static void connDecrRefs(connection *conn)
 {
     conn->refs--;
 }
 
-static inline int connHasRefs(connection *conn)
+static int connHasRefs(connection *conn)
 {
     return conn->refs;
 }
@@ -52,7 +52,7 @@ static inline int connHasRefs(connection *conn)
 // 2.如果回调函数存在，则调用回调函数。
 // 3.减少连接的引用计数。
 // 4.如果连接被标记为计划关闭且引用计数为零，则关闭连接。
-static inline int callHandler(connection *conn, ConnectionCallbackFunc handler)
+static int callHandler(connection *conn, ConnectionCallbackFunc handler)
 {
     connIncrRefs(conn);
     if (handler)

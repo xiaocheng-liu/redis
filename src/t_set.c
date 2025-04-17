@@ -1,5 +1,8 @@
 #include "server.h"
+#include "server_cammand_define.h"
 #include "t_set.h"
+
+#include "intset.h"
 
 /*-----------------------------------------------------------------------------
  * Set命令

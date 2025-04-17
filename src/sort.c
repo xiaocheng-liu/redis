@@ -3,11 +3,14 @@
  */
 
 #include <math.h> /* isnan() */
+#include <sys/errno.h>
+
 #include "server.h"
 #include "t_hash.h"
 #include "pqsort.h" /* Partial qsort for SORT+LIMIT */
 #include "t_list.h"
 #include "t_set.h"
+#include "t_zset.h"
 
 #define SORT_OP_GET 0
 

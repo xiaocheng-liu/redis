@@ -4,12 +4,15 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/errno.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 
+#include "ae.h"
 #include "server.h"
 #include "cluster.h"
 #include "bio.h"
+#include "util.h"
 
 void replicationDiscardCachedMaster(void);
 void replicationResurrectCachedMaster(connection *conn);

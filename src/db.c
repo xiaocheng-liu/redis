@@ -1,12 +1,18 @@
-
 #include <signal.h>
 #include <ctype.h>
+#include <sys/errno.h>
+
 #include "server.h"
 #include "t_hash.h"
 #include "cluster.h"
 #include "atomicvar.h"
+#include "evict.h"
+#include "intset.h"
 #include "t_list.h"
 #include "t_set.h"
+#include "t_zset.h"
+#include "util.h"
+#include "ziplist.h"
 
 /* Database backup. */
 struct dbBackup

@@ -1,39 +1,8 @@
-/*
- * Copyright (c) 2009-2016, Salvatore Sanfilippo <antirez at gmail dot com>
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- *   * Redistributions of source code must retain the above copyright notice,
- *     this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above copyright
- *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution.
- *   * Neither the name of Redis nor the names of its contributors may be used
- *     to endorse or promote products derived from this software without
- *     specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
-
 #include <time.h>
 #include <signal.h>
 #include <sys/wait.h>
 #include <errno.h>
-#include <assert.h>
 #include <ctype.h>
-#include <stdarg.h>
 #include <arpa/inet.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -41,29 +10,33 @@
 #include <sys/resource.h>
 #include <sys/uio.h>
 #include <sys/un.h>
+#include <sys/syslog.h>
 #include <limits.h>
-#include <float.h>
-#include <math.h>
-#include <sys/resource.h>
 #include <sys/utsname.h>
 #include <locale.h>
-#include <sys/socket.h>
-#include <sys/resource.h>
 
 #ifdef __linux__
 #include <sys/mman.h>
 #endif
 
+#include "config.h"
+#include "crc64.h"
+#include "version.h"
+#include "atomicvar.h"
+#include "util.h"
 #include "server.h"
+#include "ae.h"
+#include "server_cammand_define.h"
+#include "evict.h"
 #include "monotonic.h"
 #include "cluster.h"
 #include "sentinel.h"
 #include "slowlog.h"
 #include "bio.h"
 #include "latency.h"
-#include "atomicvar.h"
 #include "mt19937-64.h"
 #include "debugmacro.h"
+#include "pubsub.h"
 
 /* Our shared "common" objects */
 
@@ -2211,8 +2184,7 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData)
         }
     }
 
-    run_with_period(100)
-    {
+    run_with_period(100) {
         long long stat_net_input_bytes, stat_net_output_bytes;
         atomicGet(server.stat_net_input_bytes, stat_net_input_bytes);
         atomicGet(server.stat_net_output_bytes, stat_net_output_bytes);

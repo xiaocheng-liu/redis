@@ -1,13 +1,20 @@
 #include <math.h>
 #include <ctype.h>
-#include <stdarg.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
+#include <sys/syslog.h>
 #include <signal.h>
+#include <sys/errno.h>
 
+#include "util.h"
 #include "server.h"
+#include "ae.h"
 #include "atomicvar.h"
 #include "cluster.h"
+#include "endianconv.h"
+#include "pubsub.h"
+#include "server_cammand_define.h"
+#include "version.h"
 
 static void setProtocolError(const char *errstr, client *c);
 int postponeClientRead(client *c);

@@ -1,3 +1,6 @@
+#include <sys/errno.h>
+
+#include "ae.h"
 #include "server.h"
 #include "syncio.h"
 #include "connection_helper.h"

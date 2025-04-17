@@ -1,5 +1,6 @@
 #include "server.h"
 #include "cluster.h"
+#include "endianconv.h"
 
 /* ========================== Clients timeouts ============================= */
 

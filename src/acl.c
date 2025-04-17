@@ -4,6 +4,10 @@
 #include "sha256.h"
 #include "acl.h"
 
+#include <sys/errno.h>
+
+#include "util.h"
+
 struct ACLCategoryItem ACLCommandCategories[] = {
     {"keyspace", CMD_CATEGORY_KEYSPACE},
     {"read", CMD_CATEGORY_READ},
@@ -1292,6 +1296,8 @@ user *ACLGetUserByName(const char *name, size_t namelen)
         return NULL;
     return myuser;
 }
+
+void authCommand(client * client);
 
 /* Check if the command is ready to be executed in the client 'c', already
  * referenced by c->cmd, and can be executed by this client according to the

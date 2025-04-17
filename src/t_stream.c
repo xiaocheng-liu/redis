@@ -2,6 +2,8 @@
 #include "endianconv.h"
 #include "t_stream.h"
 
+#include "util.h"
+
 /* Every stream item inside the listpack, has a flags field that is used to
  * mark the entry as deleted, or having the same field as the "master"
  * entry at the start of the listpack> */

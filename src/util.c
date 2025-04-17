@@ -9,9 +9,7 @@
 #include <float.h>
 #include <stdint.h>
 #include <errno.h>
-#include <time.h>
 
-#include "fmacros.h"
 #include "util.h"
 #include "sha256.h"
 

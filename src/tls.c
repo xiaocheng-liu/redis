@@ -10,6 +10,8 @@
 #include <openssl/rand.h>
 #include <openssl/pem.h>
 
+#include "ae.h"
+
 #define REDIS_TLS_PROTO_TLSv1 (1 << 0)
 #define REDIS_TLS_PROTO_TLSv1_1 (1 << 1)
 #define REDIS_TLS_PROTO_TLSv1_2 (1 << 2)

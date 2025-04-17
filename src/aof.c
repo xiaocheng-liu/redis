@@ -12,8 +12,18 @@
 #include "bio.h"
 #include "rio.h"
 #include "aof.h"
+
+#include <sys/errno.h>
+
+#include "ae.h"
+#include "intset.h"
+#include "latency.h"
+#include "server_cammand_define.h"
 #include "t_list.h"
 #include "t_set.h"
+#include "t_zset.h"
+#include "util.h"
+#include "ziplist.h"
 
 /* This function free the old AOF rewrite buffer if needed, and initialize
  * a fresh new one. It tests for server.aof_rewrite_buf_blocks equal to NULL
