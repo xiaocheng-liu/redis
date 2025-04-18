@@ -1,6 +1,6 @@
-/* Redis Object implementation.
+/*
+ * Redis Object implementation.
  */
-
 #include <math.h>
 #include <ctype.h>
 

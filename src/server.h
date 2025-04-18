@@ -270,10 +270,10 @@ typedef struct clientReplyBlock
 typedef struct redisDb
 {
     dict *dict; /* The keyspace for this DB */                                              // 保存着数据库中的所有键值对数据, 这个属性也被称为键空间(key space)
-    dict *expires; /* Timeout of keys with a timeout set */                                 // 保存key对应的过期时间
-    dict *blocking_keys; /* Keys with clients waiting for data (BLPOP)*/                    // key对应的等待数据的client列表 (BLPOP)
-    dict *ready_keys; /* Blocked keys that received a PUSH */                               // 收到推送的被阻止密钥
-    dict *watched_keys; /* WATCHED keys for MULTI/EXEC */                                   // CAS 存储监听key的clients
+    struct dict *expires; /* Timeout of keys with a timeout set */                                 // 保存key对应的过期时间
+    struct dict *blocking_keys; /* Keys with clients waiting for data (BLPOP)*/                    // key对应的等待数据的client列表 (BLPOP)
+    struct dict *ready_keys; /* Blocked keys that received a PUSH */                               // 收到推送的被阻止密钥
+    struct dict *watched_keys; /* WATCHED keys for MULTI/EXEC */                                   // CAS 存储监听key的clients
     int id; /* Database ID */                                                               // 保存着数据库以整数表示的号码
     long long avg_ttl; /* Average TTL, just for stats */                                    // 存储的数据库对象的平均ttl(time to live),用于统计
     unsigned long expires_cursor; /* Cursor of the active expire cycle. */                  // 过期删除过程中的下标

@@ -1,4 +1,5 @@
-/* Slowlog implements a system that is able to remember the latest N
+/*
+ * Slowlog implements a system that is able to remember the latest N
  * queries that took more than M microseconds to execute.
  *
  * The execution time to reach to be logged in the slow log is set

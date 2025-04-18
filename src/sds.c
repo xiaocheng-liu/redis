@@ -1,4 +1,5 @@
-/* SDSLib 2.0 -- A C dynamic strings library
+/*
+ * SDSLib 2.0 -- A C dynamic strings library
  */
 #include <stdio.h>
 #include <stdlib.h>

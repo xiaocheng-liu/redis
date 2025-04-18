@@ -1,4 +1,5 @@
-/* Pseudo random number generation functions derived from the drand48()
+/*
+ * Pseudo random number generation functions derived from the drand48()
  * function obtained from pysam source code.
  *
  * This functions are used in order to replace the default math.random()

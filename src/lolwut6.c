@@ -9,7 +9,6 @@
  * Thanks to the Shhh computer art collective for the help in tuning the
  * output to have a better artistic effect.
  */
-
 #include "server.h"
 #include "lolwut.h"
 #include "version.h"

@@ -1,5 +1,4 @@
 /*
- *
  * Alternatively, the contents of this file may be used under the terms of
  * the GNU General Public License ("GPL") version 2 or any later version,
  * in which case the provisions of the GPL are applicable instead of
@@ -11,7 +10,6 @@
  * provisions above, a recipient may use your version of this file under
  * either the BSD or the GPL.
  */
-
 #include "lzfP.h"
 
 #define HSIZE (1 << (HLOG))

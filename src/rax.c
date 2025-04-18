@@ -1,4 +1,5 @@
-/* Rax -- A radix tree implementation.
+/*
+ * Rax -- A radix tree implementation.
  */
 
 #include <stdlib.h>

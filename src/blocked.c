@@ -30,11 +30,11 @@
  * clusterRedirectBlockedClientIfNeeded() function should also be updated.
  */
 
+#include "server_cammand_define.h"
 #include "server.h"
 #include "slowlog.h"
 #include "latency.h"
 #include "monotonic.h"
-#include "server_cammand_define.h"
 #include "t_list.h"
 #include "t_zset.h"
 

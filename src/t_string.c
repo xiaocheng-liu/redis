@@ -1,6 +1,5 @@
-#include "server.h"
 #include <math.h> /* isnan(), isinf() */
-
+#include "server.h"
 #include "util.h"
 
 /* Forward declarations */

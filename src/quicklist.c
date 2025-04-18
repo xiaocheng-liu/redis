@@ -1,10 +1,6 @@
-/* quicklist.c - A doubly linked list of ziplists
+/*
+ * quicklist.c - A doubly linked list of ziplists
  */
-
-/*****************************************************************************
- * quicklist具体介绍见博文 https://xindoo.blog.csdn.net/article/details/109150975
- * ***************************************************************************/
-
 #include <string.h> /* for memcpy */
 #include "quicklist.h"
 #include "zmalloc.h"

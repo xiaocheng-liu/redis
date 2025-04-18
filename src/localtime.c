@@ -20,6 +20,11 @@
  * Note that this function does not work for dates < 1/1/1970, it is solely
  * designed to work with what time(NULL) may return, and to support Redis
  * logging of the dates, it's not really a complete implementation. */
+// 该函数 is_leap_year 判断给定年份是否为闰年，返回值为1表示是闰年，0表示不是闰年。逻辑如下：
+// 1，如果年份不能被4整除，则不是闰年。
+// 2，如果年份能被4整除但不能被100整除，则是闰年。
+// 3，如果年份能被100整除但不能被400整除，则不是闰年。
+// 4，如果年份能被400整除，则是闰年。
 static int is_leap_year(time_t year) {
     if (year % 4) return 0;         /* A year not divisible by 4 is not leap. */
     else if (year % 100) return 1;  /* If div by 4 and not 100 is surely leap. */

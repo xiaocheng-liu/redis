@@ -1,6 +1,6 @@
-/* zmalloc - total amount of allocated memory aware version of malloc()
+/*
+ * zmalloc - total amount of allocated memory aware version of malloc()
  */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>

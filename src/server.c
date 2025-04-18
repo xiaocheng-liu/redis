@@ -14,6 +14,7 @@
 #include <limits.h>
 #include <sys/utsname.h>
 #include <locale.h>
+#include <stdatomic.h>
 
 #ifdef __linux__
 #include <sys/mman.h>

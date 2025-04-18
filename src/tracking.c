@@ -1,6 +1,6 @@
-/* tracking.c - Client side caching: keys tracking and invalidation
+/*
+ * tracking.c - Client side caching: keys tracking and invalidation
  */
-
 #include "pubsub.h"
 #include "server.h"
 #include "util.h"

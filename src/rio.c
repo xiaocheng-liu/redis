@@ -1,4 +1,5 @@
-/* rio.c is a simple stream-oriented I/O abstraction that provides an interface
+/*
+ * rio.c is a simple stream-oriented I/O abstraction that provides an interface
  * to write code that can consume/produce data using different concrete input
  * and output devices. For instance the same rdb.c code using the rio
  * abstraction can be used to read and write the RDB format using in-memory

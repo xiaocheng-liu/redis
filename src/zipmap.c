@@ -1,4 +1,5 @@
-/* String -> String Map data structure optimized for size.
+/*
+ * String -> String Map data structure optimized for size.
  * This file implements a data structure mapping strings to other strings
  * implementing an O(n) lookup data structure designed to be very memory
  * efficient.
@@ -38,7 +39,6 @@
  * in the zipmap and *not* the number of bytes needed to represent the zipmap.
  * This lowers the constant times considerably.
  */
-
 #include <stdio.h>
 #include <string.h>
 #include "zmalloc.h"

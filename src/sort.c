@@ -1,5 +1,5 @@
-/* SORT command and helper functions.
- *
+/*
+ * SORT command and helper functions.
  */
 
 #include <math.h> /* isnan() */

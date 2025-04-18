@@ -1,4 +1,5 @@
-/* Redis benchmark utility.
+/*
+ * Redis benchmark utility.
  * Redis 基准测试实用程序。
  */
 

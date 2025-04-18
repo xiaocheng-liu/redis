@@ -3,7 +3,6 @@
  * fun and interesting, and should be replaced by a new implementation at
  * each new version of Redis.
  */
-
 #include "server.h"
 #include "lolwut.h"
 #include <math.h>

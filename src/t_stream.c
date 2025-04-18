@@ -1,7 +1,6 @@
 #include "server.h"
 #include "endianconv.h"
 #include "t_stream.h"
-
 #include "util.h"
 
 /* Every stream item inside the listpack, has a flags field that is used to

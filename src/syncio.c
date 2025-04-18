@@ -1,11 +1,9 @@
-/* Synchronous socket and file I/O operations useful across the core.
+/*
+ * Synchronous socket and file I/O operations useful across the core.
  */
-
+#include <sys/errno.h>
 #include "server.h"
 #include "syncio.h"
-
-#include <sys/errno.h>
-
 #include "ae.h"
 
 /* ----------------- Blocking sockets I/O with timeouts --------------------- */
@@ -24,27 +22,22 @@
  * done within 'timeout' milliseconds the operation succeeds and 'size' is
  * returned. Otherwise the operation fails, -1 is returned, and an unspecified
  * partial write could be performed against the file descriptor. */
-ssize_t syncWrite(int fd, char *ptr, ssize_t size, long long timeout)
-{
+ssize_t syncWrite(int fd, char *ptr, ssize_t size, long long timeout) {
     ssize_t nwritten, ret = size;
     long long start = mstime();
     long long remaining = timeout;
 
-    while (1)
-    {
+    while (1) {
         long long wait = (remaining > SYNCIO__RESOLUTION) ? remaining : SYNCIO__RESOLUTION;
         long long elapsed;
 
         /* Optimistically try to write before checking if the file descriptor
          * is actually writable. At worst we get EAGAIN. */
         nwritten = write(fd, ptr, size);
-        if (nwritten == -1)
-        {
+        if (nwritten == -1) {
             if (errno != EAGAIN)
                 return -1;
-        }
-        else
-        {
+        } else {
             ptr += nwritten;
             size -= nwritten;
         }
@@ -54,8 +47,7 @@ ssize_t syncWrite(int fd, char *ptr, ssize_t size, long long timeout)
         /* Wait */
         aeWait(fd, AE_WRITABLE, wait);
         elapsed = mstime() - start;
-        if (elapsed >= timeout)
-        {
+        if (elapsed >= timeout) {
             errno = ETIMEDOUT;
             return -1;
         }
@@ -67,16 +59,14 @@ ssize_t syncWrite(int fd, char *ptr, ssize_t size, long long timeout)
  * within 'timeout' milliseconds the operation succeed and 'size' is returned.
  * Otherwise the operation fails, -1 is returned, and an unspecified amount of
  * data could be read from the file descriptor. */
-ssize_t syncRead(int fd, char *ptr, ssize_t size, long long timeout)
-{
+ssize_t syncRead(int fd, char *ptr, ssize_t size, long long timeout) {
     ssize_t nread, totread = 0;
     long long start = mstime();
     long long remaining = timeout;
 
     if (size == 0)
         return 0;
-    while (1)
-    {
+    while (1) {
         long long wait = (remaining > SYNCIO__RESOLUTION) ? remaining : SYNCIO__RESOLUTION;
         long long elapsed;
 
@@ -85,13 +75,10 @@ ssize_t syncRead(int fd, char *ptr, ssize_t size, long long timeout)
         nread = read(fd, ptr, size);
         if (nread == 0)
             return -1; /* short read. */
-        if (nread == -1)
-        {
+        if (nread == -1) {
             if (errno != EAGAIN)
                 return -1;
-        }
-        else
-        {
+        } else {
             ptr += nread;
             size -= nread;
             totread += nread;
@@ -102,8 +89,7 @@ ssize_t syncRead(int fd, char *ptr, ssize_t size, long long timeout)
         /* Wait */
         aeWait(fd, AE_READABLE, wait);
         elapsed = mstime() - start;
-        if (elapsed >= timeout)
-        {
+        if (elapsed >= timeout) {
             errno = ETIMEDOUT;
             return -1;
         }
@@ -116,26 +102,21 @@ ssize_t syncRead(int fd, char *ptr, ssize_t size, long long timeout)
  *
  * On success the number of bytes read is returned, otherwise -1.
  * On success the string is always correctly terminated with a 0 byte. */
-ssize_t syncReadLine(int fd, char *ptr, ssize_t size, long long timeout)
-{
+ssize_t syncReadLine(int fd, char *ptr, ssize_t size, long long timeout) {
     ssize_t nread = 0;
 
     size--;
-    while (size)
-    {
+    while (size) {
         char c;
 
         if (syncRead(fd, &c, 1, timeout) == -1)
             return -1;
-        if (c == '\n')
-        {
+        if (c == '\n') {
             *ptr = '\0';
             if (nread && *(ptr - 1) == '\r')
                 *(ptr - 1) = '\0';
             return nread;
-        }
-        else
-        {
+        } else {
             *ptr++ = c;
             *ptr = '\0';
             nread++;

@@ -1,5 +1,5 @@
-/* Asynchronous replication implementation.
- *
+/*
+ * Asynchronous replication implementation.
  */
 #include <sys/time.h>
 #include <unistd.h>

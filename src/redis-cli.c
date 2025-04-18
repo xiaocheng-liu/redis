@@ -1,5 +1,5 @@
-/* Redis CLI (command line interface)
- *
+/*
+ * Redis CLI (command line interface)
  */
 #include "fmacros.h"
 #include "version.h"
