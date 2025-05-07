@@ -1,5 +1,3 @@
-
-
 #ifndef FMACRO_H
 #define FMACRO_H
 

@@ -1,7 +1,6 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#include <stdint.h>
 #include "sds.h"
 
 /* The maximum number of characters needed to represent a long double

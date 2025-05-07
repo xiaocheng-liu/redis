@@ -5,6 +5,7 @@
 
 #include "ae.h"
 #include "server.h"
+#include "server_cammand_define.h"
 #include "t_hash.h"
 #include "t_list.h"
 #include "t_set.h"

@@ -1,4 +1,5 @@
-/* latency.h -- latency monitor API header file
+/*
+ * latency.h -- latency monitor API header file
  * See latency.c for more information.
  */
 

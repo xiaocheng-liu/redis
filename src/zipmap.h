@@ -1,12 +1,11 @@
-/* String -> String Map data structure optimized for size.
+/*
+ * String -> String Map data structure optimized for size.
  *
  * See zipmap.c for more info.
  *
  */
 #ifndef ZIPMAP_H
 #define ZIPMAP_H
-
-#include <stdio.h>
 
 unsigned char *zipmapNew(void);
 unsigned char *zipmapSet(unsigned char *zm, unsigned char *key, unsigned int klen, unsigned char *val, unsigned int vlen, int *update);

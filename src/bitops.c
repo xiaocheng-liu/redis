@@ -1,7 +1,8 @@
-/* Bit operations.
+/*
+ * Bit operations.
  */
-
 #include "server.h"
+#include "server_cammand_define.h"
 #include "util.h"
 
 /* -----------------------------------------------------------------------------

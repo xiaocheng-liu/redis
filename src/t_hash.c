@@ -1,5 +1,6 @@
 #include <math.h>
 #include "server.h"
+#include "server_cammand_define.h"
 #include "t_hash.h"
 #include "util.h"
 #include "ziplist.h"

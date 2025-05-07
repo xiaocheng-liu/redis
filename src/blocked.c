@@ -1,4 +1,5 @@
-/* blocked.c - generic support for blocking operations like BLPOP & WAIT.
+/*
+ * blocked.c - generic support for blocking operations like BLPOP & WAIT.
  * API:
  *
  * blockClient() set the CLIENT_BLOCKED flag in the client, and set the

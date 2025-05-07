@@ -1,16 +1,16 @@
-#include "server.h"
-#include "t_hash.h"
-#include "sha1.h" /* SHA1 is used for DEBUG DIGEST */
-#include "bio.h"
-#include "t_list.h"
-#include "t_set.h"
-
 #include <arpa/inet.h>
 #include <signal.h>
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <unistd.h>
 
+#include "server.h"
+#include "server_cammand_define.h"
+#include "t_hash.h"
+#include "sha1.h" /* SHA1 is used for DEBUG DIGEST */
+#include "bio.h"
+#include "t_list.h"
+#include "t_set.h"
 #include "t_zset.h"
 #include "util.h"
 #include "version.h"

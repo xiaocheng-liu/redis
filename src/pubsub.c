@@ -1,7 +1,7 @@
 #include "server.h"
+#include "server_cammand_define.h"
 #include "cluster.h"
 #include "pubsub.h"
-
 #include "util.h"
 
 /*-----------------------------------------------------------------------------

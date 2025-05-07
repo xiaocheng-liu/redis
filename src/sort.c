@@ -6,6 +6,7 @@
 #include <sys/errno.h>
 
 #include "server.h"
+#include "server_cammand_define.h"
 #include "t_hash.h"
 #include "pqsort.h" /* Partial qsort for SORT+LIMIT */
 #include "t_list.h"

@@ -2,7 +2,6 @@
 #define SERVER_CAMMAND_DEFINE_H
 
 #include "server.h"
-typedef struct client client;
 
 /* Commands prototypes */    // 命令原型
 void pingCommand(client *c); // ping命令
@@ -179,7 +178,7 @@ void zscanCommand(client *c);
 void hsetCommand(client *c);
 void hsetnxCommand(client *c);
 void hgetCommand(client *c);
-void hmsetCommand(client *c);
+// void hmsetCommand(client *c);
 void hmgetCommand(client *c);
 void hdelCommand(client *c);
 void hlenCommand(client *c);
@@ -190,10 +189,13 @@ void hgetallCommand(client *c);
 void hexistsCommand(client *c);
 void hscanCommand(client *c);
 void hrandfieldCommand(client *c);
-void configCommand(client *c);
 void hincrbyCommand(client *c);
 void hincrbyfloatCommand(client *c);
 // t_hash end
+
+// config start
+void configCommand(client *c);
+// config end
 
 // pubsub start
 void subscribeCommand(client *c);    // subscribe命令
@@ -260,8 +262,6 @@ void pfdebugCommand(client *c);
 // hyperloglog end
 
 // geo start
-// void geoencodeCommand(client *c);
-// void geodecodeCommand(client *c);
 void georadiusbymemberCommand(client *c);
 void georadiusbymemberroCommand(client *c);
 void georadiusCommand(client *c);

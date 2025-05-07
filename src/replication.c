@@ -10,6 +10,7 @@
 
 #include "ae.h"
 #include "server.h"
+#include "server_cammand_define.h"
 #include "cluster.h"
 #include "bio.h"
 #include "util.h"

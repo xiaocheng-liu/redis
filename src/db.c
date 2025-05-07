@@ -3,6 +3,7 @@
 #include <sys/errno.h>
 
 #include "server.h"
+#include "server_cammand_define.h"
 #include "t_hash.h"
 #include "cluster.h"
 #include "atomicvar.h"
@@ -21,12 +22,6 @@ struct dbBackup
     rax *slots_to_keys;
     uint64_t slots_keys_count[CLUSTER_SLOTS];
 };
-
-/*-----------------------------------------------------------------------------
- * C-level DB API
- *----------------------------------------------------------------------------*/
-
-int keyIsExpired(redisDb *db, robj *key);
 
 /* Update LFU when an object is accessed.
  * Firstly, decrement the counter if the decrement time is reached.

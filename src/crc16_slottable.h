@@ -1,5 +1,5 @@
-#ifndef _CRC16_TABLE_H__
-#define _CRC16_TABLE_H__
+#ifndef CRC16_TABLE_H
+#define CRC16_TABLE_H
 
 /* A table of the shortest possible alphanumeric string that is mapped by redis' crc16
  * to any given redis cluster slot. 

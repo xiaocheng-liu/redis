@@ -1,4 +1,5 @@
-/* This file contains debugging macros to be used when investigating issues.
+/*
+ * This file contains debugging macros to be used when investigating issues.
  */
 // 用于在排查问题时将调试信息输出到日志文件中。
 #ifndef DEBUGMACRO_H

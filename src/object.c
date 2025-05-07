@@ -4,6 +4,7 @@
 #include <math.h>
 #include <ctype.h>
 
+#include "server_cammand_define.h"
 #include "evict.h"
 #include "intset.h"
 #include "server.h"

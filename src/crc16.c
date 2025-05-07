@@ -51,9 +51,17 @@ static const uint16_t crc16tab[256]= {
 };
 
 uint16_t crc16(const char *buf, int len) {
-    int counter;
-    uint16_t crc = 0;
+    int counter;        // 循环计数器，用于遍历输入数据的每个字节。
+    uint16_t crc = 0;   // 初始值为 0，用于存储当前计算的 CRC 值。
     for (counter = 0; counter < len; counter++)
-            crc = (crc<<8) ^ crc16tab[((crc>>8) ^ *buf++)&0x00FF];
+        /**
+          * `(crc >> 8)`：将当前 CRC 值右移 8 位，取出高 8 位。
+          * `^ *buf++`：将高 8 位与当前字节进行异或操作。
+          * `& 0x00FF`：确保结果只保留低 8 位。
+          * `crc16tab[...]`：根据计算结果从查找表中获取对应的 CRC 值。
+          * `(crc << 8)`：将当前 CRC 值左移 8 位，为下一次迭代做准备。
+          * `^`：将左移后的 CRC 值与查表结果进行异或操作，更新 CRC 值。
+        */
+        crc = (crc << 8) ^ crc16tab[((crc >> 8) ^ *buf++) & 0x00FF];
     return crc;
 }

@@ -2,7 +2,6 @@
 #define RIO_H
 
 #include <stdio.h>
-#include <stdint.h>
 #include "sds.h"
 #include "connection.h"
 

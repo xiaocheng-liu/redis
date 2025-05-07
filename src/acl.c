@@ -1,11 +1,10 @@
+#include <sys/errno.h>
 #include <fcntl.h>
 #include <ctype.h>
 #include "server.h"
+#include "server_cammand_define.h"
 #include "sha256.h"
 #include "acl.h"
-
-#include <sys/errno.h>
-
 #include "util.h"
 
 struct ACLCategoryItem ACLCommandCategories[] = {

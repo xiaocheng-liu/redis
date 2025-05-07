@@ -1,11 +1,13 @@
-/* hyperloglog.c - Redis HyperLogLog probabilistic cardinality approximation.
+/*
+ * hyperloglog.c - Redis HyperLogLog probabilistic cardinality approximation.
  * This file implements the algorithm and the exported Redis commands.
  */
 
-#include "server.h"
 
 #include <stdint.h>
 #include <math.h>
+#include "server.h"
+#include "server_cammand_define.h"
 
 /* The Redis HyperLogLog implementation is based on the following ideas:
  *

@@ -1,4 +1,5 @@
-/* Background I/O service for Redis.
+/*
+ * Background I/O service for Redis.
  */
 #include "server.h"
 #include "bio.h"

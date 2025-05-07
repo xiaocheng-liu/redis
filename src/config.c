@@ -1,15 +1,16 @@
-/* Configuration file parsing and CONFIG GET/SET commands implementation.
+/*
+ * Configuration file parsing and CONFIG GET/SET commands implementation.
  */
-
-#include "server.h"
-#include "cluster.h"
-#include "sentinel.h"
 
 #include <fcntl.h>
 #include <sys/errno.h>
 #include <sys/stat.h>
 #include <sys/syslog.h>
 
+#include "server.h"
+#include "server_cammand_define.h"
+#include "cluster.h"
+#include "sentinel.h"
 #include "ae.h"
 #include "evict.h"
 #include "util.h"

@@ -1,8 +1,8 @@
 #ifndef T_LIST_H
 #define T_LIST_H
 
-#include "server.h"
 #include "quicklist.h"
+
 typedef struct redisObject robj;
 typedef struct client client;
 

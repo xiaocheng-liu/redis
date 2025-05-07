@@ -2,8 +2,6 @@
 #define T_ZSET_H
 
 #include "server.h"
-typedef struct redisObject robj;
-typedef struct client client;
 
 #define ZSET_MIN 0
 #define ZSET_MAX 1

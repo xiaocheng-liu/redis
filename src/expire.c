@@ -4,6 +4,7 @@
 
 #include "latency.h"
 #include "server.h"
+#include "server_cammand_define.h"
 
 /*-----------------------------------------------------------------------------
  * Incremental collection of expired keys.

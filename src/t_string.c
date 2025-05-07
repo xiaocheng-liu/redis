@@ -1,5 +1,6 @@
 #include <math.h> /* isnan(), isinf() */
 #include "server.h"
+#include "server_cammand_define.h"
 #include "util.h"
 
 /* Forward declarations */

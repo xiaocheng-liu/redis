@@ -1243,7 +1243,6 @@ struct redisServer
 };
 
 #define MAX_KEYS_BUFFER 256
-
 /* A result structure for the various getkeys function calls. It lists the
  * keys as indices to the provided argv.
  */
@@ -1819,6 +1818,7 @@ int rewriteConfig(char *path, int force_all);
 void initConfigValues(void);
 
 /* db.c -- Keyspace access API 键访问API */
+int keyIsExpired(redisDb *db, robj *key);
 // 删除过期
 int removeExpire(redisDb *db, robj *key);
 void propagateExpire(redisDb *db, robj *key, int lazy);

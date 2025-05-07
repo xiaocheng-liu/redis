@@ -3,6 +3,7 @@
  */
 #include <math.h>
 #include "server.h"
+#include "server_cammand_define.h"
 #include "t_zset.h"
 #include "intset.h"
 #include "util.h"

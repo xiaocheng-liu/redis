@@ -1,6 +1,7 @@
 #ifndef CLUSTER_H
 #define CLUSTER_H
 #include "macro.h"
+#include "server.h"
 
 /*-----------------------------------------------------------------------------
  * Redis cluster data structures, defines, exported API.

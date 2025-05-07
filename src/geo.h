@@ -3,7 +3,7 @@
 
 #include "server.h"
 
-typedef struct client client;
+typedef client client;
 
 /* Structures used inside geo.c in order to represent points and array of
  * points on the earth. */
