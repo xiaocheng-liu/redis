@@ -1,5 +1,5 @@
-/* CLI (command line interface) common methods
- *
+/*
+ * CLI (command line interface) common methods
  */
 #include <errno.h>
 #include <hiredis.h>

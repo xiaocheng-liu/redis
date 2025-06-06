@@ -3440,14 +3440,16 @@ int rdbSaveToSlavesSockets(rdbSaveInfo *rsi)
     return C_OK; /* Unreached. */
 }
 
+//`SAVE` 命令的核心逻辑。
 void saveCommand(client *c)
 {
-    // 检查是否后台已经有进程在执行save，如果有就停止执行。
+    // 检查是否后台已经有进程在执行save，如果有返回错误信息。
     if (server.child_type == CHILD_TYPE_RDB)
     {
         addReplyError(c, "Background save already in progress");
         return;
     }
+    // 初始化 `rdbSaveInfo` 结构体
     rdbSaveInfo rsi, *rsiptr;
     rsiptr = rdbPopulateSaveInfo(&rsi);
     // rdbSave 函数是真正进行 RDB 持久化的函数

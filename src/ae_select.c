@@ -1,5 +1,5 @@
-/* Select()-based ae.c module.
- *
+/*
+ * Select()-based ae.c module.
  */
 
 #include <sys/select.h>

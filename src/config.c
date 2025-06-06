@@ -1,7 +1,6 @@
 /*
  * Configuration file parsing and CONFIG GET/SET commands implementation.
  */
-
 #include <fcntl.h>
 #include <sys/errno.h>
 #include <sys/stat.h>

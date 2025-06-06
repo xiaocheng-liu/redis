@@ -1,4 +1,6 @@
-// adlist.c - A generic doubly linked list implementation
+/*
+ * adlist.c - A generic doubly linked list implementation
+ */
 #include <stdlib.h>
 #include "adlist.h"
 #include "zmalloc.h"

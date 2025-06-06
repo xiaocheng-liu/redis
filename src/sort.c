@@ -1,7 +1,6 @@
 /*
  * SORT command and helper functions.
  */
-
 #include <math.h> /* isnan() */
 #include <sys/errno.h>
 

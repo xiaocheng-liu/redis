@@ -430,6 +430,11 @@ test-cluster: $(REDIS_SERVER_NAME) $(REDIS_CLI_NAME)
 test-sentinel: $(REDIS_SENTINEL_NAME) $(REDIS_CLI_NAME)
 	@(cd ..; ./runtest-sentinel)
 
+# 添加一个目标来打印信息
+test-compiler-support-C11-_Atomic:
+ifeq ($(C11_ATOMIC),yes)
+	@echo "the compiler supports C11 _Atomic"
+endif
 check: test
 
 lcov:
@@ -478,4 +483,3 @@ install: all
 # 卸载
 uninstall:
 	rm -f $(INSTALL_BIN)/{$(REDIS_SERVER_NAME),$(REDIS_BENCHMARK_NAME),$(REDIS_CLI_NAME),$(REDIS_CHECK_RDB_NAME),$(REDIS_CHECK_AOF_NAME),$(REDIS_SENTINEL_NAME)}
-

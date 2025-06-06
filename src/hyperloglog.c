@@ -2,8 +2,6 @@
  * hyperloglog.c - Redis HyperLogLog probabilistic cardinality approximation.
  * This file implements the algorithm and the exported Redis commands.
  */
-
-
 #include <stdint.h>
 #include <math.h>
 #include "server.h"

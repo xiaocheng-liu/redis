@@ -1,4 +1,5 @@
-/* This is a C++ to C conversion from the ardb project.
+/*
+ * This is a C++ to C conversion from the ardb project.
  * This file started out as:
  * https://github.com/yinqiwen/ardb/blob/d42503/src/geo/geohash_helper.cpp
  */

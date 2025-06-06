@@ -32,6 +32,7 @@ static int is_leap_year(time_t year) {
     else return 1;                  /* If div by 100 and 400 is leap. */
 }
 
+// 将一个以秒为单位的时间戳 t 转换为本地时间，并填充到 struct tm 结构体中，不使用任何锁机制。
 void nolocks_localtime(struct tm *tmp, time_t t, time_t tz, int dst) {
     const time_t secs_min = 60;
     const time_t secs_hour = 3600;

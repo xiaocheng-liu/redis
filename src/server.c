@@ -1,3 +1,5 @@
+#include <stdarg.h>
+#include <stdio.h>
 #include <arpa/inet.h>
 #include <ctype.h>
 #include <errno.h>

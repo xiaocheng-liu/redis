@@ -1,4 +1,5 @@
-/* The latency monitor allows to easily observe the sources of latency
+/*
+ * The latency monitor allows to easily observe the sources of latency
  * in a Redis instance using the LATENCY command. Different latency
  * sources are monitored, like disk I/O, execution of commands, fork
  * system call, and so forth.

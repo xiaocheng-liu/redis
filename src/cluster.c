@@ -1,10 +1,6 @@
-/* Redis Cluster implementation.
+/*
+ * Redis Cluster implementation.
  */
-
-#include "server.h"
-#include "cluster.h"
-#include "endianconv.h"
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -15,6 +11,9 @@
 #include <math.h>
 #include <sys/errno.h>
 
+#include "server.h"
+#include "cluster.h"
+#include "endianconv.h"
 #include "ae.h"
 #include "pubsub.h"
 #include "server_cammand_define.h"
