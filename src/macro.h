@@ -134,7 +134,7 @@
 #define CLIENT_LUA_DEBUG (1 << 25)                /* Run EVAL in debug mode. */
 #define CLIENT_LUA_DEBUG_SYNC (1 << 26)           /* EVAL debugging without fork() */
 #define CLIENT_MODULE (1 << 27)                   /* Non connected client used by some module. */
-#define CLIENT_PROTECTED (1 << 28)                /* Client should not be freed for now. */
+#define CLIENT_PROTECTED (1 << 28)                /* Client should not be freed for now. */ // 该宏定义用于设置客户端对象的保护标志位，表示该客户端暂时不应被释放。
 #define CLIENT_PENDING_READ (1 << 29)             /* The client has pending reads and was put \
                                                      in the list of clients we can read       \
                                                      from. */

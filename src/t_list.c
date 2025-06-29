@@ -15,7 +15,7 @@ void listTypePush(robj *subject, robj *value, int where)
 {
     if (subject->encoding == OBJ_ENCODING_QUICKLIST)
     {
-        int pos = (where == LIST_HEAD) ? QUICKLIST_HEAD : QUICKLIST_TAIL;
+        int pos = (where == T_LIST_HEAD) ? QUICKLIST_HEAD : QUICKLIST_TAIL;
         value = getDecodedObject(value);
         size_t len = sdslen(value->ptr);
         quicklistPush(subject->ptr, value->ptr, len, pos);
@@ -38,7 +38,7 @@ robj *listTypePop(robj *subject, int where)
     long long vlong;
     robj *value = NULL;
 
-    int ql_where = where == LIST_HEAD ? QUICKLIST_HEAD : QUICKLIST_TAIL;
+    int ql_where = where == T_LIST_HEAD ? QUICKLIST_HEAD : QUICKLIST_TAIL;
     if (subject->encoding == OBJ_ENCODING_QUICKLIST)
     {
         if (quicklistPopCustom(subject->ptr, ql_where, (unsigned char **)&value,
@@ -78,10 +78,10 @@ listTypeIterator *listTypeInitIterator(robj *subject, long index,
     li->encoding = subject->encoding;
     li->direction = direction;
     li->iter = NULL;
-    /* LIST_HEAD means start at TAIL and move *towards* head.
-     * LIST_TAIL means start at HEAD and move *towards tail. */
+    /* T_LIST_HEAD means start at TAIL and move *towards* head.
+     * T_LIST_TAIL means start at HEAD and move *towards tail. */
     int iter_direction =
-        direction == LIST_HEAD ? AL_START_TAIL : AL_START_HEAD;
+        direction == T_LIST_HEAD ? AL_START_TAIL : AL_START_HEAD;
     if (li->encoding == OBJ_ENCODING_QUICKLIST)
     {
         li->iter = quicklistGetIteratorAtIdx(li->subject->ptr,
@@ -154,12 +154,12 @@ void listTypeInsert(listTypeEntry *entry, robj *value, int where)
         value = getDecodedObject(value);
         sds str = value->ptr;
         size_t len = sdslen(str);
-        if (where == LIST_TAIL)
+        if (where == T_LIST_TAIL)
         {
             quicklistInsertAfter((quicklist *)entry->entry.quicklist,
                                  &entry->entry, str, len);
         }
-        else if (where == LIST_HEAD)
+        else if (where == T_LIST_HEAD)
         {
             quicklistInsertBefore((quicklist *)entry->entry.quicklist,
                                   &entry->entry, str, len);
@@ -249,7 +249,7 @@ robj *listTypeDup(robj *o)
 
 /* Implements LPUSH/RPUSH/LPUSHX/RPUSHX.
  * 'xx': push if key exists. */
-void pushGenericCommand(client *c, int where, int xx)
+static void pushGenericCommand(client *c, int where, int xx)
 {
     int j;
 
@@ -284,7 +284,7 @@ void pushGenericCommand(client *c, int where, int xx)
     // 获取list的长度
     addReplyLongLong(c, listTypeLength(lobj));
 
-    char *event = (where == LIST_HEAD) ? "lpush" : "rpush";
+    char *event = (where == T_LIST_HEAD) ? "lpush" : "rpush";
     signalModifiedKey(c, c->db, c->argv[1]);
     notifyKeyspaceEvent(NOTIFY_LIST, event, c->argv[1], c->db->id);
 }
@@ -292,25 +292,25 @@ void pushGenericCommand(client *c, int where, int xx)
 /* LPUSH <key> <element> [<element> ...] */
 void lpushCommand(client *c)
 {
-    pushGenericCommand(c, LIST_HEAD, 0);
+    pushGenericCommand(c, T_LIST_HEAD, 0);
 }
 
 /* RPUSH <key> <element> [<element> ...] */
 void rpushCommand(client *c)
 {
-    pushGenericCommand(c, LIST_TAIL, 0);
+    pushGenericCommand(c, T_LIST_TAIL, 0);
 }
 
 /* LPUSHX <key> <element> [<element> ...] */
 void lpushxCommand(client *c)
 {
-    pushGenericCommand(c, LIST_HEAD, 1);
+    pushGenericCommand(c, T_LIST_HEAD, 1);
 }
 
 /* RPUSH <key> <element> [<element> ...] */
 void rpushxCommand(client *c)
 {
-    pushGenericCommand(c, LIST_TAIL, 1);
+    pushGenericCommand(c, T_LIST_TAIL, 1);
 }
 
 /* LINSERT <key> (BEFORE|AFTER) <pivot> <element> */
@@ -324,11 +324,11 @@ void linsertCommand(client *c)
 
     if (strcasecmp(c->argv[2]->ptr, "after") == 0)
     {
-        where = LIST_TAIL;
+        where = T_LIST_TAIL;
     }
     else if (strcasecmp(c->argv[2]->ptr, "before") == 0)
     {
-        where = LIST_HEAD;
+        where = T_LIST_HEAD;
     }
     else
     {
@@ -341,7 +341,7 @@ void linsertCommand(client *c)
         return;
 
     /* Seek pivot from head to tail */
-    iter = listTypeInitIterator(subject, 0, LIST_TAIL);
+    iter = listTypeInitIterator(subject, 0, T_LIST_TAIL);
     while (listTypeNext(iter, &entry))
     {
         if (listTypeEqual(&entry, c->argv[3]))
@@ -486,7 +486,7 @@ void addListRangeReply(client *c, robj *o, long start, long end, int reverse)
     if (o->encoding == OBJ_ENCODING_QUICKLIST)
     {
         int from = reverse ? end : start;
-        int direction = reverse ? LIST_HEAD : LIST_TAIL;
+        int direction = reverse ? T_LIST_HEAD : T_LIST_TAIL;
         listTypeIterator *iter = listTypeInitIterator(o, from, direction);
 
         while (rangelen--)
@@ -512,9 +512,9 @@ void addListRangeReply(client *c, robj *o, long start, long end, int reverse)
 }
 
 /* A housekeeping helper for list elements popping tasks. */
-void listElementsRemoved(client *c, robj *key, int where, robj *o, long count)
+static void listElementsRemoved(client *c, robj *key, int where, robj *o, long count)
 {
-    char *event = (where == LIST_HEAD) ? "lpop" : "rpop";
+    char *event = (where == T_LIST_HEAD) ? "lpop" : "rpop";
 
     notifyKeyspaceEvent(NOTIFY_LIST, event, key, c->db->id);
     if (listTypeLength(o) == 0)
@@ -531,7 +531,7 @@ void listElementsRemoved(client *c, robj *key, int where, robj *o, long count)
  * optional count may be provided as the third argument of the client's
  * command. */
 // 实现 LPOP/RPOP 的泛型列表弹出操作。where 参数指定对列表的哪一端进行操作。可以选择的计数作为客户端命令的第三个参数提供。
-void popGenericCommand(client *c, int where)
+static void popGenericCommand(client *c, int where)
 {
     long count = 0;
     robj *value;
@@ -576,9 +576,9 @@ void popGenericCommand(client *c, int where)
          *  which replies with a multi-bulk. */
         long llen = listTypeLength(o);
         long rangelen = (count > llen) ? llen : count;
-        long rangestart = (where == LIST_HEAD) ? 0 : -rangelen;
-        long rangeend = (where == LIST_HEAD) ? rangelen - 1 : -1;
-        int reverse = (where == LIST_HEAD) ? 0 : 1;
+        long rangestart = (where == T_LIST_HEAD) ? 0 : -rangelen;
+        long rangeend = (where == T_LIST_HEAD) ? rangelen - 1 : -1;
+        int reverse = (where == T_LIST_HEAD) ? 0 : 1;
 
         addListRangeReply(c, o, rangestart, rangeend, reverse);
         quicklistDelRange(o->ptr, rangestart, rangelen);
@@ -589,13 +589,13 @@ void popGenericCommand(client *c, int where)
 /* LPOP <key> [count] */
 void lpopCommand(client *c)
 {
-    popGenericCommand(c, LIST_HEAD);
+    popGenericCommand(c, T_LIST_HEAD);
 }
 
 /* RPOP <key> [count] */
 void rpopCommand(client *c)
 {
-    popGenericCommand(c, LIST_TAIL);
+    popGenericCommand(c, T_LIST_TAIL);
 }
 
 /* LRANGE <key> <start> <stop> */
@@ -696,7 +696,7 @@ void lposCommand(client *c)
 {
     robj *o, *ele;
     ele = c->argv[2];
-    int direction = LIST_TAIL;
+    int direction = T_LIST_TAIL;
     long rank = 1, count = -1, maxlen = 0; /* Count -1: option not given. */
 
     /* Parse the optional arguments. */
@@ -750,7 +750,7 @@ void lposCommand(client *c)
     if (rank < 0)
     {
         rank = -rank;
-        direction = LIST_HEAD;
+        direction = T_LIST_HEAD;
     }
 
     /* We return NULL or an empty array if there is no such key (or
@@ -773,7 +773,7 @@ void lposCommand(client *c)
 
     /* Seek the element. */
     listTypeIterator *li;
-    li = listTypeInitIterator(o, direction == LIST_HEAD ? -1 : 0, direction);
+    li = listTypeInitIterator(o, direction == T_LIST_HEAD ? -1 : 0, direction);
     listTypeEntry entry;
     long llen = listTypeLength(o);
     long index = 0, matches = 0, matchindex = -1, arraylen = 0;
@@ -782,7 +782,7 @@ void lposCommand(client *c)
         if (listTypeEqual(&entry, ele))
         {
             matches++;
-            matchindex = (direction == LIST_TAIL) ? index : llen - index - 1;
+            matchindex = (direction == T_LIST_TAIL) ? index : llen - index - 1;
             if (matches >= rank)
             {
                 if (arraylenptr)
@@ -837,11 +837,11 @@ void lremCommand(client *c)
     if (toremove < 0)
     {
         toremove = -toremove;
-        li = listTypeInitIterator(subject, -1, LIST_HEAD);
+        li = listTypeInitIterator(subject, -1, T_LIST_HEAD);
     }
     else
     {
-        li = listTypeInitIterator(subject, 0, LIST_TAIL);
+        li = listTypeInitIterator(subject, 0, T_LIST_TAIL);
     }
 
     listTypeEntry entry;
@@ -887,7 +887,7 @@ void lmoveHandlePush(client *c, robj *dstkey, robj *dstobj, robj *value,
     signalModifiedKey(c, c->db, dstkey);
     listTypePush(dstobj, value, where);
     notifyKeyspaceEvent(NOTIFY_LIST,
-                        where == LIST_HEAD ? "lpush" : "rpush",
+                        where == T_LIST_HEAD ? "lpush" : "rpush",
                         dstkey,
                         c->db->id);
     /* Always send the pushed value to the client. */
@@ -898,11 +898,11 @@ int getListPositionFromObjectOrReply(client *c, robj *arg, int *position)
 {
     if (strcasecmp(arg->ptr, "right") == 0)
     {
-        *position = LIST_TAIL;
+        *position = T_LIST_TAIL;
     }
     else if (strcasecmp(arg->ptr, "left") == 0)
     {
-        *position = LIST_HEAD;
+        *position = T_LIST_HEAD;
     }
     else
     {
@@ -914,13 +914,13 @@ int getListPositionFromObjectOrReply(client *c, robj *arg, int *position)
 
 robj *getStringObjectFromListPosition(int position)
 {
-    if (position == LIST_HEAD)
+    if (position == T_LIST_HEAD)
     {
         return shared.left;
     }
     else
     {
-        // LIST_TAIL
+        // T_LIST_TAIL
         return shared.right;
     }
 }
@@ -953,7 +953,7 @@ void lmoveGenericCommand(client *c, int wherefrom, int whereto)
 
         /* Delete the source list when it is empty */
         notifyKeyspaceEvent(NOTIFY_LIST,
-                            wherefrom == LIST_HEAD ? "lpop" : "rpop",
+                            wherefrom == T_LIST_HEAD ? "lpop" : "rpop",
                             touchedkey,
                             c->db->id);
         if (listTypeLength(sobj) == 0)
@@ -1005,7 +1005,7 @@ void lmoveCommand(client *c)
  */
 void rpoplpushCommand(client *c)
 {
-    lmoveGenericCommand(c, LIST_TAIL, LIST_HEAD);
+    lmoveGenericCommand(c, T_LIST_TAIL, T_LIST_HEAD);
 }
 
 /*-----------------------------------------------------------------------------
@@ -1022,11 +1022,11 @@ void rpoplpushCommand(client *c)
  * 3) Propagate the resulting BRPOP, BLPOP and additional xPUSH if any into
  *    the AOF and replication channel.
  *
- * The argument 'wherefrom' is LIST_TAIL or LIST_HEAD, and indicates if the
+ * The argument 'wherefrom' is T_LIST_TAIL or T_LIST_HEAD, and indicates if the
  * 'value' element was popped from the head (BLPOP) or tail (BRPOP) so that
  * we can propagate the command properly.
  *
- * The argument 'whereto' is LIST_TAIL or LIST_HEAD, and indicates if the
+ * The argument 'whereto' is T_LIST_TAIL or T_LIST_HEAD, and indicates if the
  * 'value' element is to be pushed to the head or tail so that we can
  * propagate the command properly.
  *
@@ -1042,9 +1042,9 @@ int serveClientBlockedOnList(client *receiver, robj *key, robj *dstkey, redisDb 
     if (dstkey == NULL)
     {
         /* Propagate the [LR]POP operation. */
-        argv[0] = (wherefrom == LIST_HEAD) ? shared.lpop : shared.rpop;
+        argv[0] = (wherefrom == T_LIST_HEAD) ? shared.lpop : shared.rpop;
         argv[1] = key;
-        propagate((wherefrom == LIST_HEAD) ? server.lpopCommand : server.rpopCommand,
+        propagate((wherefrom == T_LIST_HEAD) ? server.lpopCommand : server.rpopCommand,
                   db->id, argv, 2, PROPAGATE_AOF | PROPAGATE_REPL);
 
         /* BRPOP/BLPOP */
@@ -1053,7 +1053,7 @@ int serveClientBlockedOnList(client *receiver, robj *key, robj *dstkey, redisDb 
         addReplyBulk(receiver, value);
 
         /* Notify event. */
-        char *event = (wherefrom == LIST_HEAD) ? "lpop" : "rpop";
+        char *event = (wherefrom == T_LIST_HEAD) ? "lpop" : "rpop";
         notifyKeyspaceEvent(NOTIFY_LIST, event, key, receiver->db->id);
     }
     else
@@ -1078,7 +1078,7 @@ int serveClientBlockedOnList(client *receiver, robj *key, robj *dstkey, redisDb 
                           PROPAGATE_REPL);
 
             /* Notify event ("lpush" or "rpush" was notified by lmoveHandlePush). */
-            notifyKeyspaceEvent(NOTIFY_LIST, wherefrom == LIST_TAIL ? "rpop" : "lpop",
+            notifyKeyspaceEvent(NOTIFY_LIST, wherefrom == T_LIST_TAIL ? "rpop" : "lpop",
                                 key, receiver->db->id);
         }
         else
@@ -1126,7 +1126,7 @@ void blockingPopGenericCommand(client *c, int where)
 
                     /* Replicate it as an [LR]POP instead of B[LR]POP. */
                     rewriteClientCommandVector(c, 2,
-                                               (where == LIST_HEAD) ? shared.lpop : shared.rpop,
+                                               (where == T_LIST_HEAD) ? shared.lpop : shared.rpop,
                                                c->argv[j]);
                     return;
                 }
@@ -1150,13 +1150,13 @@ void blockingPopGenericCommand(client *c, int where)
 /* BLPOP <key> [<key> ...] <timeout> */
 void blpopCommand(client *c)
 {
-    blockingPopGenericCommand(c, LIST_HEAD);
+    blockingPopGenericCommand(c, T_LIST_HEAD);
 }
 
 /* BLPOP <key> [<key> ...] <timeout> */
 void brpopCommand(client *c)
 {
-    blockingPopGenericCommand(c, LIST_TAIL);
+    blockingPopGenericCommand(c, T_LIST_TAIL);
 }
 
 void blmoveGenericCommand(client *c, int wherefrom, int whereto, mstime_t timeout)
@@ -1209,5 +1209,5 @@ void brpoplpushCommand(client *c)
     mstime_t timeout;
     if (getTimeoutFromObjectOrReply(c, c->argv[3], &timeout, UNIT_SECONDS) != C_OK)
         return;
-    blmoveGenericCommand(c, LIST_TAIL, LIST_HEAD, timeout);
+    blmoveGenericCommand(c, T_LIST_TAIL, T_LIST_HEAD, timeout);
 }

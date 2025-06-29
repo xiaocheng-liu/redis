@@ -123,7 +123,7 @@ void xorObjectDigest(redisDb *db, robj *keyobj, unsigned char *digest, robj *o)
     }
     else if (o->type == OBJ_LIST)
     {
-        listTypeIterator *li = listTypeInitIterator(o, 0, LIST_TAIL);
+        listTypeIterator *li = listTypeInitIterator(o, 0, T_LIST_TAIL);
         listTypeEntry entry;
         while (listTypeNext(li, &entry))
         {

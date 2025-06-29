@@ -1,13 +1,13 @@
 #ifndef T_LIST_H
 #define T_LIST_H
 
+#include "server.h"
 #include "quicklist.h"
 
 typedef struct redisObject robj;
-typedef struct client client;
 
-#define LIST_HEAD 0
-#define LIST_TAIL 1
+#define T_LIST_HEAD 0
+#define T_LIST_TAIL 1
 
 /* Structure to hold list iteration abstraction. */
 // 用于保存列表迭代抽象的结构。
@@ -42,9 +42,5 @@ int listTypeEqual(listTypeEntry *entry, robj *o);                  // 判断给�
 void listTypeDelete(listTypeIterator *iter, listTypeEntry *entry); // list删除
 void listTypeConvert(robj *subject, int enc);
 robj *listTypeDup(robj *o); // 复制
-void unblockClientWaitingData(client *c);
-void pushGenericCommand(client *c, int where, int xx);
-void popGenericCommand(client *c, int where);
-void listElementsRemoved(client *c, robj *key, int where, robj *o, long count);
 
 #endif // T_LIST_H

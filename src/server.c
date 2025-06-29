@@ -42,13 +42,11 @@
 #include "version.h"
 
 /* Our shared "common" objects */
-
 struct sharedObjectsStruct shared;
 
 /* Global vars that are actually used as constants. The following double
  * values are used for double on-disk serialization, and are initialized
  * at runtime to avoid strange compiler optimizations. */
-
 double R_Zero, R_PosInf, R_NegInf, R_Nan;
 
 /*================================= Globals ================================= */
@@ -172,49 +170,28 @@ struct redisServer server; /* Server global state */
 // redis的命令表
 struct redisCommand redisCommandTable[] = {
         {"module", moduleCommand, -2, "admin no-script", 0, NULL, 0, 0, 0, 0, 0, 0},
-
         {"get", getCommand, 2, "read-only fast @string", 0, NULL, 1, 1, 1, 0, 0, 0},
-
         {"getex", getexCommand, -2, "write fast @string", 0, NULL, 1, 1, 1, 0, 0, 0},
-
         {"getdel", getdelCommand, 2, "write fast @string", 0, NULL, 1, 1, 1, 0, 0, 0},
-
         /* Note that we can't flag set as fast, since it may perform an
          * implicit DEL of a large key. */
         {"set", setCommand, -3, "write use-memory @string", 0, NULL, 1, 1, 1, 0, 0, 0},
-
         {"setnx", setnxCommand, 3, "write use-memory fast @string", 0, NULL, 1, 1, 1, 0, 0, 0},
-
         {"setex", setexCommand, 4, "write use-memory @string", 0, NULL, 1, 1, 1, 0, 0, 0},
-
         {"psetex", psetexCommand, 4, "write use-memory @string", 0, NULL, 1, 1, 1, 0, 0, 0},
-
         {"append", appendCommand, 3, "write use-memory fast @string", 0, NULL, 1, 1, 1, 0, 0, 0},
-
         {"strlen", strlenCommand, 2, "read-only fast @string", 0, NULL, 1, 1, 1, 0, 0, 0},
-
         {"del", delCommand, -2, "write @keyspace", 0, NULL, 1, -1, 1, 0, 0, 0},
-
         {"unlink", unlinkCommand, -2, "write fast @keyspace", 0, NULL, 1, -1, 1, 0, 0, 0},
-
         {"exists", existsCommand, -2, "read-only fast @keyspace", 0, NULL, 1, -1, 1, 0, 0, 0},
-
         {"setbit", setbitCommand, 4, "write use-memory @bitmap", 0, NULL, 1, 1, 1, 0, 0, 0},
-
         {"getbit", getbitCommand, 3, "read-only fast @bitmap", 0, NULL, 1, 1, 1, 0, 0, 0},
-
         {"bitfield", bitfieldCommand, -2, "write use-memory @bitmap", 0, NULL, 1, 1, 1, 0, 0, 0},
-
         {"bitfield_ro", bitfieldroCommand, -2, "read-only fast @bitmap", 0, NULL, 1, 1, 1, 0, 0, 0},
-
         {"setrange", setrangeCommand, 4, "write use-memory @string", 0, NULL, 1, 1, 1, 0, 0, 0},
-
         {"getrange", getrangeCommand, 4, "read-only @string", 0, NULL, 1, 1, 1, 0, 0, 0},
-
         {"substr", getrangeCommand, 4, "read-only @string", 0, NULL, 1, 1, 1, 0, 0, 0},
-
         {"incr", incrCommand, 2, "write use-memory fast @string", 0, NULL, 1, 1, 1, 0, 0, 0},
-
         {"decr", decrCommand, 2, "write use-memory fast @string", 0, NULL, 1, 1, 1, 0, 0, 0},
 
         {"mget", mgetCommand, -2, "read-only fast @string", 0, NULL, 1, -1, 1, 0, 0, 0},
@@ -844,7 +821,9 @@ uint64_t dictObjHash(const void *key) {
     return dictGenHashFunction(o->ptr, sdslen((sds) o->ptr));
 }
 
-uint64_t dictSdsHash(const void *key) { return dictGenHashFunction((unsigned char *) key, sdslen((char *) key)); }
+uint64_t dictSdsHash(const void *key) {
+    return dictGenHashFunction((unsigned char *) key, sdslen((char *) key));
+}
 
 uint64_t dictSdsCaseHash(const void *key) {
     return dictGenCaseHashFunction((unsigned char *) key, sdslen((char *) key));
@@ -1152,6 +1131,7 @@ void updateDictResizePolicy(void) {
         dictDisableResize();
 }
 
+// 返回一个描述子进程类型的字符串
 const char *strChildType(int type) {
     switch (type) {
         case CHILD_TYPE_RDB:
@@ -1170,8 +1150,11 @@ const char *strChildType(int type) {
 /* Return true if there are active children processes doing RDB saving,
  * AOF rewriting, or some side process spawned by a loaded module. */
 // 如果有活动的子进程执行 RDB 保存、AOF 重写或加载模块生成的某些支进程，则返回 true。
-int hasActiveChildProcess(void) { return server.child_pid != -1; }
+int hasActiveChildProcess(void) {
+    return server.child_pid != -1;
+}
 
+//这个函数的主要作用是重置与子进程相关的状态信息，并清理一些资源。
 void resetChildState(void) {
     server.child_type = CHILD_TYPE_NONE;
     server.child_pid = -1;
@@ -1188,7 +1171,10 @@ int isMutuallyExclusiveChildType(int type) {
 
 /* Return true if this instance has persistence completely turned off:
  * both RDB and AOF are disabled. */
-int allPersistenceDisabled(void) { return server.saveparamslen == 0 && server.aof_state == AOF_OFF; }
+//判断 Redis 实例是否完全关闭了持久化功能。
+int allPersistenceDisabled(void) {
+    return server.saveparamslen == 0 && server.aof_state == AOF_OFF;
+}
 
 /* ======================= Cron: called every 100 ms ======================== */
 
