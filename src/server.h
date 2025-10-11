@@ -623,17 +623,12 @@ typedef struct rdbSaveInfo {
 } rdbSaveInfo;
 
 // 这段代码定义了一个名为 malloc_stats 的结构体,用于存储与内存分配相关的统计信息。具体字段包括:
-// zmalloc_used:zmalloc 使用的内存量
-// process_rss:进程占用的物理内存大小
-// allocator_allocated:分配器已分配的内存量
-// allocator_active:分配器活跃的内存量
-// allocator_resident:分配器驻留的内存量
 struct malloc_stats {
-    size_t zmalloc_used;
-    size_t process_rss;
-    size_t allocator_allocated;
-    size_t allocator_active;
-    size_t allocator_resident;
+    size_t zmalloc_used;        // zmalloc 使用的内存量
+    size_t process_rss;         // 进程占用的物理内存大小
+    size_t allocator_allocated; // 分配器已分配的内存量
+    size_t allocator_active;    // 分配器活跃的内存量
+    size_t allocator_resident;  // 分配器驻留的内存量
 };
 
 /*-----------------------------------------------------------------------------

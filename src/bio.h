@@ -11,6 +11,7 @@ typedef void lazy_free_fn(void *args[]);
 /* Exported API */
 /* 初始化后台系统，生成线程。*/
 void bioInit(void);
+// 提交任务
 unsigned long long bioPendingJobsOfType(int type);
 unsigned long long bioWaitStepOfType(int type);
 time_t bioOlderJobOfType(int type);

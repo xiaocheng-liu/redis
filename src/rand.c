@@ -60,6 +60,7 @@ void redisSrand48(int32_t seedval)
     SEED(X0, LOW(seedval), HIGH(seedval));
 }
 
+// 生成随机数
 static void next(void)
 {
     uint32_t p[2], q[2], r[2], carry0, carry1;

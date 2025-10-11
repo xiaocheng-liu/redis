@@ -151,69 +151,71 @@ static void dictListDestructor(void *privdata, void *val);
 // 群集管理器命令信息
 typedef struct clusterManagerCommand
 {
-    char *name;
-    int argc;
-    char **argv;
-    int flags;
-    int replicas;
-    char *from;
-    char *to;
-    char **weight;
-    int weight_argc;
-    char *master_id;
-    int slots;
-    int timeout;
-    int pipeline;
-    float threshold;
-    char *backup_dir;
-    char *from_user;
-    char *from_pass;
-    int from_askpass;
+    char *name; // 命令名称
+    int argc;   // 命令参数数量
+    char **argv;    // 命令参数
+    int flags;  // 命令标志
+    int replicas;// 复制数
+    char *from;// 来源
+    char *to;// 目标
+    char **weight;// 权重
+    int weight_argc;// 权重参数数量
+    char *master_id;// 主ID
+    int slots;  // 插槽
+    int timeout;    // 超时
+    int pipeline;// 管道
+    float threshold;// 阈值
+    char *backup_dir;// 备份目录
+    char *from_user;    // 来源用户
+    char *from_pass;// 来源密码
+    int from_askpass;// 来源是否需要密码
 } clusterManagerCommand;
 
 static void createClusterManagerCommand(char *cmdname, int argc, char **argv);
 
 // 这行代码声明了一个静态的 redisContext 类型的指针变量 context，用于在多个函数调用之间保持对 Redis 连接上下文的引用。
 static redisContext *context;
+
+// 静态变量 config 用于存储 Redis 客户端程序的配置信息。
 static struct config
 {
-    char *hostip;
-    int hostport;
-    char *hostsocket;
-    int tls;
-    cliSSLconfig sslconfig;
-    long repeat;
-    long interval;
-    int dbnum;
-    int interactive;
-    int shutdown;
-    int monitor_mode;
-    int pubsub_mode;
-    int latency_mode;
-    int latency_dist_mode;
-    int latency_history;
-    int lru_test_mode;
-    long long lru_test_sample_size;
-    int cluster_mode;
-    int cluster_reissue_command;
-    int slave_mode;
-    int pipe_mode;
-    int pipe_timeout;
-    int getrdb_mode;
-    int stat_mode;
-    int scan_mode;
-    int intrinsic_latency_mode;
-    int intrinsic_latency_duration;
-    char *pattern;
-    char *rdb_filename;
-    int bigkeys;
-    int memkeys;
-    unsigned memkeys_samples;
-    int hotkeys;
+    char *hostip;   // Redis 服务器的 IP 地址
+    int hostport;   // Redis 服务器的端口号
+    char *hostsocket;// Redis 服务器的 socket 文件
+    int tls;// 是否使用 TLS
+    cliSSLconfig sslconfig;// SSL 配置
+    long repeat;// 重复次数
+    long interval;// 间隔时间
+    int dbnum;// 数据库编号
+    int interactive;// 交互模式
+    int shutdown;// 关闭模式
+    int monitor_mode;// 监视模式
+    int pubsub_mode;// 订阅模式
+    int latency_mode;// 延迟模式
+    int latency_dist_mode;// 延迟分布模式
+    int latency_history;// 延迟历史模式
+    int lru_test_mode;// LRU 测试模式
+    long long lru_test_sample_size;// LRU 测试样本大小
+    int cluster_mode;// 集群模式
+    int cluster_reissue_command;// 集群重新发布命令模式
+    int slave_mode;// 从模式
+    int pipe_mode;// 管道模式
+    int pipe_timeout;// 管道超时
+    int getrdb_mode;// 获取 RDB 模式
+    int stat_mode;// 状态模式
+    int scan_mode;// 扫描模式
+    int intrinsic_latency_mode;// 内省延迟模式
+    int intrinsic_latency_duration;// 内省延迟持续时间
+    char *pattern;// 模式
+    char *rdb_filename;// RDB 文件名
+    int bigkeys;// 大键模式
+    int memkeys;// 内存键模式
+    unsigned memkeys_samples;// 内存键样本
+    int hotkeys;// 最热键模式
     int stdinarg; /* get last arg from stdin. (-x option) */
-    char *auth;
-    int askpass;
-    char *user;
+    char *auth;// 认证
+    int askpass;// 请求密码
+    char *user;// 用户
     int output;      /* output mode, see OUTPUT_* defines */
     int push_output; /* Should we display spontaneous PUSH replies */
     sds mb_delim;

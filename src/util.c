@@ -874,7 +874,8 @@ long getTimeZone(void)
     struct timezone tz;
 
     gettimeofday(&tv, &tz);
-
+    // tz.tz_minuteswest：表示当前时区相对于UTC的分钟数偏移（向西偏移的时间）。
+    // 将本地时间与UTC之间的时差（以分钟为单位）转换成秒后返回。
     return tz.tz_minuteswest * 60L;
 #endif
 }

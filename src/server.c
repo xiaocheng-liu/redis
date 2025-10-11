@@ -454,6 +454,7 @@ struct redisCommand redisCommandTable[] = {
          0},
 
         {"info", infoCommand, -1, "ok-loading ok-stale random @dangerous", 0, NULL, 0, 0, 0, 0, 0, 0},
+        {"version", versionCommand, -1, "ok-loading ok-stale random @dangerous", 0, NULL, 0, 0, 0, 0, 0, 0},
 
         {"monitor", monitorCommand, 1, "admin no-script ok-loading ok-stale", 0, NULL, 0, 0, 0, 0, 0, 0},
 
@@ -4935,6 +4936,16 @@ void infoCommand(client *c) {
     sdsfree(info);
 }
 
+#define REDIS_VERSION_CONCATENATE(version) "redis version: " version
+
+void versionCommand(client *c) {
+    if (c->argc > 1) {
+        addReplyErrorObject(c, shared.syntaxerr);
+        return;
+    }
+    addReplyBulkCString(c, REDIS_VERSION_CONCATENATE(REDIS_VERSION));
+}
+
 // 处理 Redis 服务器中的 `MONITOR` 命令
 void monitorCommand(client *c) {
     // 检查客户端是否设置了 `CLIENT_DENY_BLOCKING` 标志
@@ -5945,5 +5956,4 @@ int main(int argc, char **argv) {
     aeDeleteEventLoop(server.el);
     return 0;
 }
-
 /* The End */

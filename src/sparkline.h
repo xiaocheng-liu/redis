@@ -1,4 +1,5 @@
-/* sparkline.h -- ASCII Sparklines header file
+/*
+ * sparkline.h -- ASCII Sparklines header file
  */
 
 #ifndef SPARKLINE_H
