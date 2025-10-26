@@ -2418,8 +2418,8 @@ void parseArgv(int argc, char **argv) {
             serverLog(LL_WARNING, "Sentinel needs config file on disk to save state.  Exiting...");
             exit(1);
         }
-        // 【10】config.c/resetServerSaveParams函数重置server.saveparams属性（该属性存放RDB SAVE配置）。
-        // config.c/loadServerConfig函数从配置文件中加载所有配置项，并使用启动命令配置项覆盖配置文件中的配置项。
+        // 【10】resetServerSaveParams函数重置server.saveparams属性（该属性存放RDB SAVE配置）。
+        // loadServerConfig函数从配置文件中加载所有配置项，并使用启动命令配置项覆盖配置文件中的配置项。
         loadServerConfig(server.configfile, config_from_stdin, options);
 
         // 如果是哨兵模式，加载哨兵配置

@@ -774,6 +774,7 @@ void loadServerConfig(char *filename, char config_from_stdin, char *options)
                       filename, strerror(errno));
             exit(1);
         }
+        // 限制每行的长度，确保解析过程的安全性。
         while (fgets(buf, CONFIG_MAX_LINE + 1, fp) != NULL)
             config = sdscat(config, buf);
         fclose(fp);
