@@ -1,6 +1,7 @@
 #include <time.h>
 
-/* This is a safe version of localtime() which contains no locks and is
+/*
+ * This is a safe version of localtime() which contains no locks and is
  * fork() friendly. Even the _r version of localtime() cannot be used safely
  * in Redis. Another thread may be calling localtime() while the main thread
  * forks(). Later when the child process calls localtime() again, for instance

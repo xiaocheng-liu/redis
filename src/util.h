@@ -34,6 +34,9 @@ int ld2string(char *buf, size_t len, long double value, ld2string_mode mode);
 sds getAbsolutePath(char *filename);
 long getTimeZone(void);
 int pathIsBaseName(char *path);
+// 生成指定长度随机十六进制字符（0-9, a-f） 的函数
+void getRandomHexChars(char *p, size_t len);
+void getRandomBytes(unsigned char *p, size_t len);
 
 #ifdef REDIS_TEST
 int utilTest(int argc, char **argv);

@@ -17,6 +17,7 @@
 #include "ae.h"
 #include "pubsub.h"
 #include "server_cammand_define.h"
+#include "util.h"
 
 /* A global reference to myself is handy to make code more clear.
  * Myself always points to server.cluster->myself, that is, the clusterNode
