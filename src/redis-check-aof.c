@@ -152,12 +152,19 @@ int redis_check_aof_main(int argc, char **argv) {
 
     /* This AOF file may have an RDB preamble. Check this to start, and if this
      * is the case, start processing the RDB part. */
-    if (size >= 8) {    /* There must be at least room for the RDB header. */
+    // 这个 AOF 文件可能有一个 RDB 前导部分。首先检查这一点，如果是这种情况，就开始处理 RDB 部分。
+    if (size >= 8) {    /* There must be at least room for the RDB header. */ // 必须至少有容纳 RDB 头部的空间。
         char sig[5];
+        // 读取签名
+        // fread(sig, sizeof(sig), 1, fp)：读取 5 字节到 sig。
+        // memcmp(sig, "REDIS", sizeof(sig)) == 0：比较是否为 "REDIS"。
+        // has_preamble：1 表示匹配成功，否则为 0。
         int has_preamble = fread(sig,sizeof(sig),1,fp) == 1 &&
                             memcmp(sig,"REDIS",sizeof(sig)) == 0;
+        // 将文件指针回到开头，为后续处理做准备。
         rewind(fp);
         if (has_preamble) {
+            // 如果检测到 RDB 前言，调用 redis_check_rdb_main 进行完整性检查。
             printf("The AOF appears to start with an RDB preamble.\n"
                    "Checking the RDB preamble to start:\n");
             if (redis_check_rdb_main(argc,argv,fp) == C_ERR) {
