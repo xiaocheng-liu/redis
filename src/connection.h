@@ -69,7 +69,7 @@ struct connection
     ConnectionCallbackFunc conn_handler;  // 连接回调函数
     ConnectionCallbackFunc write_handler; // 写回调函数
     ConnectionCallbackFunc read_handler;  // 读回调函数
-    int fd;
+    int fd;                               // 文件描述符
 };
 
 /* The connection module does not deal with listening and accepting sockets,

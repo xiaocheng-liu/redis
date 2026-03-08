@@ -114,6 +114,7 @@ int connHasReadHandler(connection *conn)
 }
 
 /* Associate a private data pointer with the connection */
+// 设置关联的私有数据指针
 void connSetPrivateData(connection *conn, void *data)
 {
     conn->private_data = data;
@@ -155,16 +156,20 @@ static void connSocketClose(connection *conn)
     zfree(conn);
 }
 
+// Redis 连接层中的 socket 写入功能。
 static int connSocketWrite(connection *conn, const void *data, size_t data_len)
 {
+    // 调用系统 write() 向 socket 文件描述符写入数据。ret 为实际写入的字节数（可能小于 data_len）。
     int ret = write(conn->fd, data, data_len);
     if (ret < 0 && errno != EAGAIN)
     {
+        // 保存错误码到 conn->last_errno
         conn->last_errno = errno;
 
         /* Don't overwrite the state of a connection that is not already
          * connected, not to mess with handler callbacks.
          */
+        // 仅当连接已建立时，将状态改为错误状态（避免覆盖未连接连接的状态）。
         if (conn->state == CONN_STATE_CONNECTED)
             conn->state = CONN_STATE_ERROR;
     }
@@ -172,9 +177,12 @@ static int connSocketWrite(connection *conn, const void *data, size_t data_len)
     return ret;
 }
 
+// Redis 连接层中的 socket 读取功能。
 static int connSocketRead(connection *conn, void *buf, size_t buf_len)
 {
+    // 调用系统 read() 从 socket 文件描述符读取数据。ret 为实际读取的字节数（0 表示对端关闭连接）。
     int ret = read(conn->fd, buf, buf_len);
+    // 当 ret == 0 时，表示对端已关闭连接。更新连接状态为 CONN_STATE_CLOSED。
     if (!ret)
     {
         conn->state = CONN_STATE_CLOSED;
@@ -193,6 +201,7 @@ static int connSocketRead(connection *conn, void *buf, size_t buf_len)
     return ret;
 }
 
+// Redis 连接层中的接受连接功能。
 static int connSocketAccept(connection *conn, ConnectionCallbackFunc accept_handler)
 {
     int ret = C_OK;
@@ -202,10 +211,12 @@ static int connSocketAccept(connection *conn, ConnectionCallbackFunc accept_hand
         return C_ERR;
     conn->state = CONN_STATE_CONNECTED;
 
+    // 增加连接的引用计数，防止在回调函数执行期间连接被意外释放。
     connIncrRefs(conn);
     // 这里又会调用到clientAcceptHandler
     if (!callHandler(conn, accept_handler))
         ret = C_ERR;
+    // 减少连接的引用计数，释放之前增加的引用。
     connDecrRefs(conn);
 
     return ret;

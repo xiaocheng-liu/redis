@@ -9,14 +9,6 @@
 #include "util.h"
 #include "ziplist.h"
 
-/*-----------------------------------------------------------------------------
- * Skiplist implementation of the low level API
- * set使用跳表实现，具体可以参考博客 https://xindoo.blog.csdn.net/article/details/109922390
- *----------------------------------------------------------------------------*/
-
-int zslLexValueGteMin(sds value, zlexrangespec *spec);
-int zslLexValueLteMax(sds value, zlexrangespec *spec);
-
 /* Create a skiplist node with the specified number of levels.
  * The SDS string 'ele' is referenced by the node after the call. */
 // 创建跳表节点
