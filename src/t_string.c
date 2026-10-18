@@ -1,6 +1,6 @@
 #include <math.h> /* isnan(), isinf() */
 #include "server.h"
-#include "server_cammand_define.h"
+#include "server_commands.h"
 #include "util.h"
 
 /* Forward declarations */
@@ -40,27 +40,27 @@ static int checkStringLength(client *c, long long size) {
 #define OBJ_NO_FLAGS 0
 #define OBJ_SET_NX (1 << 0) /* Set if key not exists. */ // 如果键不存在则设置
 #define OBJ_SET_XX (1 << 1) /* Set if key exists. */ // 如果键存在则设置
-#define OBJ_EX (1 << 2) /* Set if time in seconds is given */ // 给定过期时间（以秒为单位）设置
-#define OBJ_PX (1 << 3) /* Set if time in ms in given */ // 给定过期时间（以毫秒为单位）设置
+#define OBJ_EX (1 << 2) /* Set if time in seconds is given */ // 给定过期时间(以秒为单位)设置
+#define OBJ_PX (1 << 3) /* Set if time in ms in given */ // 给定过期时间(以毫秒为单位)设置
 #define OBJ_KEEPTTL (1 << 4) /* Set and keep the ttl */ // 设置过期时间
 #define OBJ_SET_GET (1 << 5) /* Set if want to get key before set */ // 想要在设置之前返回之前的值
 #define OBJ_EXAT (1 << 6) /* Set if timestamp in second is given */
 #define OBJ_PXAT (1 << 7) /* Set if timestamp in ms is given */
 #define OBJ_PERSIST (1 << 8) /* Set if we need to remove the ttl */
 
-// 该函数 setGenericCommand 用于实现 Redis 的 SET 命令，支持多种选项（如 NX、XX、EX、PX 等）。其主要功能包括：
-// 验证过期时间是否合法，并将其转换为毫秒单位。
+// 该函数 setGenericCommand 用于实现 Redis 的 SET 命令,支持多种选项(如 NX、XX、EX、PX 等)。其主要功能包括:
+// 验证过期时间是否合法,并将其转换为毫秒单位。
 // 检查是否满足 NX 或 XX 条件。
-// 如果设置了 GET 选项，则返回旧值。
-// 在数据库中设置键值对，并根据需要设置过期时间。
-// 触发事件通知，并在 AOF 和复制中传播命令。
+// 如果设置了 GET 选项,则返回旧值。
+// 在数据库中设置键值对,并根据需要设置过期时间。
+// 触发事件通知,并在 AOF 和复制中传播命令。
 void setGenericCommand(client *c, int flags, robj *key, robj *val, robj *expire, int unit, robj *ok_reply,
                        robj *abort_reply) {
-    // 该代码定义了一个名为milliseconds的64位有符号整型变量，并将其初始化为0，目的是为了避免编译器发出未初始化变量的警告。
+    // 该代码定义了一个名为milliseconds的64位有符号整型变量,并将其初始化为0,目的是为了避免编译器发出未初始化变量的警告。
     long long milliseconds = 0; /* initialized to avoid any harmness warning */
 
     // 这段代码的功能是判断变量 expire 是否为真。如果 expire
-    // 的值为真（非零或非空），则执行后续代码块；否则跳过该代码块。
+    // 的值为真(非零或非空),则执行后续代码块;否则跳过该代码块。
     if (expire) {
         if (getLongLongFromObjectOrReply(c, expire, &milliseconds, NULL) != C_OK)
             return;
@@ -68,7 +68,7 @@ void setGenericCommand(client *c, int flags, robj *key, robj *val, robj *expire,
             addReplyErrorFormat(c, "invalid expire time in %s", c->cmd->name);
             return;
         }
-        // 如果单位是秒，乘以1000
+        // 如果单位是秒,乘以1000
         if (unit == UNIT_SECONDS)
             milliseconds *= 1000;
     }
@@ -93,7 +93,7 @@ void setGenericCommand(client *c, int flags, robj *key, robj *val, robj *expire,
     // 事件通知
     notifyKeyspaceEvent(NOTIFY_STRING, "set", key, c->db->id);
 
-    // 如果有过期时间，则设置
+    // 如果有过期时间,则设置
     if (expire) {
         robj *exp = shared.pxat;
 
@@ -124,7 +124,7 @@ void setGenericCommand(client *c, int flags, robj *key, robj *val, robj *expire,
 
     /* Propagate without the GET argument (Isn't needed if we had expire since in that case we completely re-written the
      * command argv) */
-    // 在没有 GET 参数的情况下传播（如果我们过期了，则不需要，因为在这种情况下我们完全重写了命令 argv）
+    // 在没有 GET 参数的情况下传播(如果我们过期了,则不需要,因为在这种情况下我们完全重写了命令 argv)
     if ((flags & OBJ_SET_GET) && !expire) {
         int argc = 0;
         int j;
@@ -260,10 +260,10 @@ void psetexCommand(client *c) {
     setGenericCommand(c, OBJ_PX, c->argv[1], c->argv[3], c->argv[2], UNIT_MILLISECONDS, NULL, NULL);
 }
 
-// 该函数 getGenericCommand 的功能是根据客户端请求的键值，获取对应的对象并检查其类型，最终返回结果。具体逻辑如下：
-// 调用 lookupKeyReadOrReply 函数查找键值对应的对象，如果未找到则返回 C_OK。
-// 检查对象类型是否为字符串，如果是则返回 C_ERR。
-// 如果对象类型正确，将对象内容作为回复发送给客户端，并返回 C_OK。
+// 该函数 getGenericCommand 的功能是根据客户端请求的键值,获取对应的对象并检查其类型,最终返回结果。具体逻辑如下:
+// 调用 lookupKeyReadOrReply 函数查找键值对应的对象,如果未找到则返回 C_OK。
+// 检查对象类型是否为字符串,如果是则返回 C_ERR。
+// 如果对象类型正确,将对象内容作为回复发送给客户端,并返回 C_OK。
 int getGenericCommand(client *c) {
     robj *o;
 
@@ -536,7 +536,7 @@ void msetGenericCommand(client *c, int nx) {
 
     /* Handle the NX flag. The MSETNX semantic is to return zero and don't
      * set anything if at least one key already exists. */
-    // 处理NX标识，如果Key已存在，则不设置值
+    // 处理NX标识,如果Key已存在,则不设置值
     if (nx) {
         for (j = 1; j < c->argc; j += 2) {
             if (lookupKeyWrite(c->db, c->argv[j]) != NULL) {

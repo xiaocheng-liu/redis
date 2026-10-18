@@ -1,7 +1,7 @@
 #include "t_set.h"
 #include "intset.h"
 #include "server.h"
-#include "server_cammand_define.h"
+#include "server_commands.h"
 
 /*-----------------------------------------------------------------------------
  * Set命令
@@ -82,12 +82,12 @@ int setTypeRemove(robj *setobj, sds value) {
 int setTypeIsMember(robj *subject, sds value) {
     long long llval;
     if (subject->encoding == OBJ_ENCODING_HT) {
-        // hash 表的查找方式，hashCode 计算，链表查找
+        // hash 表的查找方式,hashCode 计算,链表查找
         return dictFind((dict *) subject->ptr, value) != NULL;
     } else if (subject->encoding == OBJ_ENCODING_INTSET) {
-        // 如果当前的set集合是 intset 编码的，则只有查找值也是整型的情况下才可能查找到元素
+        // 如果当前的set集合是 intset 编码的,则只有查找值也是整型的情况下才可能查找到元素
         if (isSdsRepresentableAsLongLong(value, &llval) == C_OK) {
-            // intset 查找，而且 intset 是有序的，所以直接使用二分查找即可
+            // intset 查找,而且 intset 是有序的,所以直接使用二分查找即可
             return intsetFind((intset *) subject->ptr, llval);
         }
     } else {
@@ -837,7 +837,7 @@ void sinterGenericCommand(client *c, robj **setkeys, unsigned long setnum, robj 
     for (j = 0; j < setnum; j++) {
         // 依次查找每个key的set实例
         robj *setobj = dstkey ? lookupKeyWrite(c->db, setkeys[j]) : lookupKeyRead(c->db, setkeys[j]);
-        // 只要有一个set为空，则交集必定为为，无需再找
+        // 只要有一个set为空,则交集必定为为,无需再找
         if (!setobj) {
             zfree(sets);
             if (dstkey) {
@@ -859,7 +859,7 @@ void sinterGenericCommand(client *c, robj **setkeys, unsigned long setnum, robj 
     }
     /* Sort sets from the smallest to largest, this will improve our
      * algorithm's performance */
-    // 快速排序算法，将 sets 按照元素长度做排序，使最少元素的set排在最前面
+    // 快速排序算法,将 sets 按照元素长度做排序,使最少元素的set排在最前面
     qsort(sets, setnum, sizeof(robj *), qsortCompareSetsByCardinality);
 
     /* The first thing we should output is the total number of elements...
@@ -879,7 +879,7 @@ void sinterGenericCommand(client *c, robj **setkeys, unsigned long setnum, robj 
      * the element against all the other sets, if at least one set does
      * not include the element it is discarded */
     // 看来redis也是直接通过迭代的方式来完成交集功能
-    // 迭代最少的set集合，依次查找后续的set集合，当遇到一个不存在的set时，上值被排除，否则是交集
+    // 迭代最少的set集合,依次查找后续的set集合,当遇到一个不存在的set时,上值被排除,否则是交集
     si = setTypeInitIterator(sets[0]);
     while ((encoding = setTypeNext(si, &elesds, &intobj)) != -1) {
         for (j = 1; j < setnum; j++) {
@@ -889,15 +889,15 @@ void sinterGenericCommand(client *c, robj **setkeys, unsigned long setnum, robj 
             // 分 hash表查找 和 intset 编码查找
             if (encoding == OBJ_ENCODING_INTSET) {
                 /* intset with intset is simple... and fast */
-                // 两个集合都是 intset 编码，直接二分查找即可
+                // 两个集合都是 intset 编码,直接二分查找即可
                 if (sets[j]->encoding == OBJ_ENCODING_INTSET && !intsetFind((intset *) sets[j]->ptr, intobj)) {
                     break;
                     /* in order to compare an integer with an object we
                      * have to use the generic function, creating an object
                      * for this */
                 } else if (sets[j]->encoding == OBJ_ENCODING_HT) {
-                    // 编码不一致，但元素可能相同
-                    // setTypeIsMember 复用前面的代码，直接查找即可
+                    // 编码不一致,但元素可能相同
+                    // setTypeIsMember 复用前面的代码,直接查找即可
                     elesds = sdsfromlonglong(intobj);
                     if (!setTypeIsMember(sets[j], elesds)) {
                         sdsfree(elesds);
@@ -913,9 +913,9 @@ void sinterGenericCommand(client *c, robj **setkeys, unsigned long setnum, robj 
         }
 
         /* Only take action when all sets contain the member */
-        // 当迭代完所有集合，说明每个set中都存在该值，是交集（注意分析最后一个迭代）
+        // 当迭代完所有集合,说明每个set中都存在该值,是交集(注意分析最后一个迭代)
         if (j == setnum) {
-            // 不存储交集的情况下，直接响应元素值即可
+            // 不存储交集的情况下,直接响应元素值即可
             if (!dstkey) {
                 if (encoding == OBJ_ENCODING_HT)
                     addReplyBulkCBuffer(c, elesds, sdslen(elesds));
@@ -923,7 +923,7 @@ void sinterGenericCommand(client *c, robj **setkeys, unsigned long setnum, robj 
                     addReplyBulkLongLong(c, intobj);
                 cardinality++;
             } else {
-                // 要存储交集数据，将值存储到 dstset 中
+                // 要存储交集数据,将值存储到 dstset 中
                 if (encoding == OBJ_ENCODING_INTSET) {
                     elesds = sdsfromlonglong(intobj);
                     setTypeAdd(dstset, elesds);

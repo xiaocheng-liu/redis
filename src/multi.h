@@ -16,7 +16,7 @@ typedef struct multiCmd
     struct redisCommand *cmd;
 } multiCmd;
 
-// 定义了一个名为 multiState 的结构体，用于存储 Redis 中 MULTI 命令执行状态。
+// 定义了一个名为 multiState 的结构体,用于存储 Redis 中 MULTI 命令执行状态。
 // 它包含命令数组、命令总数、命令标志位的累积、反向标志位累积、最小副本数以及同步复制超时时间。
 typedef struct multiState
 {
@@ -25,13 +25,13 @@ typedef struct multiState
     int cmd_flags;                                                     /* The accumulated command flags OR-ed together.
                                                                       So if at least a command has a given flag, it
                                                                       will be set in this field. */
-                                                                       // 存储事务中所有命令的标志位（flags）的按位或（OR）结果。
+                                                                       // 存储事务中所有命令的标志位(flags)的按位或(OR)结果。
     int cmd_inv_flags;                                                 /* Same as cmd_flags, OR-ing the ~flags. so that it
                                                                       is possible to know if all the commands have a
                                                                       certain flag. */
-                                                                       // 存储的是标志位的按位取反（~flags）结果的累积。
+                                                                       // 存储的是标志位的按位取反(~flags)结果的累积。
     int minreplicas; /* MINREPLICAS for synchronous replication */     // 表示事务执行时需要的最小副本数
-    time_t minreplicas_timeout; /* MINREPLICAS timeout as unixtime. */ // 表示等待 minreplicas 个副本确认的超时时间，以 Unix 时间戳（秒）表示。
+    time_t minreplicas_timeout; /* MINREPLICAS timeout as unixtime. */ // 表示等待 minreplicas 个副本确认的超时时间,以 Unix 时间戳(秒)表示。
 } multiState;
 
 /* MULTI/EXEC/WATCH... */

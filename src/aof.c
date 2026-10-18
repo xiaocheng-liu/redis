@@ -18,7 +18,7 @@
 #include "ae.h"
 #include "intset.h"
 #include "latency.h"
-#include "server_cammand_define.h"
+#include "server_commands.h"
 #include "t_list.h"
 #include "t_set.h"
 #include "t_zset.h"
@@ -528,8 +528,8 @@ sds catAppendOnlyGenericCommand(sds dst, int argc, robj **argv) {
  * This command is used in order to translate EXPIRE and PEXPIRE commands
  * into PEXPIREAT command so that we retain precision in the append only
  * file, and the time is always absolute and not relative. */
-// 这段代码的功能是创建一个表示PEXPIREAT命令的字符串，使用秒数作为生存时间，并根据cmd参数确定要转换的命令。
-// 该功能用于将EXPIRE和PEXPIRE命令转换为PEXPIREAT命令，以确保在追加仅文件中保持时间精度，并且时间始终是绝对的而不是相对的。
+// 这段代码的功能是创建一个表示PEXPIREAT命令的字符串,使用秒数作为生存时间,并根据cmd参数确定要转换的命令。
+// 该功能用于将EXPIRE和PEXPIRE命令转换为PEXPIREAT命令,以确保在追加仅文件中保持时间精度,并且时间始终是绝对的而不是相对的。
 sds catAppendOnlyExpireAtCommand(sds buf, struct redisCommand *cmd, robj *key, robj *seconds) {
     long long when;
     robj *argv[3];
@@ -562,7 +562,7 @@ void feedAppendOnlyFile(struct redisCommand *cmd, int dictid, robj **argv, int a
     /* The DB this command was targeting is not the same as the last command
      * we appended. To issue a SELECT command is needed. */
     // 这段代码的功能是检查当前命令所针对的数据库是否与上一个命令所针对的数据库不同。
-    // 如果不同，则需要发出一个SELECT命令来切换数据库
+    // 如果不同,则需要发出一个SELECT命令来切换数据库
     if (dictid != server.aof_selected_db) {
         char seldb[64];
 
@@ -606,12 +606,12 @@ void feedAppendOnlyFile(struct redisCommand *cmd, int dictid, robj **argv, int a
         buf = catAppendOnlyGenericCommand(buf, argc, argv);
     }
 
-    /* 追加到AOF缓冲区。在重新进入事件循环之前，数据将被刷新到磁盘上，因此在客户端在执行前就会得到回复。*/
+    /* 追加到AOF缓冲区。在重新进入事件循环之前,数据将被刷新到磁盘上,因此在客户端在执行前就会得到回复。*/
     if (server.aof_state == AOF_ON)
         server.aof_buf = sdscatlen(server.aof_buf, buf, sdslen(buf));
 
-    /* 如果后台正在进行AOF重写，我们希望将子数据库和当前数据库之间的差异累积到缓冲区中，
-     * 以便在子进程执行其工作时，我们可以将这些差异追加到新的只追加文件中。 */
+    /* 如果后台正在进行AOF重写,我们希望将子数据库和当前数据库之间的差异累积到缓冲区中,
+     * 以便在子进程执行其工作时,我们可以将这些差异追加到新的只追加文件中。 */
     if (server.child_type == CHILD_TYPE_AOF)
         aofRewriteBufferAppend((unsigned char *) buf, sdslen(buf));
 

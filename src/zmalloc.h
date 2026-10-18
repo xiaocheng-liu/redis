@@ -60,8 +60,8 @@
 #define HAVE_DEFRAG
 #endif
 
-void *zmalloc(size_t size);             // 调用zmalloc函数，申请size大小的内存空间，进行初始化, 有可能有脏数据
-void *zcalloc(size_t size);             // 调用zcalloc函数，申请size大小的内存空间，并初始化为0
+void *zmalloc(size_t size);             // 调用zmalloc函数,申请size大小的内存空间,进行初始化, 有可能有脏数据
+void *zcalloc(size_t size);             // 调用zcalloc函数,申请size大小的内存空间,并初始化为0
 void *zrealloc(void *ptr, size_t size); // 原内存重新调整为size空间的大小
 void *ztrymalloc(size_t size);          // 尝试用malloc申请size大小的内存
 void *ztrycalloc(size_t size);          // 尝试用calloc申请size大小的内存
@@ -70,7 +70,7 @@ void zfree(void *ptr); // 释放内存
 void *zmalloc_usable(size_t size, size_t *usable);
 void *zcalloc_usable(size_t size, size_t *usable);
 void *zrealloc_usable(void *ptr, size_t size, size_t *usable);
-void *ztrymalloc_usable(size_t size, size_t *usable); // 尝试分配内存，分配不了则返回NULL
+void *ztrymalloc_usable(size_t size, size_t *usable); // 尝试分配内存,分配不了则返回NULL
 void *ztrycalloc_usable(size_t size, size_t *usable);
 void *ztryrealloc_usable(void *ptr, size_t size, size_t *usable);
 void zfree_usable(void *ptr, size_t *usable);

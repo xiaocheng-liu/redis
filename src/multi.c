@@ -1,5 +1,5 @@
 #include "server.h"
-#include "server_cammand_define.h"
+#include "server_commands.h"
 
 /* ================================ MULTI/EXEC ============================== */
 
@@ -13,7 +13,7 @@ void initClientMultiState(client *c) {
 }
 
 /* Release all the resources associated with MULTI/EXEC state */
-// 用于释放 Redis 客户端事务状态（mstate）中分配的内存资源。
+// 用于释放 Redis 客户端事务状态(mstate)中分配的内存资源。
 void freeClientMultiState(client *c) {
     int j;
 
@@ -69,10 +69,10 @@ void flagTransaction(client *c) {
         c->flags |= CLIENT_DIRTY_EXEC;
 }
 
-// MULTI 是 Redis 事务机制的起点命令，用于开启一个事务块，允许客户端将多个命令打包为一个原子操作。
+// MULTI 是 Redis 事务机制的起点命令,用于开启一个事务块,允许客户端将多个命令打包为一个原子操作。
 void multiCommand(client *c) {
     if (c->flags & CLIENT_MULTI) {
-        addReplyError(c, "MULTI calls can not be nested"); // 如果已经使用事务了，不能嵌套使用
+        addReplyError(c, "MULTI calls can not be nested"); // 如果已经使用事务了,不能嵌套使用
         return;
     }
     c->flags |= CLIENT_MULTI;
@@ -134,7 +134,7 @@ void execCommandAbort(client *c, sds error) {
         replicationFeedMonitors(c, server.monitors, c->db->id, c->argv, c->argc);
 }
 
-// EXEC 是 Redis 事务机制的核心命令之一，用于执行客户端通过 MULTI 命令开启的事务块中积累的所有命令。
+// EXEC 是 Redis 事务机制的核心命令之一,用于执行客户端通过 MULTI 命令开启的事务块中积累的所有命令。
 void execCommand(client *c) {
     int j;
     robj **orig_argv;
@@ -148,7 +148,7 @@ void execCommand(client *c) {
     }
 
     /* Check if we need to abort the EXEC because:
-     * 检查是否需要取消支持执行EXEC，因为：
+     * 检查是否需要取消支持执行EXEC,因为:
      * 1. 有些key被监听了
      * 2. 队列前面的指令执行发生错误
      * 1) Some WATCHed key was touched.
@@ -271,7 +271,7 @@ void watchForKey(client *c, robj *key) {
     while ((ln = listNext(&li))) {
         wk = listNodeValue(ln);
         if (wk->db == c->db && equalStringObjects(key, wk->key))
-            return; /* key已经在client的监听列表中了，直接返回 */
+            return; /* key已经在client的监听列表中了,直接返回 */
     }
     /* key不在client的监听列表中就添加进去*/
     clients = dictFetchValue(c->db->watched_keys, key);
@@ -376,7 +376,7 @@ void touchAllWatchedKeysInDb(redisDb *emptied, redisDb *replaced_with) {
 }
 
 // WATCH 是 Redis
-// 事务机制中的一个重要命令，用于监视一个或多个键的变化，以便在事务执行时检测到这些键是否被其他客户端修改。
+// 事务机制中的一个重要命令,用于监视一个或多个键的变化,以便在事务执行时检测到这些键是否被其他客户端修改。
 void watchCommand(client *c) {
     int j;
 
@@ -389,7 +389,7 @@ void watchCommand(client *c) {
     addReply(c, shared.ok);
 }
 
-// UNWATCH 是 Redis 事务机制中的一个命令，用于取消客户端对所有被 WATCH 命令监视的键的监视。
+// UNWATCH 是 Redis 事务机制中的一个命令,用于取消客户端对所有被 WATCH 命令监视的键的监视。
 void unwatchCommand(client *c) {
     unwatchAllKeys(c);
     c->flags &= (~CLIENT_DIRTY_CAS);

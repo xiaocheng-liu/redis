@@ -428,7 +428,7 @@ int string2ull(const char *s, unsigned long long *value) {
 /* Convert a string into a long. Returns 1 if the string could be parsed into a
  * (non-overflowing) long, 0 otherwise. The value will be set to the parsed
  * value when appropriate. */
-// 转换一个字符串到长整型，返回1表示可以转换，返回0则不能转换
+// 转换一个字符串到长整型,返回1表示可以转换,返回0则不能转换
 int string2l(const char *s, size_t slen, long *lval) {
     long long llval;
 
@@ -613,21 +613,21 @@ void getRandomBytes(unsigned char *p, size_t len) {
          * the same seed with a progressive counter. For the goals of this
          * function we just need non-colliding strings, there are no
          * cryptographic security needs. */
-        // 第一步：尝试从/dev/urandom读取强随机种子（Linux系统级随机源）
+        // 第一步:尝试从/dev/urandom读取强随机种子(Linux系统级随机源)
         FILE *fp = fopen("/dev/urandom", "r");
         if (fp == NULL || fread(seed, sizeof(seed), 1, fp) != 1) {
             /* Revert to a weaker seed, and in this case reseed again
              * at every call.*/
-            // 降级：/dev/urandom不可用，用时间+PID生成弱种子
+            // 降级:/dev/urandom不可用,用时间+PID生成弱种子
             for (unsigned int j = 0; j < sizeof(seed); j++) {
                 struct timeval tv;
                 gettimeofday(&tv, NULL); // 微秒级时间戳
                 pid_t pid = getpid(); // 进程ID
-                // 混合时间、进程ID、文件指针地址（伪随机因子）
+                // 混合时间、进程ID、文件指针地址(伪随机因子)
                 seed[j] = tv.tv_sec ^ tv.tv_usec ^ pid ^ (long) fp;
             }
         } else {
-            // 成功读取强种子：标记初始化完成，后续复用
+            // 成功读取强种子:标记初始化完成,后续复用
             seed_initialized = 1;
         }
         if (fp)
@@ -637,19 +637,19 @@ void getRandomBytes(unsigned char *p, size_t len) {
     while (len) // 直到生成足够长度的随机字节
     {
         /* This implements SHA256-HMAC. */
-        unsigned char digest[SHA256_BLOCK_SIZE]; // 256位（32字节）哈希结果
+        unsigned char digest[SHA256_BLOCK_SIZE]; // 256位(32字节)哈希结果
         unsigned char kxor[64]; // HMAC的Key异或缓冲区
-        // 本次生成的字节数：最多32字节，不足则取剩余长度
+        // 本次生成的字节数:最多32字节,不足则取剩余长度
         unsigned int copylen = len > SHA256_BLOCK_SIZE ? SHA256_BLOCK_SIZE : len;
 
         /* IKEY: key xored with 0x36. */
-        // 第一步：HMAC第一步 - 生成IKEY（Key XOR 0x36）
+        // 第一步:HMAC第一步 - 生成IKEY(Key XOR 0x36)
         memcpy(kxor, seed, sizeof(kxor));
         for (unsigned int i = 0; i < sizeof(kxor); i++)
-            kxor[i] ^= 0x36; // 与0x36异或（HMAC标准步骤）
+            kxor[i] ^= 0x36; // 与0x36异或(HMAC标准步骤)
 
         /* Obtain HASH(IKEY||MESSAGE). */
-        // 第二步：计算HASH(IKEY || MESSAGE)，MESSAGE是计数器
+        // 第二步:计算HASH(IKEY || MESSAGE),MESSAGE是计数器
         SHA256_CTX ctx;
         sha256_init(&ctx); // 初始化SHA256上下文
         sha256_update(&ctx, kxor, sizeof(kxor)); // 输入IKEY
@@ -657,23 +657,23 @@ void getRandomBytes(unsigned char *p, size_t len) {
         sha256_final(&ctx, digest); // 输出256位哈希结果
 
         /* OKEY: key xored with 0x5c. */
-        // 第三步：HMAC第二步 - 生成OKEY（Key XOR 0x5C）
+        // 第三步:HMAC第二步 - 生成OKEY(Key XOR 0x5C)
         memcpy(kxor, seed, sizeof(kxor));
         for (unsigned int i = 0; i < sizeof(kxor); i++)
-            kxor[i] ^= 0x5C; // 与0x5C异或（HMAC标准步骤）
+            kxor[i] ^= 0x5C; // 与0x5C异或(HMAC标准步骤)
 
         /* Obtain HASH(OKEY || HASH(IKEY||MESSAGE)). */
-        // 第四步：计算HASH(OKEY || 第一步的哈希结果) → 最终HMAC结果
+        // 第四步:计算HASH(OKEY || 第一步的哈希结果) → 最终HMAC结果
         sha256_init(&ctx);
         sha256_update(&ctx, kxor, sizeof(kxor)); // 输入OKEY
         sha256_update(&ctx, digest, SHA256_BLOCK_SIZE); // 输入第一步哈希结果
         sha256_final(&ctx, digest); // 最终256位HMAC结果存入digest
 
         /* Increment the counter for the next iteration. */
-        // 第五步：计数器递增，避免下次生成相同结果
+        // 第五步:计数器递增,避免下次生成相同结果
         counter++;
 
-        // 第六步：将生成的随机字节拷贝到输出缓冲区
+        // 第六步:将生成的随机字节拷贝到输出缓冲区
         memcpy(p, digest, copylen);
         len -= copylen; // 剩余需要生成的长度
         p += copylen; // 输出缓冲区指针后移
@@ -685,15 +685,15 @@ void getRandomBytes(unsigned char *p, size_t len) {
  * having run_id == A, and you reconnect and it has run_id == B, you can be
  * sure that it is either a different instance or it was restarted. */
 void getRandomHexChars(char *p, size_t len) {
-    // 定义十六进制字符集（小写）
+    // 定义十六进制字符集(小写)
     char *charset = "0123456789abcdef";
     size_t j;
 
-    // 获取 len 个随机字节，写入 p 指向的内存
+    // 获取 len 个随机字节,写入 p 指向的内存
     getRandomBytes((unsigned char *) p, len);
-    // 遍历每个随机字节，映射为十六进制字符
+    // 遍历每个随机字节,映射为十六进制字符
     for (j = 0; j < len; j++)
-        // 关键：p[j] & 0x0F 取字节低4位（0-15），作为 charset 的索引
+        // 关键:p[j] & 0x0F 取字节低4位(0-15),作为 charset 的索引
         p[j] = charset[p[j] & 0x0F];
 }
 
@@ -760,8 +760,8 @@ long getTimeZone(void) {
     struct timezone tz;
 
     gettimeofday(&tv, &tz);
-    // tz.tz_minuteswest：表示当前时区相对于UTC的分钟数偏移（向西偏移的时间）。
-    // 将本地时间与UTC之间的时差（以分钟为单位）转换成秒后返回。
+    // tz.tz_minuteswest:表示当前时区相对于UTC的分钟数偏移(向西偏移的时间)。
+    // 将本地时间与UTC之间的时差(以分钟为单位)转换成秒后返回。
     return tz.tz_minuteswest * 60L;
 #endif
 }

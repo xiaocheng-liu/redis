@@ -3,7 +3,7 @@
 #include <fcntl.h>
 #include <sys/errno.h>
 #include "server.h"
-#include "server_cammand_define.h"
+#include "server_commands.h"
 #include "sha256.h"
 #include "util.h"
 
@@ -1015,7 +1015,7 @@ int ACLCheckUserCredentials(robj *username, robj *password) {
         return C_OK;
 
     /* Check all the user passwords for at least one to match. */
-    // 检查所有密码，至少有一个匹配
+    // 检查所有密码,至少有一个匹配
     listIter li;
     listNode *ln;
     listRewind(u->passwords, &li);
@@ -1030,7 +1030,7 @@ int ACLCheckUserCredentials(robj *username, robj *password) {
     sdsfree(hashed);
 
     /* If we reached this point, no password matched. */
-    // 到达这里了，没有密码匹配
+    // 到达这里了,没有密码匹配
     errno = EINVAL;
     return C_ERR;
 }
@@ -1041,7 +1041,7 @@ int ACLCheckUserCredentials(robj *username, robj *password) {
  *
  * The return value is C_OK or C_ERR with the same meaning as
  * ACLCheckUserCredentials(). */
-// 验证用户名密码，如果验证成功，则将连接设置为已认证状态，并设置连接的用户引用。
+// 验证用户名密码,如果验证成功,则将连接设置为已认证状态,并设置连接的用户引用。
 int ACLAuthenticateUser(client *c, robj *username, robj *password) {
     if (ACLCheckUserCredentials(username, password) == C_OK) {
         c->authenticated = 1;
@@ -1185,8 +1185,8 @@ int ACLCheckCommandPerm(client *c, int *keyidxptr) {
 /* Check if the provided channel is whitelisted by the given allowed channels
  * list. Glob-style pattern matching is employed, unless the literal flag is
  * set. Returns ACL_OK if access is granted or ACL_DENIED_CHANNEL otherwise. */
-// 检查 Redis 用户是否有权限访问指定的发布/订阅（Pub/Sub）频道。
-// 它是 Redis 访问控制列表（ACL）机制的一部分，专门用于验证频道访问权限。
+// 检查 Redis 用户是否有权限访问指定的发布/订阅(Pub/Sub)频道。
+// 它是 Redis 访问控制列表(ACL)机制的一部分,专门用于验证频道访问权限。
 int ACLCheckPubsubChannelPerm(sds channel, list *allowed, int literal) {
     listIter li;
     listNode *ln;
@@ -1198,8 +1198,8 @@ int ACLCheckPubsubChannelPerm(sds channel, list *allowed, int literal) {
         sds pattern = listNodeValue(ln);
         size_t plen = sdslen(pattern);
 
-        // sdscmp 用于比较两个 sds 字符串是否相等（严格匹配）。
-        // stringmatchlen 用于模式匹配（支持通配符，如 * 和 ?）。
+        // sdscmp 用于比较两个 sds 字符串是否相等(严格匹配)。
+        // stringmatchlen 用于模式匹配(支持通配符,如 * 和 ?)。
         if ((literal && !sdscmp(pattern, channel)) || (!literal && stringmatchlen(pattern, plen, channel, clen, 0))) {
             match = 1;
             break;
@@ -1281,7 +1281,7 @@ int ACLCheckPubsubPerm(client *c, int idx, int count, int literal, int *idxptr) 
 
     /* Check if the user can access the channels mentioned in the command's
      * arguments. */
-    // 如果用户没有设置 USER_FLAG_ALLCHANNELS 标志（表示可以访问所有频道），则需要逐一检查用户是否有权限访问指定的频道。
+    // 如果用户没有设置 USER_FLAG_ALLCHANNELS 标志(表示可以访问所有频道),则需要逐一检查用户是否有权限访问指定的频道。
     if (!(c->user->flags & USER_FLAG_ALLCHANNELS)) {
         for (int j = idx; j < idx + count; j++) {
             if (ACLCheckPubsubChannelPerm(c->argv[j]->ptr, u->channels, literal) != ACL_OK) {
@@ -1422,12 +1422,12 @@ int ACLLoadConfiguredUsers(void) {
  * At the end of the process, if no errors were found in the whole file then
  * NULL is returned. Otherwise an SDS string describing in a single line
  * a description of all the issues found is returned. */
-// 该函数用于从指定文件加载ACL（访问控制列表），功能如下：
+// 该函数用于从指定文件加载ACL(访问控制列表),功能如下:
 // 每行数据需为空或符合user <username> ... rules ...格式。
-// 不允许以#开头的注释行，但允许空行。
-// 在加载每个用户前验证规则，若发现错误则收集错误信息。
-// 若文件中存在任何错误，则不加载任何内容，保持原有规则不变。
-// 返回值：无错误返回NULL，有错误返回描述所有问题的SDS字符串。
+// 不允许以#开头的注释行,但允许空行。
+// 在加载每个用户前验证规则,若发现错误则收集错误信息。
+// 若文件中存在任何错误,则不加载任何内容,保持原有规则不变。
+// 返回值:无错误返回NULL,有错误返回描述所有问题的SDS字符串。
 sds ACLLoadFromFile(const char *filename) {
     FILE *fp;
     char buf[1024];
@@ -1575,8 +1575,8 @@ sds ACLLoadFromFile(const char *filename) {
 /* Generate a copy of the ACLs currently in memory in the specified filename.
  * Returns C_OK on success or C_ERR if there was an error during the I/O.
  * When C_ERR is returned a log is produced with hints about the issue. */
-// 该代码功能是将当前内存中的ACL（访问控制列表）生成副本并保存到指定文件中。
-// 返回值为C_OK表示成功，C_ERR表示I/O错误，错误时会记录日志提示问题原因。
+// 该代码功能是将当前内存中的ACL(访问控制列表)生成副本并保存到指定文件中。
+// 返回值为C_OK表示成功,C_ERR表示I/O错误,错误时会记录日志提示问题原因。
 int ACLSaveToFile(const char *filename) {
     sds acl = sdsempty();
     int fd = -1;
@@ -1966,7 +1966,7 @@ void aclCommand(client *c) {
             addReplyNull(c);
         }
     }
-    // 当没有配置acl文件时，不允许使用load和save命令
+    // 当没有配置acl文件时,不允许使用load和save命令
     else if (server.acl_filename[0] == '\0' && (!strcasecmp(sub, "load") || !strcasecmp(sub, "save"))) {
         addReplyError(c, "This Redis instance is not configured to use an ACL file. You may want to specify users via "
                          "the ACL SETUSER command and then issue a CONFIG REWRITE (assuming you have a Redis "
@@ -2176,12 +2176,12 @@ void authCommand(client *c) {
 
     /* Handle the two different forms here. The form with two arguments
      * will just use "default" as username. */
-    // 处理两种不同的情况，两个参数将default作为用户名
+    // 处理两种不同的情况,两个参数将default作为用户名
     robj *username, *password;
     if (c->argc == 2) {
         /* Mimic the old behavior of giving an error for the two commands
          * from if no password is configured. */
-        // 如果用户不需要密码，返回提示错误信息
+        // 如果用户不需要密码,返回提示错误信息
         if (DefaultUser->flags & USER_FLAG_NOPASS) {
             addReplyError(c, "AUTH <password> called without any password "
                              "configured for the default user. Are you sure "

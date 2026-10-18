@@ -23,10 +23,10 @@ typedef struct redisObject robj;
 #define EVPOOL_SIZE 16
 #define EVPOOL_CACHED_SDS_SIZE 255
 // 用于 Redis 的内存淘汰机制。
-// Redis 是一个内存数据库，当内存使用达到上限时，会根据配置的淘汰策略移除一些键值对以释放内存。
+// Redis 是一个内存数据库,当内存使用达到上限时,会根据配置的淘汰策略移除一些键值对以释放内存。
 struct evictionPoolEntry
 {
-    unsigned long long idle; /*  (inverse frequency for LFU) */ // 对象的空闲时间，单位通常是毫秒。
+    unsigned long long idle; /*  (inverse frequency for LFU) */ // 对象的空闲时间,单位通常是毫秒。
     sds key;                                                    // key的名字 待淘汰的键值对的key
     sds cached; /* Cached SDS object for key name. */           // 缓存的SDS对象
     int dbid; /* Key DB number. */                              // 待淘汰键值对的key所在的数据库ID

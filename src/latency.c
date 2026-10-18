@@ -8,7 +8,7 @@
 #include "latency.h"
 
 #include "server.h"
-#include "server_cammand_define.h"
+#include "server_commands.h"
 #include "sparkline.h"
 
 /* Dictionary type for latency events. */

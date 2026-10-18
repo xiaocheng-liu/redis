@@ -13,7 +13,7 @@
 #include "pubsub.h"
 #include "rdb.h"
 #include "server.h"
-#include "server_cammand_define.h"
+#include "server_commands.h"
 #include "slowlog.h"
 #include "t_hash.h"
 #include "t_list.h"
@@ -7440,7 +7440,7 @@ void moduleCallCommandFilters(client *c) {
          * currently processing a command.
          */
         // 这段代码的功能是检查命令过滤器的标志和模块调用状态。如果命令过滤器设置了 REDISMODULE_CMDFILTER_NOSELF
-        // 标志且模块正在调用，则跳过当前命令。
+        // 标志且模块正在调用,则跳过当前命令。
         if ((f->flags & REDISMODULE_CMDFILTER_NOSELF) && f->module->in_call)
             continue;
 

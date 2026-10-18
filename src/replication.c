@@ -12,7 +12,7 @@
 #include "bio.h"
 #include "cluster.h"
 #include "server.h"
-#include "server_cammand_define.h"
+#include "server_commands.h"
 #include "util.h"
 
 void replicationDiscardCachedMaster(void);
@@ -192,7 +192,7 @@ int canFeedReplicaReplBuffer(client *replica) {
  * the commands received by our clients in order to create the replication
  * stream. Instead if the instance is a slave and has sub-slaves attached,
  * we use replicationFeedSlavesFromMasterStream()
- * 把写操作同步给slave，
+ * 把写操作同步给slave,
  */
 void replicationFeedSlaves(list *slaves, int dictid, robj **argv, int argc) {
     listNode *ln;
@@ -610,7 +610,7 @@ need_full_resync:
  *    started.
  *
  * Returns C_OK on success or C_ERR otherwise.
- * 生成rdb快照，rdb可以同步给slave，也可以写入到文档中，socket_target区分 */
+ * 生成rdb快照,rdb可以同步给slave,也可以写入到文档中,socket_target区分 */
 int startBgsaveForReplication(int mincapa) {
     int retval;
     int socket_target = server.repl_diskless_sync && (mincapa & SLAVE_CAPA_EOF);
@@ -714,7 +714,7 @@ void syncCommand(client *c) {
         return;
     }
 
-    /*  如果是已连接到master的slave实例收到了SYNC命令，则拒绝 */
+    /*  如果是已连接到master的slave实例收到了SYNC命令,则拒绝 */
     if (server.masterhost && server.repl_state != REPL_STATE_CONNECTED) {
         addReplyError(c, "-NOMASTERLINK Can't SYNC while not connected with my master");
         return;
@@ -788,7 +788,7 @@ void syncCommand(client *c) {
     }
 
     /* CASE 1: BGSAVE is in progress, with disk target.
-     * 情况1： BGSAVE正在执行中，rdb信息正在写入文件中  */
+     * 情况1: BGSAVE正在执行中,rdb信息正在写入文件中  */
     if (server.child_type == CHILD_TYPE_RDB && server.rdb_child_type == RDB_CHILD_TYPE_DISK) {
         /* Ok a background save is in progress. Let's check if it is a good
          * one for replication, i.e. if there is another slave that is
@@ -822,7 +822,7 @@ void syncCommand(client *c) {
             serverLog(LL_NOTICE, "Can't attach the replica to the current BGSAVE. Waiting for next BGSAVE for SYNC");
         }
         /* CASE 2: BGSAVE is in progress, with socket target.
-         * 情况2： BGSAVE正在执行中，rdb信息正在写入slave的socket中*/
+         * 情况2: BGSAVE正在执行中,rdb信息正在写入slave的socket中*/
     } else if (server.child_type == CHILD_TYPE_RDB && server.rdb_child_type == RDB_CHILD_TYPE_SOCKET) {
         /* There is an RDB child process but it is writing directly to
          * children sockets. We need to wait for the next BGSAVE
@@ -830,7 +830,7 @@ void syncCommand(client *c) {
         serverLog(LL_NOTICE, "Current BGSAVE has socket target. Waiting for next BGSAVE for SYNC");
 
         /* CASE 3: There is no BGSAVE is progress.
-         * 情况3： BGSAVE没有在执行，开始将rdb同步给slave */
+         * 情况3: BGSAVE没有在执行,开始将rdb同步给slave */
     } else {
         if (server.repl_diskless_sync && (c->slave_capa & SLAVE_CAPA_EOF) && server.repl_diskless_sync_delay) {
             /* Diskless replication RDB child is created inside
@@ -2153,7 +2153,7 @@ void syncWithMaster(connection *conn) {
         goto error;
     }
 
-    /* 发送PING并同步等待，以检查master是否能正常回应 */
+    /* 发送PING并同步等待,以检查master是否能正常回应 */
     if (server.repl_state == REPL_STATE_CONNECTING) {
         serverLog(LL_NOTICE, "Non blocking connect for SYNC fired the event.");
         /* Delete the writable event so that the readable event remains
@@ -2539,24 +2539,24 @@ int cancelReplicationHandshake(int reconnect) {
 /* 设置当前服务为指定ip,port所代表的主机的从机 */
 void replicationSetMaster(char *ip, int port) {
     /* == 的优先级高于 = */
-    /* 判断server.masterhost是否为空，并且将是否为空的结果存入was_master中 */
+    /* 判断server.masterhost是否为空,并且将是否为空的结果存入was_master中 */
     int was_master = server.masterhost == NULL;
 
     /* 清空释放server.masterhost之前存入的内容*/
     sdsfree(server.masterhost);
     server.masterhost = NULL;
     /* 如果server.master不为NULL */
-    /* 这里可以这么理解：
-        假设当前节点是B，且当前B的主节点是A，现在B想要将自己设置成C的从节点，那么B就要把自己之前存的关于A节点的信息给释放掉,
-        因为当前B的主节点是A,作为网络中的两个节点，那么它必定与A保持一定的连接，所以可将A看作是B的客户端，存入server.master中.
+    /* 这里可以这么理解:
+        假设当前节点是B,且当前B的主节点是A,现在B想要将自己设置成C的从节点,那么B就要把自己之前存的关于A节点的信息给释放掉,
+        因为当前B的主节点是A,作为网络中的两个节点,那么它必定与A保持一定的连接,所以可将A看作是B的客户端,存入server.master中.
     */
     /* 如果server.masterhost不为空 */
     if (server.master) {
         freeClient(server.master);
     }
     /*
-      断开所有阻塞着的客户端，现在可能出现主机变成别的主机的从机的情况，连接到本台机器上的连接
-      可能已经不安全了，需要将它们与当前机器的连接断开
+      断开所有阻塞着的客户端,现在可能出现主机变成别的主机的从机的情况,连接到本台机器上的连接
+      可能已经不安全了,需要将它们与当前机器的连接断开
     */
     disconnectAllBlockedClients(); /* Clients blocked in master, now slave. */
 
@@ -2572,7 +2572,7 @@ void replicationSetMaster(char *ip, int port) {
 
     /* Force our slaves to resync with us as well. They may hopefully be able
      * to partially resync with us, but we can notify the replid change. */
-    /* 关闭所有从节点服务器的连接，强制从节点服务器进行重新同步操作 */
+    /* 关闭所有从节点服务器的连接,强制从节点服务器进行重新同步操作 */
     disconnectSlaves();
     /* 取消主从复制的握手功能 */
     cancelReplicationHandshake(0);
@@ -2582,7 +2582,7 @@ void replicationSetMaster(char *ip, int port) {
     if (was_master) {
         /* 释放之前缓存的master的相关状态 */
         replicationDiscardCachedMaster();
-        /* 同步一下自己的master中的一些信息，也许在之后可以少同步一些内容，设置
+        /* 同步一下自己的master中的一些信息,也许在之后可以少同步一些内容,设置
            server.cached_master = server.master*/
         replicationCacheMasterUsingMyself();
     }
@@ -2603,7 +2603,7 @@ void replicationSetMaster(char *ip, int port) {
 }
 
 /* Cancel replication, setting the instance as a master itself. */
-// 取消复制，设置自己为主实例
+// 取消复制,设置自己为主实例
 void replicationUnsetMaster(void) {
     if (server.masterhost == NULL)
         return; /* Nothing to do. */
@@ -2686,14 +2686,14 @@ void replicationHandleMasterDisconnection(void) {
 /* replicaof和slaveof命令的具体实现
  * SLAVEOF host port 可以把当前redis实例变成某个实例的从服务器 */
 // 判断当前环境是否在集群模式下, 如果是的, 就不能执行命令,给出相关提示并且返回;
-// 如果输入的命令是slaveof no one,那么解除主从关系，设置当前节点为主节点服务器;
+// 如果输入的命令是slaveof no one,那么解除主从关系,设置当前节点为主节点服务器;
 // 判断是否已经是指定host,ip所代表的服务器的从机了, 如果已经是了,就不能再执行这个命令了,给出相关提示并且返回;
 // 如果不是以上三个步骤中的情况,
 // 调用replicationSetMaster设置执行slaveof命令的服务器为指定host,ip所代表的主服务器的从服务器.
 void replicaofCommand(client *c) {
     /* SLAVEOF is not allowed in cluster mode as replication is automatically
      * configured using the current address of the master node. */
-    /* 如果服务器当前处于集群模式，不可以执行此操作 */
+    /* 如果服务器当前处于集群模式,不可以执行此操作 */
     if (server.cluster_enabled) {
         addReplyError(c, "REPLICAOF not allowed in cluster mode.");
         return;
@@ -2707,14 +2707,14 @@ void replicaofCommand(client *c) {
 
     /* The special host/port combination "NO" "ONE" turns the instance
      * into a master. Otherwise the new master address is set. */
-    /* SLAVEOF NO ONE命令使得这个从节点关闭复制功能，并从从节点的身份转变回主节点，
+    /* SLAVEOF NO ONE命令使得这个从节点关闭复制功能,并从从节点的身份转变回主节点,
        原来同步所得的数据集不会被丢弃*/
     if (!strcasecmp(c->argv[1]->ptr, "no") && !strcasecmp(c->argv[2]->ptr, "one")) {
         /* 如果当前服务器的主节点的主机名不为NULL */
         if (server.masterhost) {
-            /* 取消复制操作，设置服务器为主服务器 */
+            /* 取消复制操作,设置服务器为主服务器 */
             replicationUnsetMaster();
-            /* 获取client的每种信息，并以sds形式返回，并打印到日志中 */
+            /* 获取client的每种信息,并以sds形式返回,并打印到日志中 */
             sds client = catClientInfoString(sdsempty(), c);
             serverLog(LL_NOTICE, "MASTER MODE enabled (user request from '%s')", client);
             /* 释放内存 */
@@ -2728,7 +2728,7 @@ void replicaofCommand(client *c) {
             /* If a client is already a replica they cannot run this command,
              * because it involves flushing all replicas (including this
              * client) */
-            /* 返回错误,给出错误提示：当前机器已经被部属为从机,不可以使用此命令 */
+            /* 返回错误,给出错误提示:当前机器已经被部属为从机,不可以使用此命令 */
             addReplyError(c, "Command is not valid when client is a replica.");
             return;
         }
@@ -2740,7 +2740,7 @@ void replicaofCommand(client *c) {
         /* Check if we are already attached to the specified slave */
         /*
           如果已存在从属于masterhost主节点且命令参数指定的主节点的host及port信息和
-          server.masterhost，server.masterport也相等，给出“已经是指定主机指定端
+          server.masterhost,server.masterport也相等,给出“已经是指定主机指定端
           口的主服务器的从机了”,并直接返回
         */
         if (server.masterhost && !strcasecmp(server.masterhost, c->argv[1]->ptr) && server.masterport == port) {

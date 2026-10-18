@@ -1,10 +1,10 @@
 /* Implementation of EXPIRE (keys with fixed time to live).
- * 实现 EXPIRE（具有固定生存时间的密钥）。
+ * 实现 EXPIRE(具有固定生存时间的密钥)。
  */
 
 #include "latency.h"
 #include "server.h"
-#include "server_cammand_define.h"
+#include "server_commands.h"
 
 /*-----------------------------------------------------------------------------
  * Incremental collection of expired keys.
@@ -25,7 +25,7 @@
  *
  * The parameter 'now' is the current time in milliseconds as is passed
  * to the function to avoid too many gettimeofday() syscalls. */
-/* activeExpireCycle()将存储在hash表中的过期key清理掉，如果发现某个key是过期的，清理掉后返回1，否则返回0。
+/* activeExpireCycle()将存储在hash表中的过期key清理掉,如果发现某个key是过期的,清理掉后返回1,否则返回0。
  * 过期key被清理掉后 server.stat_expiredkeys++
  */
 int activeExpireCycleTryExpire(redisDb *db, dictEntry *de, long long now) {
@@ -101,7 +101,7 @@ int activeExpireCycleTryExpire(redisDb *db, dictEntry *de, long long now) {
 #define ACTIVE_EXPIRE_CYCLE_ACCEPTABLE_STALE                                                                           \
     10 /* % of stale keys after which                                                                                  \
           we do extra efforts. */
-/* 有两种清理模式，快速清理和慢速清理 */
+/* 有两种清理模式,快速清理和慢速清理 */
 void activeExpireCycle(int type) {
     /* Adjust the running parameters according to the configured expire
      * effort. The default effort is 1, and the maximum configurable effort
@@ -159,7 +159,7 @@ void activeExpireCycle(int type) {
      * time per iteration. Since this function gets called with a frequency of
      * server.hz times per second, the following is the max amount of
      * microseconds we can spend in this function.
-     * config_cycle_slow_time_perc是清理所能占用的CPU周期数配置，这里将周期数转化为具体的时间 */
+     * config_cycle_slow_time_perc是清理所能占用的CPU周期数配置,这里将周期数转化为具体的时间 */
     timelimit = config_cycle_slow_time_perc * 1000000 / server.hz / 100;
     timelimit_exit = 0;
     if (timelimit <= 0)
@@ -195,7 +195,7 @@ void activeExpireCycle(int type) {
             int ttl_samples;
             iteration++;
 
-            /* 如果没有可清理的，直接结束 */
+            /* 如果没有可清理的,直接结束 */
             if ((num = dictSize(db->expires)) == 0) {
                 db->avg_ttl = 0;
                 break;
@@ -203,7 +203,7 @@ void activeExpireCycle(int type) {
             slots = dictSlots(db->expires);
             now = mstime();
 
-            /* 如果slot的填充率小于1%，采样的成本太高，跳过执行，等待下次合适的机会。dict会尽快执行resize*/
+            /* 如果slot的填充率小于1%,采样的成本太高,跳过执行,等待下次合适的机会。dict会尽快执行resize*/
             if (slots > DICT_HT_INITIAL_SIZE && (num * 100 / slots < 1))
                 break;
 
@@ -216,11 +216,11 @@ void activeExpireCycle(int type) {
             if (num > config_keys_per_loop)
                 num = config_keys_per_loop;
 
-            /* 这里因为性能考量，我们访问了hashcode的的底层实现，代码和dict.c有些类型，
+            /* 这里因为性能考量,我们访问了hashcode的的底层实现,代码和dict.c有些类型,
              * 但十几年内很难改变。
              *
-             * 注意：hashtable很多特定的地方是空的，所以我们的终止条件需要考虑到已扫描的bucket
-             * 数量。 但实际上扫描空bucket是很快的，因为都是在cpu 缓存行里线性扫描，所以可以多
+             * 注意:hashtable很多特定的地方是空的,所以我们的终止条件需要考虑到已扫描的bucket
+             * 数量。 但实际上扫描空bucket是很快的,因为都是在cpu 缓存行里线性扫描,所以可以多
              * 扫一些bucket */
             long max_buckets = num * 20;
             long checked_buckets = 0;
@@ -275,7 +275,7 @@ void activeExpireCycle(int type) {
             /* We can't block forever here even if there are many keys to
              * expire. So after a given amount of milliseconds return to the
              * caller waiting for the other active expire cycle.
-             * 不能一直阻塞在这里做清理工作，如果超时了要结束清理循环*/
+             * 不能一直阻塞在这里做清理工作,如果超时了要结束清理循环*/
             if ((iteration & 0xf) == 0) { /* check once every 16 iterations. */
                 elapsed = ustime() - start;
                 if (elapsed > timelimit) {
@@ -285,7 +285,7 @@ void activeExpireCycle(int type) {
                 }
             }
             /*
-             * 如果过期key数量超过采样数的10%+effort，说明过期测数量较多，要多清理下，所以
+             * 如果过期key数量超过采样数的10%+effort,说明过期测数量较多,要多清理下,所以
              * 继续循环做一次采样清理。
              */
         } while (sampled == 0 || (expired * 100 / sampled) > config_cycle_acceptable_stale);
@@ -471,10 +471,10 @@ int checkAlreadyExpired(long long when) {
  * Expires 命令
  *----------------------------------------------------------------------------*/
 
-/* 这是EXPIRE命令的通用实现，因为命令的第二个参数可能是相对的，也可能是绝对的，
- * 所以"basetime"参数被用来表示基准时间是多少(对于这个命令的各种变体，参数要么是0，要么当前时间)
+/* 这是EXPIRE命令的通用实现,因为命令的第二个参数可能是相对的,也可能是绝对的,
+ * 所以"basetime"参数被用来表示基准时间是多少(对于这个命令的各种变体,参数要么是0,要么当前时间)
  *
- * 时间单位有秒UNIT_SECONDS 和 毫秒UNIT_MILLISECONDS两种，basetime参数的时间单位始终是秒 */
+ * 时间单位有秒UNIT_SECONDS 和 毫秒UNIT_MILLISECONDS两种,basetime参数的时间单位始终是秒 */
 void expireGenericCommand(client *c, long long basetime, int unit) {
     robj *key = c->argv[1], *param = c->argv[2];
     long long when; /* unix time in milliseconds when the key will expire. */
@@ -495,7 +495,7 @@ void expireGenericCommand(client *c, long long basetime, int unit) {
     // 检查设置的时间是否已过期(比如过期时间是否已经过了当前时间)
     if (checkAlreadyExpired(when)) {
         robj *aux;
-        // 如果是已过期的时间，需要把这个key安装过期策略删除掉
+        // 如果是已过期的时间,需要把这个key安装过期策略删除掉
         int deleted = server.lazyfree_lazy_expire ? dbAsyncDelete(c->db, key) : dbSyncDelete(c->db, key);
         serverAssertWithInfo(c, key, deleted);
         server.dirty++;
@@ -534,13 +534,13 @@ void pexpireatCommand(client *c) { expireGenericCommand(c, 0, UNIT_MILLISECONDS)
 void ttlGenericCommand(client *c, int output_ms) {
     long long expire, ttl = -1;
 
-    /* 如果key不存在，直接返回-2 */
+    /* 如果key不存在,直接返回-2 */
     if (lookupKeyReadWithFlags(c->db, c->argv[1], LOOKUP_NOTOUCH) == NULL) {
         addReplyLongLong(c, -2);
         return;
     }
-    /* 如果key存在，但没有设置过期时间，返回-1，
-     * 否则从expire表里查到它的过期时间，并计算出ttl  */
+    /* 如果key存在,但没有设置过期时间,返回-1,
+     * 否则从expire表里查到它的过期时间,并计算出ttl  */
     expire = getExpire(c->db, c->argv[1]);
     if (expire != -1) {
         ttl = expire - mstime();
@@ -560,7 +560,7 @@ void ttlCommand(client *c) { ttlGenericCommand(c, 0); }
 /* PTTL key */
 void pttlCommand(client *c) { ttlGenericCommand(c, 1); }
 
-/* 持久化key，取消key的过期时间  */
+/* 持久化key,取消key的过期时间  */
 void persistCommand(client *c) {
     if (lookupKeyWrite(c->db, c->argv[1])) {
         if (removeExpire(c->db, c->argv[1])) {

@@ -20,8 +20,8 @@ user *DefaultUser; /* Global reference to the default user.
                         AUTH or HELLO is used to authenticate with a
                         different user. */
 
-// 这是在配置文件中找到的用户列表，我们需要在Redis初始化的最后阶段加载，在所有模块都已经加载之后。
-// 每个列表元素都是一个以NULL结尾的SDS指针数组：第一个是用户名，其余所有指针都是ACL规则，格式与ACLSetUser（）相同。
+// 这是在配置文件中找到的用户列表,我们需要在Redis初始化的最后阶段加载,在所有模块都已经加载之后。
+// 每个列表元素都是一个以NULL结尾的SDS指针数组:第一个是用户名,其余所有指针都是ACL规则,格式与ACLSetUser()相同。
 list *UsersToLoad; /* This is a list of users found in the configuration file
                         that we'll need to load in the final stage of Redis
                         initialization, after all the modules are already
@@ -30,7 +30,7 @@ list *UsersToLoad; /* This is a list of users found in the configuration file
                         all the remaining pointers are ACL rules in the same
                         format as ACLSetUser(). */
 
-// 我们的安全日志，用户可以使用ACL log命令检查它。
+// 我们的安全日志,用户可以使用ACL log命令检查它。
 list *ACLLog; /* Our security log, the user is able to inspect that
                  using the ACL LOG command. */
 
@@ -38,18 +38,18 @@ static rax *commandId = NULL; /* Command name to id mapping */
 
 static unsigned long nextid = 0; /* Next command id that has not been assigned */
 
-// 表示 Redis 访问控制列表（ACL）系统中的权限类别项。
+// 表示 Redis 访问控制列表(ACL)系统中的权限类别项。
 struct ACLCategoryItem
 {
     const char *name; // 存储权限类别的名称
-    uint64_t flag;    // 权限类别的标志位。标志位通常以位掩码的形式使用，每一位表示一个特定的权限。例如，某个类别可能使用特定位来表示是否允许执行某些命令。通过这种方式，可以高效地存储和检查权限。
+    uint64_t flag;    // 权限类别的标志位。标志位通常以位掩码的形式使用,每一位表示一个特定的权限。例如,某个类别可能使用特定位来表示是否允许执行某些命令。通过这种方式,可以高效地存储和检查权限。
 };
 
-// 表示 Redis 访问控制列表（ACL）系统中与用户权限相关的标志项。
+// 表示 Redis 访问控制列表(ACL)系统中与用户权限相关的标志项。
 struct ACLUserFlag
 {
     const char *name; // 存储标志的名称
-    uint64_t flag;    // 表示标志的值。标志通常以位掩码的形式使用，每一位表示一个特定的权限。例如，某些标志可能通过特定位来表示是否允许用户执行某些命令或访问某些资源。通过这种方式，可以高效地存储和检查用户的权限。
+    uint64_t flag;    // 表示标志的值。标志通常以位掩码的形式使用,每一位表示一个特定的权限。例如,某些标志可能通过特定位来表示是否允许用户执行某些命令或访问某些资源。通过这种方式,可以高效地存储和检查用户的权限。
 };
 
 /* =============================================================================

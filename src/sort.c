@@ -6,7 +6,7 @@
 
 #include "pqsort.h" /* Partial qsort for SORT+LIMIT */
 #include "server.h"
-#include "server_cammand_define.h"
+#include "server_commands.h"
 #include "t_hash.h"
 #include "t_list.h"
 #include "t_set.h"

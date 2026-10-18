@@ -11,7 +11,7 @@
 #include "evict.h"
 #include "sentinel.h"
 #include "server.h"
-#include "server_cammand_define.h"
+#include "server_commands.h"
 #include "util.h"
 #include "version.h"
 
@@ -375,7 +375,7 @@ void loadServerConfigFromString(char *config) {
         }
 
         /* Skip this line if the resulting command vector is empty. */
-        // 如果生成的命令向量为空，请跳过此行。
+        // 如果生成的命令向量为空,请跳过此行。
         if (argc == 0) {
             sdsfreesplitres(argv, argc);
             continue;
@@ -626,7 +626,7 @@ loaderr:
  * just load a string. */
 // 从指定的文件名加载服务配置
 // 该函数在加载之前将存储在"选项"字符串中的其他配置指令附加到配置文件中。
-// 文件名和选项都可以为 NULL，在这种情况下被视为空。这样，loadServerConfig 可以只用于加载文件或只加载字符串。
+// 文件名和选项都可以为 NULL,在这种情况下被视为空。这样,loadServerConfig 可以只用于加载文件或只加载字符串。
 void loadServerConfig(char *filename, char config_from_stdin, char *options) {
     sds config = sdsempty();
     char buf[CONFIG_MAX_LINE + 1];
@@ -639,7 +639,7 @@ void loadServerConfig(char *filename, char config_from_stdin, char *options) {
             serverLog(LL_WARNING, "Fatal error, can't open config file '%s': %s", filename, strerror(errno));
             exit(1);
         }
-        // 限制每行的长度，确保解析过程的安全性。
+        // 限制每行的长度,确保解析过程的安全性。
         while (fgets(buf, CONFIG_MAX_LINE + 1, fp) != NULL)
             config = sdscat(config, buf);
         fclose(fp);
@@ -1740,7 +1740,7 @@ void configSetCommand(client *c) {
         rewriteConfigOOMScoreAdjValuesOption(state);
 
         /* Rewrite Sentinel config if in Sentinel mode. */
-        // 如果是哨兵模式，重写哨兵配置
+        // 如果是哨兵模式,重写哨兵配置
         if (server.sentinel_mode)
             rewriteConfigSentinelOption(state);
 

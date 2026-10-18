@@ -20,13 +20,13 @@
 /* 有写事件注册上 */
 #define AE_WRITABLE 2 /* Fire when descriptor is writable. */
 /*
-   一般情况先执行readable事件再执行writable事件，
-   这里的AE_BARRIER表示事件屏障，设置了AE_BARRIER之后,如果已经有了readable事件之后就不会触发
+   一般情况先执行readable事件再执行writable事件,
+   这里的AE_BARRIER表示事件屏障,设置了AE_BARRIER之后,如果已经有了readable事件之后就不会触发
    writable事件,在如下场景下适用:
-   例如：你想要的以批量的方式先将file同步到磁盘，然后再回复给客户端
+   例如:你想要的以批量的方式先将file同步到磁盘,然后再回复给客户端
    这种情况下先执行writable事件再执行readable事件.
-   感觉这里还需要再多多理解,不是很明白.(本段解释可能不对，感觉这里的英文解释写的不是很好，据下面
-   的说，应该就是如果设置了AE_BARRIER，就优先处理写事件）
+   感觉这里还需要再多多理解,不是很明白.(本段解释可能不对,感觉这里的英文解释写的不是很好,据下面
+   的说,应该就是如果设置了AE_BARRIER,就优先处理写事件)
 */
 #define AE_BARRIER 4 /* With WRITABLE, never fire the event if the      \
                         READABLE event already fired in the same event  \
@@ -35,12 +35,12 @@
                         to do that in a group fashion. */
 
 /* 0001-表示文件事件 */
-#define AE_FILE_EVENTS (1 << 0) // redis将事件分为时间事件和文件事件，通过flag位来标识
+#define AE_FILE_EVENTS (1 << 0) // redis将事件分为时间事件和文件事件,通过flag位来标识
 /* 0010-表示时间事件 */
 #define AE_TIME_EVENTS (1 << 1)
 /* 0011-表示文件事件和时间事件 */
 #define AE_ALL_EVENTS (AE_FILE_EVENTS | AE_TIME_EVENTS)
-/* 0100-表示函数处理完事件后直接返回，不阻塞等待 */
+/* 0100-表示函数处理完事件后直接返回,不阻塞等待 */
 #define AE_DONT_WAIT (1 << 2)
 
 /*
@@ -56,11 +56,11 @@ flags设置了AE_CALL_BEFORE_SLEEP,eventLoop->aftersleep回调函数会被调用
 
 /* 表示没有事件了,在processTimeEvents中被用到 */
 #define AE_NOMORE -1
-/* 表示删除事件ID，在processTimeEvents，aeDeleteTimeEvent等函数中被用到 */
+/* 表示删除事件ID,在processTimeEvents,aeDeleteTimeEvent等函数中被用到 */
 #define AE_DELETED_EVENT_ID -1
 
 /* Macros */
-/* 仅仅用作编译器处理，防止因为没有到相关变量而被当做错误 */
+/* 仅仅用作编译器处理,防止因为没有到相关变量而被当做错误 */
 #define AE_NOTUSED(V) ((void)V)
 
 struct aeEventLoop;
@@ -72,14 +72,14 @@ typedef void aeFileProc(struct aeEventLoop *eventLoop, int fd, void *clientData,
 typedef int aeTimeProc(struct aeEventLoop *eventLoop, long long id, void *clientData);
 // 一个对eventLoop和clientData处理的函数原型
 typedef void aeEventFinalizerProc(struct aeEventLoop *eventLoop, void *clientData);
-// 一个对eventLoop处理的函数原型，后面此函数类型具体的对象有beforeSleep和afterSleep
+// 一个对eventLoop处理的函数原型,后面此函数类型具体的对象有beforeSleep和afterSleep
 typedef void aeBeforeSleepProc(struct aeEventLoop *eventLoop);
 
 /* File event structure */
 // 文件事件结构
 typedef struct aeFileEvent
 {
-    /* 文件事件类型：是AE_READABLE,AE_WRITABLE和AE_BARRIER中的一个 */
+    /* 文件事件类型:是AE_READABLE,AE_WRITABLE和AE_BARRIER中的一个 */
     int mask;              /* one of AE_(READABLE|WRITABLE|BARRIER) */
     aeFileProc *rfileProc; /* 有可读IO事件时的处理函数 一般设置为readQueryFromClient*/
     aeFileProc *wfileProc; /* 有可写IO事件时的处理函数 一般设置为sendReplyToClient*/
@@ -104,7 +104,7 @@ typedef struct aeTimeEvent
     struct aeTimeEvent *prev;
     /* 指向下一个时间事件的指针 */
     struct aeTimeEvent *next;
-    /* 引用次数，防止时间事件在多次被调用后被释放*/
+    /* 引用次数,防止时间事件在多次被调用后被释放*/
     int refcount; /* refcount to prevent timer events from being
                    * freed in recursive time event calls. */
 } aeTimeEvent;
@@ -116,7 +116,7 @@ typedef struct aeFiredEvent
 {
     /* 就绪事件的文件描述符 */
     int fd;
-    /* 就绪事件类型，如AE_NONE，AE_READABLE，AE_WRITABLE等 */
+    /* 就绪事件类型,如AE_NONE,AE_READABLE,AE_WRITABLE等 */
     int mask;
 } aeFiredEvent;
 
@@ -130,17 +130,17 @@ typedef struct aeEventLoop
     /**
      * 指定事件循环要监听的文件描述符集合的大小。这个值与配置文件中的maxclients有关。
      *
-     * setsize参数表示了eventloop可以监听的网络事件fd的个数（不包含超时事件），
-     * 如果当前监听的fd个数超过了setsize，eventloop将不能继续注册。
+     * setsize参数表示了eventloop可以监听的网络事件fd的个数(不包含超时事件),
+     * 如果当前监听的fd个数超过了setsize,eventloop将不能继续注册。
      */
     int setsize; /* max number of file descriptors tracked */ // 跟踪的最大文件描述符数
     /* 下一个时间事件的ID */
     long long timeEventNextId;
     /* 已注册的事件 */
     /**
-     * 存放所有注册的读写事件，是大小为setsize的数组。内核会保证新建连接的fd是当前可用描述符的最小值，
-     * 所以最多监听setsize个描述符，那么最大的fd就是setsize - 1。这种组织方式的好处是，可以以fd为下标，
-     * 索引到对应的事件，在事件触发后根据fd快速查找到对应的事件。
+     * 存放所有注册的读写事件,是大小为setsize的数组。内核会保证新建连接的fd是当前可用描述符的最小值,
+     * 所以最多监听setsize个描述符,那么最大的fd就是setsize - 1。这种组织方式的好处是,可以以fd为下标,
+     * 索引到对应的事件,在事件触发后根据fd快速查找到对应的事件。
      */
     aeFileEvent *events; /* Registered events */
     /* 已触发的事件 同样是setsize大小的数组。*/
@@ -155,7 +155,7 @@ typedef struct aeEventLoop
     aeBeforeSleepProc *beforesleep;
     /* 执行处理事件之后的函数 */
     aeBeforeSleepProc *aftersleep;
-    /* 事件循环的标志，初始值赋值为NONE(0)，在aeCreateEventLoop中搜索eventLoop->flags可看到*/
+    /* 事件循环的标志,初始值赋值为NONE(0),在aeCreateEventLoop中搜索eventLoop->flags可看到*/
     int flags;
 } aeEventLoop;
 
@@ -163,23 +163,23 @@ typedef struct aeEventLoop
 // ae.h提供的函数声明
 /* 创建aeEventLoop */
 aeEventLoop *aeCreateEventLoop(int setsize);
-/* 删除EventLoop，释放相应的事件所占的空间 */
+/* 删除EventLoop,释放相应的事件所占的空间 */
 void aeDeleteEventLoop(aeEventLoop *eventLoop);
-/* 设置eventLoop中的停止属性为1，服务器中似乎没有用到，压测和客户端中有用到这个函数 */
+/* 设置eventLoop中的停止属性为1,服务器中似乎没有用到,压测和客户端中有用到这个函数 */
 void aeStop(aeEventLoop *eventLoop);
 /* 在eventLoop中创建文件事件 */
 int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, int mask,
                       aeFileProc *proc, void *clientData);
 /* 删除文件事件 */
 void aeDeleteFileEvent(aeEventLoop *eventLoop, int fd, int mask);
-/* 根据文件描述符id，找出文件的属性，是读事件还是写事件 */
+/* 根据文件描述符id,找出文件的属性,是读事件还是写事件 */
 int aeGetFileEvents(aeEventLoop *eventLoop, int fd);
-/* 在eventLoop中创建时间事件，创建的时间为当前时间加上自己传入的时间 */
+/* 在eventLoop中创建时间事件,创建的时间为当前时间加上自己传入的时间 */
 long long aeCreateTimeEvent(aeEventLoop *eventLoop, long long milliseconds,
                             aeTimeProc *proc, void *clientData,
                             aeEventFinalizerProc *finalizerProc);
 
-/* 根据时间id，删除时间事件，涉及链表的操作 */
+/* 根据时间id,删除时间事件,涉及链表的操作 */
 int aeDeleteTimeEvent(aeEventLoop *eventLoop, long long id);
 /* 处理eventLoop中的所有类型事件 */
 int aeProcessEvents(aeEventLoop *eventLoop, int flags);
@@ -197,7 +197,7 @@ void aeSetAfterSleepProc(aeEventLoop *eventLoop, aeBeforeSleepProc *aftersleep);
 int aeGetSetSize(aeEventLoop *eventLoop);
 /* 设置eventLoop的长度*/
 int aeResizeSetSize(aeEventLoop *eventLoop, int setsize);
-/* 通知事件的下一个迭代器将超时设置为零，即不等待 */
+/* 通知事件的下一个迭代器将超时设置为零,即不等待 */
 void aeSetDontWait(aeEventLoop *eventLoop, int noWait);
 
 #endif // AE_H

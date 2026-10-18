@@ -34,7 +34,7 @@
 #include "latency.h"
 #include "monotonic.h"
 #include "server.h"
-#include "server_cammand_define.h"
+#include "server_commands.h"
 #include "slowlog.h"
 #include "t_list.h"
 #include "t_zset.h"
@@ -566,7 +566,7 @@ void handleClientsBlockedOnKeys(void) {
  * stream keys, we also provide an array of streamID structures: clients will
  * be unblocked only when items with an ID greater or equal to the specified
  * one is appended to the stream.
- * 将client阻塞在key上，*/
+ * 将client阻塞在key上,*/
 void blockForKeys(client *c, int btype, robj **keys, int numkeys, mstime_t timeout, robj *target,
                   struct listPos *listpos, streamID *ids) {
     dictEntry *de;
@@ -589,7 +589,7 @@ void blockForKeys(client *c, int btype, robj **keys, int numkeys, mstime_t timeo
         if (btype == BLOCKED_STREAM)
             bki->stream_id = ids[j];
 
-        /* 添加client到key的映射，如果已有则忽略. */
+        /* 添加client到key的映射,如果已有则忽略. */
         if (dictAdd(c->bpop.keys, keys[j], bki) != DICT_OK) {
             zfree(bki);
             continue;

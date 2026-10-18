@@ -22,7 +22,7 @@ typedef struct _rio
      * designed so that can be called with the current checksum, and the buf
      * and len fields pointing to the new block of data to add to the checksum
      * computation. */
-    // 计算校验和（checksum）的方法
+    // 计算校验和(checksum)的方法
     void (*update_cksum)(struct _rio *, const void *buf, size_t len);
 
     /* The current checksum and flags (see RIO_FLAG_*) */

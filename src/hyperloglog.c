@@ -5,7 +5,7 @@
 #include <math.h>
 #include <stdint.h>
 #include "server.h"
-#include "server_cammand_define.h"
+#include "server_commands.h"
 
 /* The Redis HyperLogLog implementation is based on the following ideas:
  *

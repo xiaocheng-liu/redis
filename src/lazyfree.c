@@ -144,12 +144,12 @@ size_t lazyfreeGetFreeEffort(robj *key, robj *obj) {
  * If there are enough allocations to free the value object may be put into
  * a lazy free list instead of being freed synchronously. The lazy free list
  * will be reclaimed in a different bio.c thread. */
-// 从数据库中删除键、值和关联的过期条目（如果有）。
-// 如果有足够的分配来释放值对象，则可以将其放入惰性空闲列表中，而不是同步释放。
+// 从数据库中删除键、值和关联的过期条目(如果有)。
+// 如果有足够的分配来释放值对象,则可以将其放入惰性空闲列表中,而不是同步释放。
 // 懒惰的免费列表将在不同的 bio.c 线程中回收。
 #define LAZYFREE_THRESHOLD 64
 int dbAsyncDelete(redisDb *db, robj *key) {
-    /* 从db->expires中删除key，只是删除其指针而已，并没有删除实际值 */
+    /* 从db->expires中删除key,只是删除其指针而已,并没有删除实际值 */
     if (dictSize(db->expires) > 0)
         dictDelete(db->expires, key->ptr);
 
@@ -157,7 +157,7 @@ int dbAsyncDelete(redisDb *db, robj *key) {
      * is actually just slower... So under a certain limit we just free
      * the object synchronously. */
     /*
-     * 在字典中摘除这个key(没有真正删除，只是查不到而已)，如果被摘除的dictEntry不为
+     * 在字典中摘除这个key(没有真正删除,只是查不到而已),如果被摘除的dictEntry不为
      * 空就去执行下面的释放逻辑
      */
     dictEntry *de = dictUnlink(db->dict, key->ptr);
@@ -166,7 +166,7 @@ int dbAsyncDelete(redisDb *db, robj *key) {
         /* Tells the module that the key has been unlinked from the database. */
         moduleNotifyKeyUnlink(key, val);
 
-        /* lazy_free并不是完全异步的，而是先评估释放操作所需工作量，如果影响较小就直接在主线程中删除了 */
+        /* lazy_free并不是完全异步的,而是先评估释放操作所需工作量,如果影响较小就直接在主线程中删除了 */
         size_t free_effort = lazyfreeGetFreeEffort(key, val);
 
         /* If releasing the object is too much work, do it in the background
@@ -177,9 +177,9 @@ int dbAsyncDelete(redisDb *db, robj *key) {
          * objects, and then call dbDelete(). In this case we'll fall
          * through and reach the dictFreeUnlinkedEntry() call, that will be
          * equivalent to just calling decrRefCount().
-         * 如果释放这个对象需要做大量的工作，就把他放到异步线程里做
-         * 但如果这个对象是共享对象(refcount > 1)就不能直接释放了，当然这很少发送，但有可能redis
-         * 核心会调用incrRefCount来保护对象，然后调用dbDelete。这我只需要直接调用dictFreeUnlinkedEntry，
+         * 如果释放这个对象需要做大量的工作,就把他放到异步线程里做
+         * 但如果这个对象是共享对象(refcount > 1)就不能直接释放了,当然这很少发送,但有可能redis
+         * 核心会调用incrRefCount来保护对象,然后调用dbDelete。这我只需要直接调用dictFreeUnlinkedEntry,
          * 等价于调用decrRefCount */
         if (free_effort > LAZYFREE_THRESHOLD && val->refcount == 1) {
             atomicIncr(lazyfree_objects, 1);
@@ -188,7 +188,7 @@ int dbAsyncDelete(redisDb *db, robj *key) {
         }
     }
 
-    /* 释放键值对所占用的内存，如果是lazyFree，val已经是null了，只需要释放key的内存即可 */
+    /* 释放键值对所占用的内存,如果是lazyFree,val已经是null了,只需要释放key的内存即可 */
     if (de) {
         dictFreeUnlinkedEntry(db->dict, de);
         if (server.cluster_enabled)

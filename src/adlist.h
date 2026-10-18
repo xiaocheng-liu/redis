@@ -8,14 +8,14 @@ typedef struct listNode
 {
     struct listNode *prev; // 前一个节点
     struct listNode *next; // 后一个节点
-    void *value;           // 值，可以是任意类型
+    void *value;           // 值,可以是任意类型
 } listNode;
 
-// Redis为list定义了一个迭代器结构，其能正序和逆序的访问list结构
+// Redis为list定义了一个迭代器结构,其能正序和逆序的访问list结构
 typedef struct listIter
 {
     listNode *next; // 指向下一个节点
-    int direction;  // 方向参数，正序和逆序
+    int direction;  // 方向参数,正序和逆序
 } listIter;
 
 // 双端链表本身
@@ -24,14 +24,14 @@ typedef struct list
 {
     listNode *head;                     // 指向链表头节点
     listNode *tail;                     // 指向链表尾节点
-    void *(*dup)(void *ptr);            // 用来复制节点的函数，主要用于深拷贝
+    void *(*dup)(void *ptr);            // 用来复制节点的函数,主要用于深拷贝
     void (*free)(void *ptr);            // 释放节点的函数
-    int (*match)(void *ptr, void *key); // 校验给定的key是否和节点中的node匹配，用于查找
+    int (*match)(void *ptr, void *key); // 校验给定的key是否和节点中的node匹配,用于查找
     unsigned long len;                  // 长度
 } list;
 
 /* Functions implemented as macros */
-// Redis对其结构体提供了一系列的宏定义函数，方便操作其结构体参数
+// Redis对其结构体提供了一系列的宏定义函数,方便操作其结构体参数
 #define listLength(l) ((l)->len)      // 获取list的长度
 #define listFirst(l) ((l)->head)      // 获取list的头节点
 #define listLast(l) ((l)->tail)       // 获取list的尾节点

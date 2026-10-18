@@ -1,5 +1,5 @@
 #include "t_list.h"
-#include "server_cammand_define.h"
+#include "server_commands.h"
 
 /*-----------------------------------------------------------------------------
  * List API
@@ -80,7 +80,7 @@ void listTypeReleaseIterator(listTypeIterator *li) {
 /* Stores pointer to current the entry in the provided entry structure
  * and advances the position of the iterator. Returns 1 when the current
  * entry is in fact an entry, 0 otherwise. */
-// 在提供的条目结构中存储指向当前条目的指针，并推进迭代器的位置。当当前条目实际上是条目时返回 1，否则返回 0。
+// 在提供的条目结构中存储指向当前条目的指针,并推进迭代器的位置。当当前条目实际上是条目时返回 1,否则返回 0。
 int listTypeNext(listTypeIterator *li, listTypeEntry *entry) {
     /* Protect from converting when iterating */
     serverAssert(li->subject->encoding == li->encoding);
@@ -197,7 +197,7 @@ static void pushGenericCommand(client *c, int where, int xx) {
     // 检查是否是list类型
     if (checkType(c, lobj, OBJ_LIST))
         return;
-    // 如果对象不存在，则创建一个quicklist
+    // 如果对象不存在,则创建一个quicklist
     if (!lobj) {
         if (xx) {
             addReply(c, shared.czero);
@@ -886,7 +886,7 @@ void blockingPopGenericCommand(client *c, int where) {
                 return;
             } else {
                 if (listTypeLength(o) != 0) {
-                    /* 非空队列，直接返回[LR]POP结果. */
+                    /* 非空队列,直接返回[LR]POP结果. */
                     robj *value = listTypePop(o, where);
                     serverAssert(value != NULL);
 
@@ -904,18 +904,18 @@ void blockingPopGenericCommand(client *c, int where) {
         }
     }
 
-    /* 如果是在MULTI/EXEC中使用，且list是空，就当做这次请求超时*/
+    /* 如果是在MULTI/EXEC中使用,且list是空,就当做这次请求超时*/
     if (c->flags & CLIENT_MULTI) {
         addReplyNullArray(c);
         return;
     }
 
-    /* 如果list是空，或者key不存在，就阻塞 */
+    /* 如果list是空,或者key不存在,就阻塞 */
     struct listPos pos = {where};
     blockForKeys(c, BLOCKED_LIST, c->argv + 1, c->argc - 2, timeout, NULL, &pos, NULL);
 }
 
-/* 阻塞从队首pop元素，如果list为空则阻塞 */
+/* 阻塞从队首pop元素,如果list为空则阻塞 */
 /* BLPOP <key> [<key> ...] <timeout> */
 void blpopCommand(client *c) { blockingPopGenericCommand(c, T_LIST_HEAD); }
 

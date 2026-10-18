@@ -19,10 +19,10 @@
 #include "zmalloc.h"
 
 /*
- * ae.c里封装了不同操作系统的IO多路复用机制，通过条件编译的方式编译不同的多路复用库。
- * redis优先会考虑使用evport,然后才是epoll，再是kqueue，最后才是select，
- * 从前到后性能逐渐变差，当然有些IO复用是在特殊平台才独有的，
- * 比如kqueue用于freebsd系统，目前mac系统上用的就是kqueue。
+ * ae.c里封装了不同操作系统的IO多路复用机制,通过条件编译的方式编译不同的多路复用库。
+ * redis优先会考虑使用evport,然后才是epoll,再是kqueue,最后才是select,
+ * 从前到后性能逐渐变差,当然有些IO复用是在特殊平台才独有的,
+ * 比如kqueue用于freebsd系统,目前mac系统上用的就是kqueue。
  */
 #ifdef HAVE_EVPORT
 #include "ae_evport.c"
@@ -75,7 +75,7 @@ aeEventLoop *aeCreateEventLoop(int setsize) {
 
     /* Events with mask == AE_NONE are not set. So let's initialize the
      * vector with it. */
-    // 未设置掩码 == AE_NONE的事件。因此，让我们用它初始化向量。
+    // 未设置掩码 == AE_NONE的事件。因此,让我们用它初始化向量。
     for (i = 0; i < setsize; i++)
         eventLoop->events[i].mask = AE_NONE; // 初始化为空事件
     return eventLoop;
@@ -101,7 +101,7 @@ void aeSetDontWait(aeEventLoop *eventLoop, int noWait) {
  * performed at all.
  *
  * Otherwise AE_OK is returned and the operation is successful. */
-// 改变setsize的值（重新分配空间）
+// 改变setsize的值(重新分配空间)
 int aeResizeSetSize(aeEventLoop *eventLoop, int setsize) {
     int i;
 
@@ -123,7 +123,7 @@ int aeResizeSetSize(aeEventLoop *eventLoop, int setsize) {
     return AE_OK;
 }
 
-// 删除事件循环eventLoop（释放内存空间）
+// 删除事件循环eventLoop(释放内存空间)
 void aeDeleteEventLoop(aeEventLoop *eventLoop) {
     aeApiFree(eventLoop);
     zfree(eventLoop->events);
@@ -140,11 +140,11 @@ void aeDeleteEventLoop(aeEventLoop *eventLoop) {
     zfree(eventLoop);
 }
 
-// 停止事件循环，即stop值设为1
+// 停止事件循环,即stop值设为1
 void aeStop(aeEventLoop *eventLoop) { eventLoop->stop = 1; }
 
-/* fd事件监听的统一注册入口，最开始监听了redis端口的fd，有新的连接进来是其fd也会被加进来
- * 另外这里还有aof和rdb的异步时间，后端依赖于不同的aeApiAddEvent实现 */
+/* fd事件监听的统一注册入口,最开始监听了redis端口的fd,有新的连接进来是其fd也会被加进来
+ * 另外这里还有aof和rdb的异步时间,后端依赖于不同的aeApiAddEvent实现 */
 int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, int mask, aeFileProc *proc, void *clientData) {
     if (fd >= eventLoop->setsize) { // eventLoop->setsize为事件数组的大小
         errno = ERANGE;
@@ -153,10 +153,10 @@ int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, int mask, aeFileProc *proc
     // 根据传入的文件描述符获取对应的IO事件
     aeFileEvent *fe = &eventLoop->events[fd];
 
-    // 注册要监听的事件，让内核可以监听到当前文件描述符上的IO事件
+    // 注册要监听的事件,让内核可以监听到当前文件描述符上的IO事件
     if (aeApiAddEvent(eventLoop, fd, mask) == -1)
         return AE_ERR;
-    // 设置文件事件类型，以及事件的处理器
+    // 设置文件事件类型,以及事件的处理器
     fe->mask |= mask;
     if (mask & AE_READABLE)
         fe->rfileProc = proc; // 设置写事件的回调函数
@@ -164,7 +164,7 @@ int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, int mask, aeFileProc *proc
         fe->wfileProc = proc; // 设置读事件的回调函数
     // 私有数据
     fe->clientData = clientData;
-    // 如果有需要，更新事件处理器的最大fd
+    // 如果有需要,更新事件处理器的最大fd
     if (fd > eventLoop->maxfd)
         eventLoop->maxfd = fd;
     return AE_OK;
@@ -259,7 +259,7 @@ int aeDeleteTimeEvent(aeEventLoop *eventLoop, long long id) {
  *    Much better but still insertion or deletion of timers is O(N).
  * 2) Use a skiplist to have this operation as O(1) and insertion as O(log(N)).
  */
-// 距离第一个计时器应触发的毫秒数。如果没有计时器，则返回 -1。
+// 距离第一个计时器应触发的毫秒数。如果没有计时器,则返回 -1。
 static long msUntilEarliestTimer(aeEventLoop *eventLoop) {
     aeTimeEvent *te = eventLoop->timeEventHead;
     if (te == NULL)
@@ -277,8 +277,8 @@ static long msUntilEarliestTimer(aeEventLoop *eventLoop) {
 }
 
 /*
- * 执行时间事件，时间事件直接存放在了aeEventLoop->timeEventHead双链表中，
- * 执行的过程就是遍历链表，只执行到了或这超过预定时间的是时间事件.
+ * 执行时间事件,时间事件直接存放在了aeEventLoop->timeEventHead双链表中,
+ * 执行的过程就是遍历链表,只执行到了或这超过预定时间的是时间事件.
  * 函数返回值是执行了多少时间事件
  */
 static int processTimeEvents(aeEventLoop *eventLoop) {
@@ -323,7 +323,7 @@ static int processTimeEvents(aeEventLoop *eventLoop) {
          * add new timers on the head, however if we change the implementation
          * detail, this check may be useful again: we keep it here for future
          * defense.
-         * 这里确保timeEvent执行过程中创建的timeEvent不被执行，确保timeEvent链表不会爆掉 */
+         * 这里确保timeEvent执行过程中创建的timeEvent不被执行,确保timeEvent链表不会爆掉 */
         if (te->id > maxId) {
             te = te->next;
             continue;
@@ -366,21 +366,21 @@ static int processTimeEvents(aeEventLoop *eventLoop) {
  * if flags has AE_CALL_BEFORE_SLEEP set, the beforesleep callback is called.
  *
  * The function returns the number of events processed. */
-// 核心部分：事件处理逻辑
-// 处理每个挂起的时间事件，然后处理每个挂起的文件事件（可能由刚刚处理的时间事件回调注册）。
-// 如果没有特殊标志，函数将休眠，直到某个文件事件触发，或者下次事件发生（如果有）。
-// 如果标志为 0，则该函数不执行任何操作并返回。
-// 如果设置了AE_ALL_EVENTS标志，则会处理所有类型的事件。
-// 如果设置了AE_FILE_EVENTS标志，则处理文件事件。
-// 如果设置了AE_TIME_EVENTS标志，则处理时间事件。
-// 如果设置了AE_DONT_WAIT标志，则该函数将尽快返回，直到处理所有无需等待即可处理的事件。
-// 如果设置了AE_CALL_AFTER_SLEEP标志，调用aftersleep回调。
-// 如果设置了AE_CALL_BEFORE_SLEEP标志，调用beforesleep回调。
+// 核心部分:事件处理逻辑
+// 处理每个挂起的时间事件,然后处理每个挂起的文件事件(可能由刚刚处理的时间事件回调注册)。
+// 如果没有特殊标志,函数将休眠,直到某个文件事件触发,或者下次事件发生(如果有)。
+// 如果标志为 0,则该函数不执行任何操作并返回。
+// 如果设置了AE_ALL_EVENTS标志,则会处理所有类型的事件。
+// 如果设置了AE_FILE_EVENTS标志,则处理文件事件。
+// 如果设置了AE_TIME_EVENTS标志,则处理时间事件。
+// 如果设置了AE_DONT_WAIT标志,则该函数将尽快返回,直到处理所有无需等待即可处理的事件。
+// 如果设置了AE_CALL_AFTER_SLEEP标志,调用aftersleep回调。
+// 如果设置了AE_CALL_BEFORE_SLEEP标志,调用beforesleep回调。
 int aeProcessEvents(aeEventLoop *eventLoop, int flags) {
-    int processed = 0, numevents; //  1.定义临时变量processed(已经处理好的事件数)并初始化；
+    int processed = 0, numevents; //  1.定义临时变量processed(已经处理好的事件数)并初始化;
                                   //  2.定义临时变量numevents(事件数)
 
-    /* 如果没有事件。如果flag位既不是时间事件，又不是文件事件，返回0 */
+    /* 如果没有事件。如果flag位既不是时间事件,又不是文件事件,返回0 */
     if (!(flags & AE_TIME_EVENTS) && !(flags & AE_FILE_EVENTS))
         return 0;
 
@@ -388,7 +388,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags) {
      * file events to process as long as we want to process time
      * events, in order to sleep until the next time event is ready
      * to fire. */
-    // 注意，既然我们要处理时间事件，即使没有要处理的文件事件，我们仍要调用select()，以便在下一次事件准备启动之前进行休眠。
+    // 注意,既然我们要处理时间事件,即使没有要处理的文件事件,我们仍要调用select(),以便在下一次事件准备启动之前进行休眠。
     // 如果【有监控文件事件】或者【有要处理定时器事件并且没有设置不阻塞标志】则进入逻辑。
     // 不等于-1代表当前存在正在监听的套接字。
     // &&的优先级高于||
@@ -408,12 +408,12 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags) {
             tv.tv_usec = (msUntilTimer % 1000) * 1000;
             tvp = &tv;
         } else {
-            // 执行到这一步，说明没有时间事件
-            // 那么根据 AE_DONT_WAIT 是否设置来决定是否阻塞，以及阻塞的时间长度
+            // 执行到这一步,说明没有时间事件
+            // 那么根据 AE_DONT_WAIT 是否设置来决定是否阻塞,以及阻塞的时间长度
             /* If we have to check for events but need to return
              * ASAP because of AE_DONT_WAIT we need to set the timeout
              * to zero */
-            // 如果设置了不阻塞标志，则将阻塞时间为0，表示不阻塞
+            // 如果设置了不阻塞标志,则将阻塞时间为0,表示不阻塞
             if (flags & AE_DONT_WAIT) {
                 // 设置文件事件不阻塞
                 tv.tv_sec = tv.tv_usec = 0;
@@ -425,7 +425,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags) {
             }
         }
 
-        /* 如果事件循环的标志位不阻塞等待，那么将tv的成员变量值置为0并且将tvp指向tv的地址*/
+        /* 如果事件循环的标志位不阻塞等待,那么将tv的成员变量值置为0并且将tvp指向tv的地址*/
         if (eventLoop->flags & AE_DONT_WAIT) {
             tv.tv_sec = tv.tv_usec = 0;
             tvp = &tv;
@@ -437,8 +437,8 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags) {
             eventLoop->beforesleep(eventLoop);
 
         /* 调用aeApiPoll,这个函数仅仅会返回超时或者当有事件触发的时候回返回就绪文件事件个数
-           linux下的epoll_wait的返回值:若成功，返回就绪的文件描述符个数;
-                              若出错, 返回-1，
+           linux下的epoll_wait的返回值:若成功,返回就绪的文件描述符个数;
+                              若出错, 返回-1,
                               若超时, 返回0
            这里只会返回0或者就绪的文件描述符个数.
          */
@@ -450,7 +450,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags) {
         // 这样也可以保证epoll_wait不会阻塞太长时间
         // 且在一段时间没有来文件事件的话也可以正常进行时间事件,
         // 这里redis的实现就非常巧妙,以前的见过网络框架的做法是时间事件由定时器驱动 触发epoll去执行
-        // redis的这样实现显然提高了效率，就算是大量的定时事件换个数据结构(时间轮)也完全hold得住
+        // redis的这样实现显然提高了效率,就算是大量的定时事件换个数据结构(时间轮)也完全hold得住
         numevents = aeApiPoll(eventLoop, tvp);
 
         /* 执行阻塞后的处理函数 */
@@ -490,9 +490,9 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags) {
              *
              * Fire the readable event if the call sequence is not
              * inverted. */
-            /* 如果没有设置AE_BARRIER标志，优先处理读事件 */
+            /* 如果没有设置AE_BARRIER标志,优先处理读事件 */
             if (!invert && fe->mask & mask & AE_READABLE) {
-                // 如果是可读事件，调用可读事件的回调函数，参数分别为eventLoop、文件描述符、aeFileEvent的clientData、事件类型掩码
+                // 如果是可读事件,调用可读事件的回调函数,参数分别为eventLoop、文件描述符、aeFileEvent的clientData、事件类型掩码
                 fe->rfileProc(eventLoop, fd, fe->clientData, mask);
                 // rfired 确保读/写事件只能执行其中一个
                 fired++;
@@ -500,10 +500,10 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags) {
             }
 
             /*
-                 如果是写事件，且在【没有翻转读写顺序】或【fe->wfileProc与fe->rfileProc】
-                 的情况下，执行写事件处理函数
-                 疑问：为什么要做【fe->wfileProc与fe->rfileProc】的判断？
-                       可能是默写版本中的错误，下面有refresh in case of resize，应该
+                 如果是写事件,且在【没有翻转读写顺序】或【fe->wfileProc与fe->rfileProc】
+                 的情况下,执行写事件处理函数
+                 疑问:为什么要做【fe->wfileProc与fe->rfileProc】的判断？
+                       可能是默写版本中的错误,下面有refresh in case of resize,应该
                        是为了解决一些存在的瞬时状态的bug而产生的更严谨的写法.
             */
             /* Fire the writable event. 处理可写事件*/
@@ -569,7 +569,7 @@ int aeWait(int fd, int mask, long long milliseconds) {
     }
 }
 
-// 启动事件循环，事件循环的入口
+// 启动事件循环,事件循环的入口
 void aeMain(aeEventLoop *eventLoop) {
     eventLoop->stop = 0;
     while (!eventLoop->stop) {
@@ -581,10 +581,10 @@ void aeMain(aeEventLoop *eventLoop) {
 // 获取当前用的Api的名称
 char *aeGetApiName(void) { return aeApiName(); }
 
-// 注册回调函数，即每次主循环在休眠之前被调用
+// 注册回调函数,即每次主循环在休眠之前被调用
 void aeSetBeforeSleepProc(aeEventLoop *eventLoop, aeBeforeSleepProc *beforesleep) {
     eventLoop->beforesleep = beforesleep;
 }
 
-// 注册回调函数，即每次主循环在休眠之后被调用
+// 注册回调函数,即每次主循环在休眠之后被调用
 void aeSetAfterSleepProc(aeEventLoop *eventLoop, aeBeforeSleepProc *aftersleep) { eventLoop->aftersleep = aftersleep; }

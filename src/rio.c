@@ -110,12 +110,12 @@ static const rio rioFileIO = {
         {{NULL, 0}} /* union for io-specific vars */
 };
 
-// 初始化一个 rio 结构体对象，使其与指定的文件流 FILE *fp 关联，并设置相关的文件 I/O 参数。
+// 初始化一个 rio 结构体对象,使其与指定的文件流 FILE *fp 关联,并设置相关的文件 I/O 参数。
 void rioInitWithFile(rio *r, FILE *fp) {
     *r = rioFileIO; // 初始化为 rioFileIO 类型。
     r->io.file.fp = fp; // 设置文件流指针 fp
-    r->io.file.buffered = 0; // 初始化缓冲标志为 0（未启用缓冲）。
-    r->io.file.autosync = 0; // 初始化自动同步标志为 0（未启用自动同步）。
+    r->io.file.buffered = 0; // 初始化缓冲标志为 0(未启用缓冲)。
+    r->io.file.autosync = 0; // 初始化自动同步标志为 0(未启用自动同步)。
 }
 
 /* ------------------- Connection implementation -------------------

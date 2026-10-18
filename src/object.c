@@ -7,7 +7,7 @@
 #include "evict.h"
 #include "intset.h"
 #include "server.h"
-#include "server_cammand_define.h"
+#include "server_commands.h"
 #include "t_zset.h"
 #include "util.h"
 #include "ziplist.h"
@@ -17,7 +17,7 @@
 #endif
 
 /* ===================== Creation and parsing of objects ==================== */
-/* 公共创建对象的方法，默认给对象raw编码 */
+/* 公共创建对象的方法,默认给对象raw编码 */
 robj *createObject(int type, void *ptr) {
     // 开辟redisObject的大小的空间
     robj *o = zmalloc(sizeof(*o));
@@ -28,11 +28,11 @@ robj *createObject(int type, void *ptr) {
 
     /* Set the LRU to the current lruclock (minutes resolution), or
      * alternatively the LFU counter. */
-    // 如果缓存替换策略是LFU，那么将lru变量设置为LFU的计数值
+    // 如果缓存替换策略是LFU,那么将lru变量设置为LFU的计数值
     if (server.maxmemory_policy & MAXMEMORY_FLAG_LFU) {
         o->lru = (LFUGetTimeInMinutes() << 8) | LFU_INIT_VAL;
     } else {
-        // 否则，调用LRU_CLOCK函数获取LRU时钟值
+        // 否则,调用LRU_CLOCK函数获取LRU时钟值
         o->lru = LRU_CLOCK();
     }
     return o;
@@ -100,7 +100,7 @@ robj *createEmbeddedStringObject(const char *ptr, size_t len) {
  * we allocate as EMBSTR will still fit into the 64 byte arena of jemalloc. */
 #define OBJ_ENCODING_EMBSTR_SIZE_LIMIT 44
 robj *createStringObject(const char *ptr, size_t len) {
-    if (len <= OBJ_ENCODING_EMBSTR_SIZE_LIMIT) // 如果长度小于44，则使用embstr编码
+    if (len <= OBJ_ENCODING_EMBSTR_SIZE_LIMIT) // 如果长度小于44,则使用embstr编码
         return createEmbeddedStringObject(ptr, len);
     else // 否则使用raw编码
         return createRawStringObject(ptr, len);
@@ -335,7 +335,7 @@ void incrRefCount(robj *o) {
         }
     }
 }
-/* 减少引用计数，如果没有引用了就释放内存空间 */
+/* 减少引用计数,如果没有引用了就释放内存空间 */
 void decrRefCount(robj *o) {
     if (o->refcount == 1) {
         switch (o->type) {
@@ -412,7 +412,7 @@ void trimStringObjectIfNeeded(robj *o) {
     }
 }
 
-/* 将string类型的robj做特殊编码，以节省存储空间  */
+/* 将string类型的robj做特殊编码,以节省存储空间  */
 robj *tryObjectEncoding(robj *o) {
     long value;
     sds s = o->ptr;
@@ -423,8 +423,8 @@ robj *tryObjectEncoding(robj *o) {
      * representations but are handled by the commands implementing
      * the type.
      */
-    // 这段代码的功能是确保当前对象为字符串类型，这是该函数唯一编码的类型。
-    // 其他类型使用内存高效的编码表示，但由实现这些类型的命令处理。
+    // 这段代码的功能是确保当前对象为字符串类型,这是该函数唯一编码的类型。
+    // 其他类型使用内存高效的编码表示,但由实现这些类型的命令处理。
     serverAssertWithInfo(NULL, o, o->type == OBJ_STRING);
 
     /* We try some specialized encoding only for objects that are
@@ -440,7 +440,7 @@ robj *tryObjectEncoding(robj *o) {
      * everywhere in the "object space" of Redis and may end in places where
      * they are not handled. We handle them only as values in the keyspace.
      */
-    // 如果是共享的对象，不能编码，因为可能会影响到其他地方的使用
+    // 如果是共享的对象,不能编码,因为可能会影响到其他地方的使用
     if (o->refcount > 1)
         return o;
 
@@ -448,28 +448,28 @@ robj *tryObjectEncoding(robj *o) {
      * Note that we are sure that a string larger than 20 chars is not
      * representable as a 32 nor 64 bit integer.
      */
-    // 这段代码的功能是检查一个字符串是否可以被表示为长整型数。具体逻辑如下：
-    // 如果字符串长度超过20个字符，则直接判定无法表示为32位或64位整数。
-    // 对于长度小于等于20的字符串，进一步判断其是否符合长整型数的范围。
+    // 这段代码的功能是检查一个字符串是否可以被表示为长整型数。具体逻辑如下:
+    // 如果字符串长度超过20个字符,则直接判定无法表示为32位或64位整数。
+    // 对于长度小于等于20的字符串,进一步判断其是否符合长整型数的范围。
     len = sdslen(s);
-    // 尝试进行 OBJ_ENCODING_INT 编码，长度小于等于20，并且能转为长整型
+    // 尝试进行 OBJ_ENCODING_INT 编码,长度小于等于20,并且能转为长整型
     if (len <= 20 && string2l(s, len, &value)) {
         /* This object is encodable as a long. Try to use a shared object.
          * Note that we avoid using shared integers when maxmemory is used
          * because every object needs to have a private LRU field for the LRU
          * algorithm to work well.
-         * 如果可以被编码为long型，且编码后的值小于OBJ_SHARED_INTEGERS(10000)，且未配
-         * 置LRU替换淘汰策略, 就使用这个数的共享对象，相当于所有小于10000的数都是用的同一个robj*/
+         * 如果可以被编码为long型,且编码后的值小于OBJ_SHARED_INTEGERS(10000),且未配
+         * 置LRU替换淘汰策略, 就使用这个数的共享对象,相当于所有小于10000的数都是用的同一个robj*/
         if ((server.maxmemory == 0 || !(server.maxmemory_policy & MAXMEMORY_FLAG_NO_SHARED_INTEGERS)) && value >= 0 &&
             value < OBJ_SHARED_INTEGERS) {
-            // 减少o的引用计数，以便被回收
+            // 减少o的引用计数,以便被回收
             decrRefCount(o);
             // 增加引用共享对象的引用计数
             incrRefCount(shared.integers[value]);
             // 返回共享对象的值
             return shared.integers[value];
         } else {
-            if (o->encoding == OBJ_ENCODING_RAW) { /* 否则原来如果是RAW类型，直接转为OBJ_ENCODING_INT类型，然后用long来直接存储字符串
+            if (o->encoding == OBJ_ENCODING_RAW) { /* 否则原来如果是RAW类型,直接转为OBJ_ENCODING_INT类型,然后用long来直接存储字符串
                                                     */
                 sdsfree(o->ptr);
                 o->encoding = OBJ_ENCODING_INT;
@@ -477,15 +477,15 @@ robj *tryObjectEncoding(robj *o) {
                 return o;
             } else if (
                     o->encoding ==
-                    OBJ_ENCODING_EMBSTR) { /*如果是OBJ_ENCODING_EMBSTR，也会转化为OBJ_ENCODING_INT，并用long存储字符串*/
-                // 减少o的引用计数，以便被回收
+                    OBJ_ENCODING_EMBSTR) { /*如果是OBJ_ENCODING_EMBSTR,也会转化为OBJ_ENCODING_INT,并用long存储字符串*/
+                // 减少o的引用计数,以便被回收
                 decrRefCount(o);
                 // 为value创建字符串对象返回
                 return createStringObjectFromLongLongForValue(value);
             }
         }
     }
-    // 对于那些无法转为long的字符串，做如下处理
+    // 对于那些无法转为long的字符串,做如下处理
 
     /* If the string is small and is still RAW encoded,
      * try the EMBSTR encoding which is more efficient.
@@ -494,7 +494,7 @@ robj *tryObjectEncoding(robj *o) {
      *
      */
     // 尝试进行 OBJ_ENCODING_EMBSTR 编码
-    // 如果字符串太小，长度小于等于44，直接转为OBJ_ENCODING_EMBSTR
+    // 如果字符串太小,长度小于等于44,直接转为OBJ_ENCODING_EMBSTR
     if (len <= OBJ_ENCODING_EMBSTR_SIZE_LIMIT) {
         robj *emb;
 
@@ -515,8 +515,8 @@ robj *tryObjectEncoding(robj *o) {
      * is only entered if the length of the string is greater than
      * OBJ_ENCODING_EMBSTR_SIZE_LIMIT.
      *
-     * 如果前面没有编码成功，这里做最后一次尝试，如果sds有超过10%的可用空闲空间，
-     * 且字符长度大于OBJ_ENCODING_EMBSTR_SIZE_LIMIT(44)，那尝试释放sds中多余
+     * 如果前面没有编码成功,这里做最后一次尝试,如果sds有超过10%的可用空闲空间,
+     * 且字符长度大于OBJ_ENCODING_EMBSTR_SIZE_LIMIT(44),那尝试释放sds中多余
      * 的空间以节省内存。
      **/
     trimStringObjectIfNeeded(o);
@@ -527,7 +527,7 @@ robj *tryObjectEncoding(robj *o) {
 
 /* Get a decoded version of an encoded object (returned as a new object).
  * If the object is already raw-encoded just increment the ref count.
- * 获取解码后的对象(返回的是有个新对象)，如果这个对象是个原始类型，只是把引用加一。 */
+ * 获取解码后的对象(返回的是有个新对象),如果这个对象是个原始类型,只是把引用加一。 */
 robj *getDecodedObject(robj *o) {
     robj *dec;
 

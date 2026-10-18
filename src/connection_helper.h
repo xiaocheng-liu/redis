@@ -47,11 +47,11 @@ static int connHasRefs(connection *conn)
  * 2. Execute the handler (if set).
  * 3. Decrement refs and perform deferred close, if refs==0.
  */
-// 该函数 callHandler 的功能是调用连接的回调函数并处理连接的引用计数和关闭逻辑：
+// 该函数 callHandler 的功能是调用连接的回调函数并处理连接的引用计数和关闭逻辑:
 // 1.增加连接的引用计数。
-// 2.如果回调函数存在，则调用回调函数。
+// 2.如果回调函数存在,则调用回调函数。
 // 3.减少连接的引用计数。
-// 4.如果连接被标记为计划关闭且引用计数为零，则关闭连接。
+// 4.如果连接被标记为计划关闭且引用计数为零,则关闭连接。
 static int callHandler(connection *conn, ConnectionCallbackFunc handler)
 {
     connIncrRefs(conn);

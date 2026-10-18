@@ -28,7 +28,7 @@ list *listCreate(void) {
     return list;
 }
 
-/* 清空list，但不销毁list */
+/* 清空list,但不销毁list */
 void listEmpty(list *list) {
     unsigned long len;
     listNode *current, *next;
@@ -39,7 +39,7 @@ void listEmpty(list *list) {
     // 遍历整个链表
     while (len--) {
         next = current->next;
-        // 如果设置了值释放函数，就调用
+        // 如果设置了值释放函数,就调用
         if (list->free)
             list->free(current->value);
         // 释放节点
@@ -60,7 +60,7 @@ void listRelease(list *list) {
     zfree(list);
 }
 
-/* 在list头部增加一个新节点，就是一次双向链表的头部插入，插入成功返回新的head*/
+/* 在list头部增加一个新节点,就是一次双向链表的头部插入,插入成功返回新的head*/
 list *listAddNodeHead(list *list, void *value) {
     listNode *node;
 
@@ -112,10 +112,10 @@ list *listAddNodeTail(list *list, void *value) {
 
 // 将一个包含给定值的新节点添加到给定节点的之前或者之后。
 /*
- * 创建一个包含值 value 的新节点，并将它插入到 old_node 的之前或之后
+ * 创建一个包含值 value 的新节点,并将它插入到 old_node 的之前或之后
  *
- * 如果 after 为 0 ，将新节点插入到 old_node 之前。
- * 如果 after 为 1 ，将新节点插入到 old_node 之后。
+ * 如果 after 为 0 ,将新节点插入到 old_node 之前。
+ * 如果 after 为 1 ,将新节点插入到 old_node 之后。
  *
  */
 list *listInsertNode(list *list, listNode *old_node, void *value, int after) {
@@ -133,7 +133,7 @@ list *listInsertNode(list *list, listNode *old_node, void *value, int after) {
         // 将插入节点的后一个节点设置为老节点的后一个节点
         node->next = old_node->next;
         if (list->tail == old_node) {
-            // 如果链表的尾节点就是被插入的节点，将链表的尾节点设置为插入节点
+            // 如果链表的尾节点就是被插入的节点,将链表的尾节点设置为插入节点
             list->tail = node;
         }
     } else {
@@ -143,18 +143,18 @@ list *listInsertNode(list *list, listNode *old_node, void *value, int after) {
         // 将插入节点的前一个节点设置为老节点的前一个节点
         node->prev = old_node->prev;
         if (list->head == old_node) {
-            // 如果链表的头节点就是被插入的节点，将链表的头节点设置为插入节点
+            // 如果链表的头节点就是被插入的节点,将链表的头节点设置为插入节点
             list->head = node;
         }
     }
     // 更新插入节点的前置节点
     if (node->prev != NULL) {
-        // 如果插入节点的前一个节点不为NULL，将前一个节点的后一个节点设置为插入节点
+        // 如果插入节点的前一个节点不为NULL,将前一个节点的后一个节点设置为插入节点
         node->prev->next = node;
     }
     // 更新插入节点的后置节点
     if (node->next != NULL) {
-        // 如果插入节点的后一个节点不为NULL，将后一个节点的前一个节点设置为插入节点
+        // 如果插入节点的后一个节点不为NULL,将后一个节点的前一个节点设置为插入节点
         node->next->prev = node;
     }
     // 更新链表长度
@@ -191,14 +191,14 @@ void listDelNode(list *list, listNode *node) {
  * call to listNext() will return the next element of the list.
  *
  * This function can't fail.
- * list的迭代器，就是有个指针 */
+ * list的迭代器,就是有个指针 */
 listIter *listGetIterator(list *list, int direction) {
     listIter *iter;
 
     // 为迭代器分配内存
     if ((iter = zmalloc(sizeof(*iter))) == NULL)
         return NULL;
-    // 根据迭代方向，设置起始节点
+    // 根据迭代方向,设置起始节点
     if (direction == AL_START_HEAD)
         iter->next = list->head;
     else
@@ -216,13 +216,13 @@ void listReleaseIterator(listIter *iter) {
 }
 
 /* Create an iterator in the list private iterator structure */
-// 将迭代器的指针指向表头，并设置迭代方向
+// 将迭代器的指针指向表头,并设置迭代方向
 void listRewind(list *list, listIter *li) {
     li->next = list->head;
     li->direction = AL_START_HEAD;
 }
 
-// 将迭代器的指针指向表尾，并设置迭代方向
+// 将迭代器的指针指向表尾,并设置迭代方向
 void listRewindTail(list *list, listIter *li) {
     li->next = list->tail;
     li->direction = AL_START_TAIL;
@@ -249,22 +249,22 @@ listNode *listNext(listIter *iter) {
     if (current != NULL) {
         // 根据方向选择下一个节点
         if (iter->direction == AL_START_HEAD)
-            // 保存下一个节点，防止当前节点被删除而造成指针丢失
+            // 保存下一个节点,防止当前节点被删除而造成指针丢失
             iter->next = current->next;
         else
-            // 保存下一个节点，防止当前节点被删除而造成指针丢失
+            // 保存下一个节点,防止当前节点被删除而造成指针丢失
             iter->next = current->prev;
     }
     return current;
 }
 
-/* 复制整个list，如果内存不足返回null，否则返回复制出来的新list
+/* 复制整个list,如果内存不足返回null,否则返回复制出来的新list
  *
- * 如果设置了List的dup方法，新list里的ListNode里的val才是新复制处理来的，
- * 否则就直接是旧ListNode里val的一个指针，这样的问题是如果新旧list其中一
- * 个有变动，都会影响到另外一个list。
+ * 如果设置了List的dup方法,新list里的ListNode里的val才是新复制处理来的,
+ * 否则就直接是旧ListNode里val的一个指针,这样的问题是如果新旧list其中一
+ * 个有变动,都会影响到另外一个list。
  *
- * 不管成功与否，原始链表都不会被改动 */
+ * 不管成功与否,原始链表都不会被改动 */
 list *listDup(list *orig) {
     list *copy;
     listIter iter;
@@ -303,10 +303,10 @@ list *listDup(list *orig) {
     return copy;
 }
 
-/*  在list中查找指定的key，如果list指定了match方法，则使用match方法来判定
- * 是否匹配，否则直接比较节点中的val和key指向的是否是同一个地址。
+/*  在list中查找指定的key,如果list指定了match方法,则使用match方法来判定
+ * 是否匹配,否则直接比较节点中的val和key指向的是否是同一个地址。
  *
- * 如果找到匹配的，返回第一个匹配的节点，否则返回null，本质上就是一个双向链表的查找 */
+ * 如果找到匹配的,返回第一个匹配的节点,否则返回null,本质上就是一个双向链表的查找 */
 listNode *listSearchKey(list *list, void *key) {
     listIter iter;
     listNode *node;
@@ -336,13 +336,13 @@ listNode *listIndex(list *list, long index) {
     listNode *n;
 
     if (index < 0) {
-        // 如果index是负，执行逆向查找
+        // 如果index是负,执行逆向查找
         index = (-index) - 1;
         n = list->tail;
         while (index-- && n)
             n = n->prev;
     } else {
-        // // 如果index是正，执行正向查找
+        // // 如果index是正,执行正向查找
         n = list->head;
         while (index-- && n)
             n = n->next;
@@ -399,9 +399,9 @@ void listRotateHeadToTail(list *list) {
 
 /* Add all the elements of the list 'o' at the end of the
  * list 'l'. The list 'other' remains empty but otherwise valid.
- * 把l和o两个list拼接在一起，*/
+ * 把l和o两个list拼接在一起,*/
 void listJoin(list *l, list *o) {
-    // 如果o为空，直接返回
+    // 如果o为空,直接返回
     if (o->len == 0)
         return;
 
@@ -409,10 +409,10 @@ void listJoin(list *l, list *o) {
     o->head->prev = l->tail;
 
     if (l->tail)
-        // 如果l的尾节点存在，将l的尾节点的下一个节点指向o的头节点
+        // 如果l的尾节点存在,将l的尾节点的下一个节点指向o的头节点
         l->tail->next = o->head;
     else
-        // 不存在，说明l为空，直接设置l的头节点为o的头节点
+        // 不存在,说明l为空,直接设置l的头节点为o的头节点
         l->head = o->head;
 
     // l的尾节点设置为o的尾节点

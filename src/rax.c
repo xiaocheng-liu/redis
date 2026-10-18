@@ -18,7 +18,7 @@
 /* This is a special pointer that is guaranteed to never have the same value
  * of a radix tree node. It's used in order to report "not found" error without
  * requiring the function to have multiple return values. */
-// 这是一个特殊的指针，保证它永远不会有相同的根树节点值。它用于报告“未找到”错误，而不要求函数具有多个返回值。
+// 这是一个特殊的指针,保证它永远不会有相同的根树节点值。它用于报告“未找到”错误,而不要求函数具有多个返回值。
 void *raxNotFound = (void *) "rax-not-found-pointer";
 
 /* -------------------------------- Debugging ------------------------------ */
@@ -883,18 +883,18 @@ oom:
     return 0;
 }
 
-/* 在rax中插入数据，s指向key，data指向value， len是data的实际长度，如果插入的key已
- * 经存在了就覆盖旧的数据，并将旧数据赋值给old指针*/
+/* 在rax中插入数据,s指向key,data指向value, len是data的实际长度,如果插入的key已
+ * 经存在了就覆盖旧的数据,并将旧数据赋值给old指针*/
 int raxInsert(rax *rax, unsigned char *s, size_t len, void *data, void **old) {
     return raxGenericInsert(rax, s, len, data, old, 1);
 }
 
-/* 功能和raxInsert差不多，但差别这个函数不会覆盖旧数据 */
+/* 功能和raxInsert差不多,但差别这个函数不会覆盖旧数据 */
 int raxTryInsert(rax *rax, unsigned char *s, size_t len, void *data, void **old) {
     return raxGenericInsert(rax, s, len, data, old, 0);
 }
 
-/* 在rax中查找key，如果没找到就返回raxNotFound的指针，其指向一个"rax-not-found-pointer"
+/* 在rax中查找key,如果没找到就返回raxNotFound的指针,其指向一个"rax-not-found-pointer"
  * 的字符串。如果找到了就返回对应的值 */
 void *raxFind(rax *rax, unsigned char *s, size_t len) {
     raxNode *h;

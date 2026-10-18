@@ -7,7 +7,7 @@
 /* Check if this blocked client timedout (does nothing if the client is
  * not blocked right now). If so send a reply, unblock it, and return 1.
  * Otherwise 0 is returned and no operation is performed.
- * 检查阻塞的client是否超时，如果没有什么都不做，如果超时，回复client，并去掉阻塞，
+ * 检查阻塞的client是否超时,如果没有什么都不做,如果超时,回复client,并去掉阻塞,
  * 返回1。否则返回0 */
 int checkBlockedClientTimeout(client *c, mstime_t now) {
     if (c->flags & CLIENT_BLOCKED && c->bpop.timeout != 0 && c->bpop.timeout < now) {
@@ -63,7 +63,7 @@ int clientsCronHandleTimeout(client *c, mstime_t now_ms) {
 
 #define CLIENT_ST_KEYLEN 16 /* 8 bytes mstime + 8 bytes client ID. */
 
-/* 用timeout和client生成radix tree中的key，主要是timeout从小端表示改大端表示法 */
+/* 用timeout和client生成radix tree中的key,主要是timeout从小端表示改大端表示法 */
 void encodeTimeoutKey(unsigned char *buf, uint64_t timeout, client *c) {
     timeout = htonu64(timeout);
     memcpy(buf, &timeout, sizeof(timeout));
@@ -95,7 +95,7 @@ void addClientToTimeoutTable(client *c) {
 
 /* Remove the client from the table when it is unblocked for reasons
  * different than timing out. */
-// 当客户端因超时以外的原因而取消阻止时，将其从表中删除。
+// 当客户端因超时以外的原因而取消阻止时,将其从表中删除。
 void removeClientFromTimeoutTable(client *c) {
     if (!(c->flags & CLIENT_IN_TO_TABLE))
         return;
@@ -123,7 +123,7 @@ void handleBlockedClientsTimeout(void) {
         // 从radix树节点中解析出timeout时间和对应的client指针
         decodeTimeoutKey(ri.key, &timeout, &c);
         if (timeout >= now)
-            break; /* 因为是timeout从大到小遍历，如果说当前节点没有超时，那后面一定也没有超时的了 */
+            break; /* 因为是timeout从大到小遍历,如果说当前节点没有超时,那后面一定也没有超时的了 */
         c->flags &= ~CLIENT_IN_TO_TABLE;
         checkBlockedClientTimeout(c, now);
         raxRemove(server.clients_timeout_table, ri.key, ri.key_len, NULL);

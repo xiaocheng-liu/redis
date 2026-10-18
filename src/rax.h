@@ -74,7 +74,7 @@ typedef struct raxNode
     uint32_t iskey : 1;   /* 这个节点是否包含key? */
     uint32_t isnull : 1;  /* 分配的值是null (如果是null的话就不用分配内存存储空数据)). */
     uint32_t iscompr : 1; /* 节点是否是压缩的 */
-    uint32_t size : 29;   /* 子节点数量，或者是压缩后的字符串长度. */
+    uint32_t size : 29;   /* 子节点数量,或者是压缩后的字符串长度. */
     /* Data layout is as follows:
      *
      * If node is not compressed we have 'size' bytes, one for each children

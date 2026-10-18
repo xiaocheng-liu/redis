@@ -8,14 +8,14 @@
 
 /* Each entry in the ziplist is either a string or an integer. */
 // 用于表示 ziplist 中的单个条目。
-// ziplist 是一种紧凑的数据结构，用于存储不同类型的元素。
+// ziplist 是一种紧凑的数据结构,用于存储不同类型的元素。
 // 该结构体能同时支持字符串和整数两种数据类型。
 typedef struct
 {
-    /* When string is used, it is provided with the length (slen). */ // 使用字符串时，将为其提供长度（slen）
+    /* When string is used, it is provided with the length (slen). */ // 使用字符串时,将为其提供长度(slen)
     unsigned char *sval;
     unsigned int slen;
-    /* When integer is used, 'sval' is NULL, and lval holds the value. */ // 使用整数时，'sval' 为 NULL，lval 保存值
+    /* When integer is used, 'sval' is NULL, and lval holds the value. */ // 使用整数时,'sval' 为 NULL,lval 保存值
     long long lval;
 } ziplistEntry;
 

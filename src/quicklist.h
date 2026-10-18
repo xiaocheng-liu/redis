@@ -8,14 +8,14 @@
 
 /* Node, quicklist, and Iterator are the only data structures used currently. */
 
-/* quicklistNode 中用了32个字节存储一个节点，三个指针总计24字节，加sz和后面按位用的几个int，总计32字节
+/* quicklistNode 中用了32个字节存储一个节点,三个指针总计24字节,加sz和后面按位用的几个int,总计32字节
  * 用了32个bit来保存ziplist的信息。
- * count: 16位，最大65536(最大ziplist的大小是65k，所以实际上count小于32k)
- * encoding: 2位，RAW=1, LZF=2.
- * container: 2位，NONE=1, ZIPLIST=2.
- * recompress: 1位，bool类型，如果是true表示当前节点是临时使用的解压后的节点.
- * attempted_compress: 1位， boolean类型，基本是在测试中使用
- * extra: 用剩下的10位，暂时没有用到，留给之后的feature */
+ * count: 16位,最大65536(最大ziplist的大小是65k,所以实际上count小于32k)
+ * encoding: 2位,RAW=1, LZF=2.
+ * container: 2位,NONE=1, ZIPLIST=2.
+ * recompress: 1位,bool类型,如果是true表示当前节点是临时使用的解压后的节点.
+ * attempted_compress: 1位, boolean类型,基本是在测试中使用
+ * extra: 用剩下的10位,暂时没有用到,留给之后的feature */
 typedef struct quicklistNode
 {
     struct quicklistNode *prev;
@@ -23,7 +23,7 @@ typedef struct quicklistNode
     unsigned char *zl;                   /* quicklist节点对应的ziplist */
     unsigned int sz;                     /* ziplist的字节数 */
     unsigned int count : 16;             /* ziplist的item数*/
-    unsigned int encoding : 2;           /* 数据类型，RAW==1 or LZF==2 */
+    unsigned int encoding : 2;           /* 数据类型,RAW==1 or LZF==2 */
     unsigned int container : 2;          /* NONE==1 or ZIPLIST==2 */
     unsigned int recompress : 1;         /* 这个节点以前压缩过吗？ */
     unsigned int attempted_compress : 1; /* node can't compress; too small */
@@ -69,20 +69,20 @@ typedef struct quicklistBookmark
 #error unknown arch bits count
 #endif
 
-/* quicklist是一个40字节的结构体(在64位系统中)，具体字段如下：
+/* quicklist是一个40字节的结构体(在64位系统中),具体字段如下:
  * count: quicklist中所有数据项的个数
- * len：quicklist中的节点数
- * compress: quicklist的压缩深度，0表示不压缩，否则就表示从两端开始有多少个节点不压缩
- * bookmarks是一个可选字段，用来quicklist重新分配内存空间时使用，不使用时不占用空间 */
+ * len:quicklist中的节点数
+ * compress: quicklist的压缩深度,0表示不压缩,否则就表示从两端开始有多少个节点不压缩
+ * bookmarks是一个可选字段,用来quicklist重新分配内存空间时使用,不使用时不占用空间 */
 typedef struct quicklist
 {
     quicklistNode *head;                      /* 头结点 */
     quicklistNode *tail;                      /* 尾结点 */
     unsigned long count;                      /* 在所有的ziplist中的entry总数 */
     unsigned long len;                        /* quicklist节点总数 */
-    int fill : QL_FILL_BITS;                  /* 16位，每个节点的最大容量*/
-    unsigned int compress : QL_COMP_BITS;     /* 16位，quicklist的压缩深度，0表示所有节点都不压缩，否则就表示从两端开始有多少个节点不压缩 */
-    unsigned int bookmark_count : QL_BM_BITS; /*4位，bookmarks数组的大小，bookmarks是一个可选字段，用来quicklist重新分配内存空间时使用，不使用时不占用空间*/
+    int fill : QL_FILL_BITS;                  /* 16位,每个节点的最大容量*/
+    unsigned int compress : QL_COMP_BITS;     /* 16位,quicklist的压缩深度,0表示所有节点都不压缩,否则就表示从两端开始有多少个节点不压缩 */
+    unsigned int bookmark_count : QL_BM_BITS; /*4位,bookmarks数组的大小,bookmarks是一个可选字段,用来quicklist重新分配内存空间时使用,不使用时不占用空间*/
     quicklistBookmark bookmarks[];
 } quicklist;
 

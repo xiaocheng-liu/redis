@@ -102,7 +102,7 @@ void slowlogPushEntryIfNeeded(client *c, robj **argv, int argc, long long durati
 }
 
 /* Remove all the entries from the current slow log. */
-// 清空 Redis 的慢查询日志（slowlog）
+// 清空 Redis 的慢查询日志(slowlog)
 void slowlogReset(void) {
     while (listLength(server.slowlog) > 0)
         listDelNode(server.slowlog, listLast(server.slowlog));

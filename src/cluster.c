@@ -16,7 +16,7 @@
 #include "endianconv.h"
 #include "pubsub.h"
 #include "server.h"
-#include "server_cammand_define.h"
+#include "server_commands.h"
 #include "util.h"
 
 /* A global reference to myself is handy to make code more clear.
@@ -503,7 +503,7 @@ void clusterInit(void) {
         }
     }
 
-    /*slot到key的映射是一颗radix树，在这里初始化 */
+    /*slot到key的映射是一颗radix树,在这里初始化 */
     server.cluster->slots_to_keys = raxNew();
     memset(server.cluster->slots_keys_count, 0, sizeof(server.cluster->slots_keys_count));
 
@@ -521,14 +521,14 @@ void clusterInit(void) {
     clusterUpdateMyselfFlags();
 }
 
-/* 重置节点分为软重置和硬重置，主要逻辑如下：
+/* 重置节点分为软重置和硬重置,主要逻辑如下:
  * 1. 所有其他节点被遗忘
  * 2. 所有已分配或启用的槽位被释放
- * 3. 如果节点是slave节点，则转变为master节点
+ * 3. 如果节点是slave节点,则转变为master节点
  * 4. 生成新的节点id (仅硬重置)
  * 5. currentEpoch和configEpoch被重设为0(仅硬重置)
- * 6. 新配置文件被保存，集群状态信息被更新
- * 7. 如果当前节点是slave节点，所有数据会被清除  */
+ * 6. 新配置文件被保存,集群状态信息被更新
+ * 7. 如果当前节点是slave节点,所有数据会被清除  */
 void clusterReset(int hard) {
     dictIterator *di;
     dictEntry *de;
@@ -647,7 +647,7 @@ void clusterAcceptHandler(aeEventLoop *el, int fd, void *privdata, int mask) {
 
     /* If the server is starting up, don't accept cluster connections:
      * UPDATE messages may interact with the database content.
-     * 如果服务正在启动中，不接收集群的连接 */
+     * 如果服务正在启动中,不接收集群的连接 */
     if (server.masterhost == NULL && server.loading)
         return;
 
@@ -706,7 +706,7 @@ unsigned long getClusterConnectionsCount(void) {
  * However if the key contains the {...} pattern, only the part between
  * { and } is hashed. This may be useful in the future to force certain
  * keys to be in the same node (assuming no resharding is in progress). */
-// 用于计算 Redis 集群中键（key）的哈希槽（hash slot）。Redis 集群使用哈希槽来分布数据到不同的节点上。
+// 用于计算 Redis 集群中键(key)的哈希槽(hash slot)。Redis 集群使用哈希槽来分布数据到不同的节点上。
 unsigned int keyHashSlot(char *key, int keylen) {
     // 寻找 `{` 和 `}` 的位置
     int s, e; /* start-end indexes of { and } */
@@ -716,20 +716,20 @@ unsigned int keyHashSlot(char *key, int keylen) {
             break;
 
     /* No '{' ? Hash the whole key. This is the base case. */
-    // 如果遍历完整个键都没有发现 `{`，则直接对整个键进行哈希计算
-    // `& 0x3FFF` 用于将结果限制在 0 到 16383（即 2^14 - 1）的范围内。
+    // 如果遍历完整个键都没有发现 `{`,则直接对整个键进行哈希计算
+    // `& 0x3FFF` 用于将结果限制在 0 到 16383(即 2^14 - 1)的范围内。
     // 这是因为 Redis 集群共有 16384 个哈希槽。
     if (s == keylen)
         return crc16(key, keylen) & 0x3FFF;
 
     /* '{' found? Check if we have the corresponding '}'. */
-    // 从 `{` 的下一个字符开始，继续查找 `}` 的位置，存储在变量 `e` 中。
+    // 从 `{` 的下一个字符开始,继续查找 `}` 的位置,存储在变量 `e` 中。
     for (e = s + 1; e < keylen; e++)
         if (key[e] == '}')
             break;
 
     /* No '}' or nothing between {} ? Hash the whole key. */
-    // 如果没有找到 `}` 或者 `{` 和 `}` 之间没有内容（即 `e == s+1`），仍然对整个键进行哈希计算：
+    // 如果没有找到 `}` 或者 `{` 和 `}` 之间没有内容(即 `e == s+1`),仍然对整个键进行哈希计算:
     if (e == keylen || e == s + 1)
         return crc16(key, keylen) & 0x3FFF;
 
@@ -3775,7 +3775,7 @@ int clusterDelNodeSlots(clusterNode *node) {
 
 /* Clear the migrating / importing state for all the slots.
  * This is useful at initialization and when turning a master into slave.
- * 清除从所有槽位导入或者迁移的状态，在master角色转化为slave时尤其有用*/
+ * 清除从所有槽位导入或者迁移的状态,在master角色转化为slave时尤其有用*/
 void clusterCloseAllSlots(void) {
     memset(server.cluster->migrating_slots_to, 0, sizeof(server.cluster->migrating_slots_to));
     memset(server.cluster->importing_slots_from, 0, sizeof(server.cluster->importing_slots_from));
@@ -5809,9 +5809,9 @@ int clusterRedirectBlockedClientIfNeeded(client *c) {
             /* We send an error and unblock the client if:
              * 1) The slot is unassigned, emitting a cluster down error.
              * 2) The slot is not handled by this node, nor being imported. */
-            /* 如果key对应的slot不是自己，有两种情况
-             * 1. 对应的slot未分配，返回CLUSTER_REDIR_DOWN_UNBOUND
-             * 2. 返回重定向信息，包含重定向的节点信息和slot
+            /* 如果key对应的slot不是自己,有两种情况
+             * 1. 对应的slot未分配,返回CLUSTER_REDIR_DOWN_UNBOUND
+             * 2. 返回重定向信息,包含重定向的节点信息和slot
              */
             if (node != myself && server.cluster->importing_slots_from[slot] == NULL) {
                 if (node == NULL) {

@@ -10,18 +10,18 @@
 #include <string.h>
 #include "sdsalloc.h"
 
-/* 关于sds完整解析的博文已更新，详见 https://blog.csdn.net/xindoo/article/details/108808273
+/* 关于sds完整解析的博文已更新,详见 https://blog.csdn.net/xindoo/article/details/108808273
  *
- * redis sds（动态字符）的实现，类似于java中的StringBuffer StringBuilder，但为了节省存储空间，
- * 做了更极致的设计。 redis针对不同的字符串长度设计了多种不同的结构体，比如sdshdr8 sdshdr16
- * sdshdr32，其差异在于sdshdr中len和allo其差异在于sdshdr中len和alloc字段的数据类型c字段的数据类型。
- * 以 sdshdr8为例，其存储结构如下。
+ * redis sds(动态字符)的实现,类似于java中的StringBuffer StringBuilder,但为了节省存储空间,
+ * 做了更极致的设计。 redis针对不同的字符串长度设计了多种不同的结构体,比如sdshdr8 sdshdr16
+ * sdshdr32,其差异在于sdshdr中len和allo其差异在于sdshdr中len和alloc字段的数据类型c字段的数据类型。
+ * 以 sdshdr8为例,其存储结构如下。
  * |  len  | alloc | flag |   buff   |
  * | 1byte | 1byte | 1byte|  n bytes |
- * 相比于直接用int表示len和alloc，某个字符串节省了6个字节，其设计策略是用最少的字节存储字符串的长
- * 度信息和剩余空间，这对于redis中大量短字符串的情况而言省下的内存是非常可观的。
+ * 相比于直接用int表示len和alloc,某个字符串节省了6个字节,其设计策略是用最少的字节存储字符串的长
+ * 度信息和剩余空间,这对于redis中大量短字符串的情况而言省下的内存是非常可观的。
  *
- * 另外，sds为了兼容c的字符串，redis中所有sds指针都是指向buf的，而并不是sdshdr的开头，这点要
+ * 另外,sds为了兼容c的字符串,redis中所有sds指针都是指向buf的,而并不是sdshdr的开头,这点要
  * 额外注意。
  */
 const char *SDS_NOINIT = "SDS_NOINIT";
@@ -90,16 +90,16 @@ static inline size_t sdsTypeMaxSize(char type) {
  * You can print the string with printf() as there is an implicit \0 at the
  * end of the string. However the string is binary safe and can contain
  * \0 characters in the middle, as the length is stored in the sds header. */
-// 新建一个sds字符串，包含特殊的初始化指针和初始长度
-// 如果 NULL 用于"init"，则字符串初始化为零字节。
-// 如果使用SDS_NOINIT，则缓冲区保持未初始化状态;
+// 新建一个sds字符串,包含特殊的初始化指针和初始长度
+// 如果 NULL 用于"init",则字符串初始化为零字节。
+// 如果使用SDS_NOINIT,则缓冲区保持未初始化状态;
 sds _sdsnewlen(const void *init, size_t initlen, int trymalloc) {
     void *sh; // 指向SDS结构体的指针
-    sds s; // sds类型变量，即char*字符数组
+    sds s; // sds类型变量,即char*字符数组
 
     char type = sdsReqType(initlen); // 根据初始化的长度确定用哪种sdshdr
     // SDS_TYPE_5 强制转换为 SDS_TYPE_8, 这样侧面验证了 sdshdr5 从未被使用
-    /* 空字符串大概率之后会append，但sdshdr5不适合用来append，所以直接替换成sdshdr8 */
+    /* 空字符串大概率之后会append,但sdshdr5不适合用来append,所以直接替换成sdshdr8 */
     if (type == SDS_TYPE_5 && initlen == 0) {
         type = SDS_TYPE_8;
     }
@@ -109,7 +109,7 @@ sds _sdsnewlen(const void *init, size_t initlen, int trymalloc) {
     size_t usable; // 分配的空间
 
     // 分配空间
-    // s_trymalloc_usable: 尝试分配内存，失败则返回NULL
+    // s_trymalloc_usable: 尝试分配内存,失败则返回NULL
     // s_malloc_usable: 分配内存或者抛异常[不友好]
     //    sh = trymalloc ?
     //         s_trymalloc_usable(hdrlen + initlen + 1, &usable) :
@@ -130,7 +130,7 @@ sds _sdsnewlen(const void *init, size_t initlen, int trymalloc) {
         memset(sh, 0, hdrlen + initlen + 1);
     }
 
-    /* 注意：返回的s并不是直接指向sds的指针，而是指向sds中字符串的指针，sds的指针还需要根据s和hdrlen计算出来 */
+    /* 注意:返回的s并不是直接指向sds的指针,而是指向sds中字符串的指针,sds的指针还需要根据s和hdrlen计算出来 */
     s = (char *) sh + hdrlen; // s 此时指向buf
     fp = ((unsigned char *) s) - 1; // fp指向flags
     usable = usable - hdrlen - 1;
@@ -187,7 +187,7 @@ sds sdsnewlen(const void *init, size_t initlen) { return _sdsnewlen(init, initle
 /* 尝试新建一个容量为initlen的sds */
 sds sdstrynewlen(const void *init, size_t initlen) { return _sdsnewlen(init, initlen, 1); }
 
-/* 新建一个空的sds字符串，长度为0，空字符串 */
+/* 新建一个空的sds字符串,长度为0,空字符串 */
 sds sdsempty(void) { return sdsnewlen("", 0); }
 
 /* 将一个C字符串转化为sds字符串 */
@@ -196,14 +196,14 @@ sds sdsnew(const char *init) {
     return sdsnewlen(init, initlen);
 }
 
-/* 将sds根据其实际长度生成一个新的sds，目的是降低内存的占用 */
+/* 将sds根据其实际长度生成一个新的sds,目的是降低内存的占用 */
 sds sdsdup(const sds s) { return sdsnewlen(s, sdslen(s)); }
 
 /* 释放sds的占用的空间 */
 void sdsfree(sds s) {
     if (s == NULL)
         return;
-    // 得到内存的真正起始位置，然后释放内存
+    // 得到内存的真正起始位置,然后释放内存
     s_free((char *) s - sdsHdrSize(s[-1]));
 }
 
@@ -226,7 +226,7 @@ void sdsupdatelen(sds s) {
     sdssetlen(s, reallen);
 }
 
-/* 将sds中的内容清空，但并不会释放其占用的空间，以便下次继续使用 */
+/* 将sds中的内容清空,但并不会释放其占用的空间,以便下次继续使用 */
 void sdsclear(sds s) {
     // 设置len为0
     sdssetlen(s, 0);
@@ -235,8 +235,8 @@ void sdsclear(sds s) {
 }
 
 /*
- * 扩大sds的实际可用空间，以便后续能拼接更多字符串。
- * 注意：这里实际不会改变sds的长度，只是增加了更多可用的空间(buf)
+ * 扩大sds的实际可用空间,以便后续能拼接更多字符串。
+ * 注意:这里实际不会改变sds的长度,只是增加了更多可用的空间(buf)
  * s: 源字符串
  * addlen: 新增长度
  */
@@ -245,32 +245,32 @@ sds sdsMakeRoomFor(sds s, size_t addlen) {
     size_t avail = sdsavail(s); // 获取sds的剩余空间
     size_t len, newlen;
 
-    // type 新类型；oldtype：之前的类型
+    // type 新类型;oldtype:之前的类型
     char type, oldtype = s[-1] & SDS_TYPE_MASK; // SDS_TYPE_MASK = 7  , 根据flags获取SDS的类型oldtype
     int hdrlen;
     size_t usable;
 
     if (avail >= addlen)
-        return s; // 如果有足够的剩余空间，直接返回
+        return s; // 如果有足够的剩余空间,直接返回
 
     len = sdslen(s); // 获取当前长度
     sh = (char *) s - sdsHdrSize(oldtype);
 
     newlen = (len + addlen); // 新长度
-    // 在未超出 SDS_MAX_PREALLOC 前，扩容都是按2倍的方式扩容，超出后只能递增
+    // 在未超出 SDS_MAX_PREALLOC 前,扩容都是按2倍的方式扩容,超出后只能递增
     // SDS_MAX_PREALLOC = 1024*1024
     if (newlen < SDS_MAX_PREALLOC) {
-        // 新增后长度小于 1MB ，则按新长度的两倍扩容
+        // 新增后长度小于 1MB ,则按新长度的两倍扩容
         newlen *= 2;
     } else {
-        // 新增后长度大于 1MB ，则按新长度加上 1MB 扩容
+        // 新增后长度大于 1MB ,则按新长度加上 1MB 扩容
         newlen += SDS_MAX_PREALLOC;
     }
 
     // 重新计算 SDS 的类型
     type = sdsReqType(newlen);
 
-    /*  在真正使用过程中不会用到type5，如果遇到type5直接使用type8*/
+    /*  在真正使用过程中不会用到type5,如果遇到type5直接使用type8*/
     if (type == SDS_TYPE_5)
         type = SDS_TYPE_8;
 
@@ -278,19 +278,19 @@ sds sdsMakeRoomFor(sds s, size_t addlen) {
     hdrlen = sdsHdrSize(type);
     if (oldtype == type) {
         // 类型没变
-        // 调用 s_realloc_usable 重新分配可用内存，返回新 SDS 的头部指针， usable 会被设置为当前分配的大小
+        // 调用 s_realloc_usable 重新分配可用内存,返回新 SDS 的头部指针, usable 会被设置为当前分配的大小
         newsh = s_realloc_usable(sh, hdrlen + newlen + 1, &usable);
         if (newsh == NULL)
-            return NULL; // 分配失败，直接返回NULL
+            return NULL; // 分配失败,直接返回NULL
         s = (char *) newsh + hdrlen; // 获取指向buf的指针
     } else {
         /* Since the header size changes, need to move the string forward,
          * and can't use realloc */
-        // 扩容其实就是申请新的空间，然后把旧数据挪过去
-        // 类型变化导致 header 的大小也变化，需要向前移动字符串，不能使用 realloc
+        // 扩容其实就是申请新的空间,然后把旧数据挪过去
+        // 类型变化导致 header 的大小也变化,需要向前移动字符串,不能使用 realloc
         newsh = s_malloc_usable(hdrlen + newlen + 1, &usable);
         if (newsh == NULL)
-            return NULL; // 分配失败，直接返回NULL
+            return NULL; // 分配失败,直接返回NULL
         memcpy((char *) newsh + hdrlen, s, len + 1); // 将原字符串copy至新空间中
         s_free(sh); // 释放原字符串内存
         s = (char *) newsh + hdrlen;
@@ -342,8 +342,8 @@ sds sdsRemoveFreeSpace(sds s) {
      * required, we just realloc(), letting the allocator to do the copy
      * only if really needed. Otherwise if the change is huge, we manually
      * reallocate the string to use the different header type. */
-    /* 如果类型相同，或者至少仍然需要一个足够大的类型，我们只需 realloc buf即可；
-     * 否则，说明变化很大，则手动重新分配字符串以使用不同的头文件类型。
+    /* 如果类型相同,或者至少仍然需要一个足够大的类型,我们只需 realloc buf即可;
+     * 否则,说明变化很大,则手动重新分配字符串以使用不同的头文件类型。
      */
     if (oldtype == type || type > SDS_TYPE_8) {
         newsh = s_realloc(sh, oldhdrlen + len + 1);
@@ -367,7 +367,7 @@ sds sdsRemoveFreeSpace(sds s) {
 }
 
 /*
- * 返回sds总共占用的内存大小 包含：
+ * 返回sds总共占用的内存大小 包含:
  * 1) sds标记
  * 2) 字符串长度
  * 3) 剩余未使用的空间
@@ -453,7 +453,7 @@ void sdsIncrLen(sds s, ssize_t incr) {
  *
  * if the specified length is smaller than the current length, no operation
  * is performed. */
-// 把sds增长到指定的长度，增长出来的新的空间用0填充
+// 把sds增长到指定的长度,增长出来的新的空间用0填充
 sds sdsgrowzero(sds s, size_t len) {
     size_t curlen = sdslen(s);
 
@@ -484,7 +484,7 @@ sds sdscatlen(sds s, const void *t, size_t len) {
     // 获取源字符串的长度
     size_t curlen = sdslen(s);
 
-    // SDS分配空间（自动扩容机制）
+    // SDS分配空间(自动扩容机制)
     s = sdsMakeRoomFor(s, len);
     if (s == NULL)
         return NULL;
@@ -802,8 +802,8 @@ sds sdscatfmt(sds s, char const *fmt, ...) {
  *
  * Output will be just "HelloWorld".
  *
- * 字符串："XXXXYYXBXXXBXXXYYY" ,修剪集合 "XY"
- * 修剪结果为 "BXXXB"， 而不是"BB"
+ * 字符串:"XXXXYYXBXXXBXXXYYY" ,修剪集合 "XY"
+ * 修剪结果为 "BXXXB", 而不是"BB"
  */
 sds sdstrim(sds s, const char *cset) {
     char *start, *end, *sp, *ep;
@@ -826,10 +826,10 @@ sds sdstrim(sds s, const char *cset) {
 }
 
 /*
- * 根据传入的起始和终止位置截取sds的部分子串，起始和终止位置可以是负数，比如-1表示字符串
- * 最后一个位置，-2是倒数第二个位置……
- * start和end是闭区间，结果中会包含start和end位置
- * 字符串字符串是原地更改，原有字符串信息会丢失
+ * 根据传入的起始和终止位置截取sds的部分子串,起始和终止位置可以是负数,比如-1表示字符串
+ * 最后一个位置,-2是倒数第二个位置……
+ * start和end是闭区间,结果中会包含start和end位置
+ * 字符串字符串是原地更改,原有字符串信息会丢失
  *
  * 例如:
  *
@@ -893,7 +893,7 @@ void sdstoupper(sds s) {
  * If two strings share exactly the same prefix, but one of the two has
  * additional characters, the longer string is considered to be greater than
  * the smaller one. */
-// 字符串大小的比较，因为sds兼容了c的字符串，所以可以直接用c的memcmp函数
+// 字符串大小的比较,因为sds兼容了c的字符串,所以可以直接用c的memcmp函数
 int sdscmp(const sds s1, const sds s2) {
     size_t l1, l2, minlen;
     int cmp;
@@ -993,7 +993,7 @@ void sdsfreesplitres(sds *tokens, int count) {
  *
  * After the call, the modified sds string is no longer valid and all the
  * references must be substituted with the new pointer returned by the call. */
-// 将长度为 len 的字符串 p 以带引号（quoted）的格式
+// 将长度为 len 的字符串 p 以带引号(quoted)的格式
 // 追加到给定 sds 的末尾
 sds sdscatrepr(sds s, const char *p, size_t len) {
     s = sdscatlen(s, "\"", 1);
@@ -1292,7 +1292,7 @@ void sds_free(void *ptr) { s_free(ptr); }
  * Template variables are specified using curly brackets, e.g. {variable}.
  * An opening bracket can be quoted by repeating it twice.
  */
-// 用于解析模板字符串，替换其中的变量。
+// 用于解析模板字符串,替换其中的变量。
 sds sdstemplate(const char *template, sdstemplate_callback_t cb_func, void *cb_arg) {
     sds res = sdsempty();
     const char *p = template;

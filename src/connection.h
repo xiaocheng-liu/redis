@@ -9,7 +9,7 @@
 typedef struct aeEventLoop aeEventLoop;
 typedef struct connection connection;
 
-// 枚举类型 ConnectionState，用于表示连接的状态。
+// 枚举类型 ConnectionState,用于表示连接的状态。
 typedef enum
 {
     CONN_STATE_NONE = 0,   // 连接状态为空
@@ -20,24 +20,24 @@ typedef enum
     CONN_STATE_ERROR       // 连接状态为错误
 } ConnectionState;
 
-// 这段代码定义了两个宏，用于表示连接的状态标志位。
-// CONN_FLAG_CLOSE_SCHEDULED 表示连接已由某个处理器安排关闭；
+// 这段代码定义了两个宏,用于表示连接的状态标志位。
+// CONN_FLAG_CLOSE_SCHEDULED 表示连接已由某个处理器安排关闭;
 // CONN_FLAG_WRITE_BARRIER 表示请求写屏障。
 #define CONN_FLAG_CLOSE_SCHEDULED (1 << 0) /* Closed scheduled by a handler */
 #define CONN_FLAG_WRITE_BARRIER (1 << 1)   /* Write barrier requested */
 
-// 这段代码定义了两个宏，用于表示连接类型。
-// CONN_TYPE_SOCKET 表示使用普通套接字连接，值为1；
-// CONN_TYPE_TLS 表示使用TLS加密的连接，值为2。
+// 这段代码定义了两个宏,用于表示连接类型。
+// CONN_TYPE_SOCKET 表示使用普通套接字连接,值为1;
+// CONN_TYPE_TLS 表示使用TLS加密的连接,值为2。
 #define CONN_TYPE_SOCKET 1
 #define CONN_TYPE_TLS 2
 
-// 定义了一个函数指针类型 ConnectionCallbackFunc，该函数指针指向一个接受 struct connection *conn 类型参数且返回值为 void 的函数。
-// 此函数指针用于回调机制，通常在连接事件发生时调用。
+// 定义了一个函数指针类型 ConnectionCallbackFunc,该函数指针指向一个接受 struct connection *conn 类型参数且返回值为 void 的函数。
+// 此函数指针用于回调机制,通常在连接事件发生时调用。
 typedef void (*ConnectionCallbackFunc)(connection *conn);
 
-// 这段代码定义了一个名为 ConnectionType 的结构体，用于封装网络连接的各种操作。
-// 它包含多个函数指针，每个函数指针对应一种特定的操作，如事件处理、连接、读写、关闭、接受连接、设置读写处理器、获取错误信息、阻塞连接、同步读写等。
+// 这段代码定义了一个名为 ConnectionType 的结构体,用于封装网络连接的各种操作。
+// 它包含多个函数指针,每个函数指针对应一种特定的操作,如事件处理、连接、读写、关闭、接受连接、设置读写处理器、获取错误信息、阻塞连接、同步读写等。
 typedef struct ConnectionType
 {
     void (*ae_handler)(aeEventLoop *el, int fd, void *clientData, int mask);                                                       // 事件处理函数
@@ -56,8 +56,8 @@ typedef struct ConnectionType
     int (*get_type)(connection *conn);                                                                                             // 获取连接类型函数
 } ConnectionType;
 
-// 这段代码定义了一个名为 connection 的结构体，用于表示网络连接。
-// 结构体包含连接类型、状态、标志、引用计数、错误码、私有数据、回调函数和文件描述符等成员变量，主要用于管理和处理网络连接的各个属性和行为。
+// 这段代码定义了一个名为 connection 的结构体,用于表示网络连接。
+// 结构体包含连接类型、状态、标志、引用计数、错误码、私有数据、回调函数和文件描述符等成员变量,主要用于管理和处理网络连接的各个属性和行为。
 struct connection
 {
     ConnectionType *type;                 // 连接类型
@@ -65,7 +65,7 @@ struct connection
     short int flags;                      // 标志位
     short int refs;                       // 引用计数
     int last_errno;                       // 错误码
-    void *private_data;                   // 定义了一个指向无类型数据的指针，可以指向任何类型的对象或结构体。通常用于存储私有数据或用户自定义数据，具体用途取决于上下文环境。
+    void *private_data;                   // 定义了一个指向无类型数据的指针,可以指向任何类型的对象或结构体。通常用于存储私有数据或用户自定义数据,具体用途取决于上下文环境。
     ConnectionCallbackFunc conn_handler;  // 连接回调函数
     ConnectionCallbackFunc write_handler; // 写回调函数
     ConnectionCallbackFunc read_handler;  // 读回调函数
@@ -105,8 +105,8 @@ static inline int connAccept(connection *conn, ConnectionCallbackFunc accept_han
  * If C_ERR is returned, the operation failed and the connection handler shall
  * not be expected.
  */
-// 这段代码定义了一个静态内联函数 connConnect，用于连接网络。
-// 它调用传入的 connection 对象中指定类型的 connect 方法，传递地址、端口、源地址和连接回调函数作为参数。
+// 这段代码定义了一个静态内联函数 connConnect,用于连接网络。
+// 它调用传入的 connection 对象中指定类型的 connect 方法,传递地址、端口、源地址和连接回调函数作为参数。
 static inline int connConnect(connection *conn, const char *addr, int port, const char *src_addr,
                               ConnectionCallbackFunc connect_handler)
 {
@@ -119,7 +119,7 @@ static inline int connConnect(connection *conn, const char *addr, int port, cons
  * connections, but should probably be refactored out of cluster.c and replication.c,
  * in favor of a pure async implementation.
  */
-// 该函数用于连接到指定地址和端口的服务器，并设置连接超时时间。
+// 该函数用于连接到指定地址和端口的服务器,并设置连接超时时间。
 // 它调用connection对象中type成员的blocking_connect方法来执行实际的连接操作。
 static inline int connBlockingConnect(connection *conn, const char *addr, int port, long long timeout)
 {
@@ -146,9 +146,9 @@ static inline int connWrite(connection *conn, const void *data, size_t data_len)
  * The caller should NOT rely on errno. Testing for an EAGAIN-like condition, use
  * connGetState() to see if the connection state is still CONN_STATE_CONNECTED.
  */
-// 该函数用于从连接中读取数据。它通过调用连接对象 conn 中指定的读取方法来实现，返回读取结果。具体步骤如下：
+// 该函数用于从连接中读取数据。它通过调用连接对象 conn 中指定的读取方法来实现,返回读取结果。具体步骤如下:
 // 检查连接对象 conn 的类型。
-// 调用该类型的读取方法，传入连接对象、缓冲区指针和缓冲区长度。
+// 调用该类型的读取方法,传入连接对象、缓冲区指针和缓冲区长度。
 // 返回读取操作的结果。
 static inline int connRead(connection *conn, void *buf, size_t buf_len)
 {
@@ -158,8 +158,8 @@ static inline int connRead(connection *conn, void *buf, size_t buf_len)
 /* Register a write handler, to be called when the connection is writable.
  * If NULL, the existing handler is removed.
  */
-// 这段代码定义了一个内联函数 connSetWriteHandler，用于设置连接的写处理程序。
-// 它调用连接类型的 set_write_handler 方法，并传递连接对象、回调函数和一个整数参数 0。
+// 这段代码定义了一个内联函数 connSetWriteHandler,用于设置连接的写处理程序。
+// 它调用连接类型的 set_write_handler 方法,并传递连接对象、回调函数和一个整数参数 0。
 static inline int connSetWriteHandler(connection *conn, ConnectionCallbackFunc func)
 {
     return conn->type->set_write_handler(conn, func, 0);
@@ -169,7 +169,7 @@ static inline int connSetWriteHandler(connection *conn, ConnectionCallbackFunc f
  * If NULL, the existing handler is removed.
  */
 // 该函数用于设置连接的读取处理器。
-// 它通过调用连接对象中指定类型的 set_read_handler 方法，将给定的回调函数设置为读取处理器，并返回该方法的执行结果。
+// 它通过调用连接对象中指定类型的 set_read_handler 方法,将给定的回调函数设置为读取处理器,并返回该方法的执行结果。
 static inline int connSetReadHandler(connection *conn, ConnectionCallbackFunc func)
 {
     return conn->type->set_read_handler(conn, func);
@@ -180,9 +180,9 @@ static inline int connSetReadHandler(connection *conn, ConnectionCallbackFunc fu
  * With barrier enabled, we never fire the event if the read handler already
  * fired in the same event loop iteration. Useful when you want to persist
  * things to disk before sending replies, and want to do that in a group fashion. */
-// 该函数用于设置连接的写处理程序，并根据参数决定是否添加内存屏障。具体功能如下：
-// 接收三个参数：连接对象 conn，回调函数 func 和屏障标志 barrier
-// 调用 conn->type->set_write_handler 方法，传递上述参数并返回其结果
+// 该函数用于设置连接的写处理程序,并根据参数决定是否添加内存屏障。具体功能如下:
+// 接收三个参数:连接对象 conn,回调函数 func 和屏障标志 barrier
+// 调用 conn->type->set_write_handler 方法,传递上述参数并返回其结果
 static inline int connSetWriteHandlerWithBarrier(connection *conn, ConnectionCallbackFunc func, int barrier)
 {
     return conn->type->set_write_handler(conn, func, barrier);
@@ -197,31 +197,31 @@ static inline void connClose(connection *conn)
 /* Returns the last error encountered by the connection, as a string.  If no error,
  * a NULL is returned.
  */
-// 该函数用于获取连接对象的最后一个错误信息。具体步骤如下：
+// 该函数用于获取连接对象的最后一个错误信息。具体步骤如下:
 // 函数接收一个 connection 类型的指针 conn。
-// 调用 conn->type->get_last_error(conn)，返回连接对象的最后一个错误信息。
+// 调用 conn->type->get_last_error(conn),返回连接对象的最后一个错误信息。
 static inline const char *connGetLastError(connection *conn)
 {
     return conn->type->get_last_error(conn);
 }
 
 // 该函数用于同步写入数据到连接中。
-// 它调用连接对象的类型特定的 sync_write 方法，传递连接对象、指针、大小和超时时间作为参数，并返回写入结果。
+// 它调用连接对象的类型特定的 sync_write 方法,传递连接对象、指针、大小和超时时间作为参数,并返回写入结果。
 static inline ssize_t connSyncWrite(connection *conn, char *ptr, ssize_t size, long long timeout)
 {
     return conn->type->sync_write(conn, ptr, size, timeout);
 }
 
-// 该函数 connSyncRead 是一个内联静态函数，用于从连接中同步读取数据。
-// 它调用连接对象 conn 中指定的读取方法 sync_read，并传递指针 ptr、读取大小 size 和超时时间 timeout 参数。
+// 该函数 connSyncRead 是一个内联静态函数,用于从连接中同步读取数据。
+// 它调用连接对象 conn 中指定的读取方法 sync_read,并传递指针 ptr、读取大小 size 和超时时间 timeout 参数。
 static inline ssize_t connSyncRead(connection *conn, char *ptr, ssize_t size, long long timeout)
 {
     return conn->type->sync_read(conn, ptr, size, timeout);
 }
 
-// 该函数用于从连接中同步读取一行数据。具体功能如下：
-// 函数名为 connSyncReadLine，参数包括连接对象 conn、指向缓冲区的指针 ptr、缓冲区大小 size 和超时时间 timeout。
-// 函数通过调用连接对象 conn 中定义的 sync_readline 方法来实现具体读取逻辑，并返回读取的字节数或错误码。
+// 该函数用于从连接中同步读取一行数据。具体功能如下:
+// 函数名为 connSyncReadLine,参数包括连接对象 conn、指向缓冲区的指针 ptr、缓冲区大小 size 和超时时间 timeout。
+// 函数通过调用连接对象 conn 中定义的 sync_readline 方法来实现具体读取逻辑,并返回读取的字节数或错误码。
 static inline ssize_t connSyncReadLine(connection *conn, char *ptr, ssize_t size, long long timeout)
 {
     return conn->type->sync_readline(conn, ptr, size, timeout);

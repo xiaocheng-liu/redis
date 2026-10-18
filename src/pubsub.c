@@ -1,7 +1,7 @@
 #include "pubsub.h"
 #include "cluster.h"
 #include "server.h"
-#include "server_cammand_define.h"
+#include "server_commands.h"
 #include "util.h"
 
 /*-----------------------------------------------------------------------------
@@ -13,8 +13,8 @@
  * message. However if the caller sets 'msg' as NULL, it will be able
  * to send a special message (for instance an Array type) by using the
  * addReply*() API family. */
-// 向客户端发送类型为"消息"的 pubsub 消息。通常，"msg"是一个 Redis 对象，其中包含要作为消息发送的字符串。
-// 但是，如果调用方将"msg"设置为 NULL，它将能够使用 addReply（） API 系列发送特殊消息（例如数组类型）。
+// 向客户端发送类型为"消息"的 pubsub 消息。通常,"msg"是一个 Redis 对象,其中包含要作为消息发送的字符串。
+// 但是,如果调用方将"msg"设置为 NULL,它将能够使用 addReply() API 系列发送特殊消息(例如数组类型)。
 void addReplyPubsubMessage(client *c, robj *channel, robj *msg) {
     if (c->resp == 2) {
         addReply(c, shared.mbulkhdr[3]);
@@ -31,7 +31,7 @@ void addReplyPubsubMessage(client *c, robj *channel, robj *msg) {
  * with the "message" type delivered by addReplyPubsubMessage() is that
  * this message format also includes the pattern that matched the message. */
 // 向客户端发送类型为"pmessage"的 pubsub 消息。
-// 与 addReplyPubsubMessage() 传递的"消息"类型的区别在于，此消息格式还包括与消息匹配的模式。
+// 与 addReplyPubsubMessage() 传递的"消息"类型的区别在于,此消息格式还包括与消息匹配的模式。
 void addReplyPubsubPatMessage(client *c, robj *pat, robj *channel, robj *msg) {
     if (c->resp == 2) {
         addReply(c, shared.mbulkhdr[4]);
@@ -62,8 +62,8 @@ void addReplyPubsubSubscribed(client *c, robj *channel) {
  * Channel can be NULL: this is useful when the client sends a mass
  * unsubscribe command but there are no channels to unsubscribe from: we
  * still send a notification. */
-// 向客户端发送 pubsub 取消订阅通知。通道可以为 NULL：当客户端发送批量取消订阅命令但没有要取消订阅的通道时，
-// 这很有用：我们仍然发送通知。
+// 向客户端发送 pubsub 取消订阅通知。通道可以为 NULL:当客户端发送批量取消订阅命令但没有要取消订阅的通道时,
+// 这很有用:我们仍然发送通知。
 void addReplyPubsubUnsubscribed(client *c, robj *channel) {
     if (c->resp == 2) {
         addReply(c, shared.mbulkhdr[3]);
@@ -96,8 +96,8 @@ void addReplyPubsubPatSubscribed(client *c, robj *pattern) {
  * Pattern can be NULL: this is useful when the client sends a mass
  * punsubscribe command but there are no pattern to unsubscribe from: we
  * still send a notification. */
-// 向客户端发送 pubsub 模式取消订阅通知。模式可以为 NULL：当客户端发送批量 punsubscribe 命令但没有要取消订阅的模式时，
-// 这很有用：我们仍然发送通知。
+// 向客户端发送 pubsub 模式取消订阅通知。模式可以为 NULL:当客户端发送批量 punsubscribe 命令但没有要取消订阅的模式时,
+// 这很有用:我们仍然发送通知。
 void addReplyPubsubPatUnsubscribed(client *c, robj *pattern) {
     if (c->resp == 2) {
         addReply(c, shared.mbulkhdr[3]);
@@ -116,7 +116,7 @@ void addReplyPubsubPatUnsubscribed(client *c, robj *pattern) {
 /*-----------------------------------------------------------------------------
  * Pubsub low level API
  *----------------------------------------------------------------------------*/
-// 清理和释放与 pubsubPattern 结构体相关的内存资源，防止内存泄漏。
+// 清理和释放与 pubsubPattern 结构体相关的内存资源,防止内存泄漏。
 void freePubsubPattern(void *p) {
     pubsubPattern *pat = p;
 
@@ -142,19 +142,19 @@ int clientSubscriptionsCount(client *c) { return dictSize(c->pubsub_channels) + 
 
 /* Subscribe a client to a channel. Returns 1 if the operation succeeded, or
  * 0 if the client was already subscribed to that channel. */
-// 订阅成功返回 1 ，如果客户端已经订阅了该频道，那么返回 0 。
+// 订阅成功返回 1 ,如果客户端已经订阅了该频道,那么返回 0 。
 int pubsubSubscribeChannel(client *c, robj *channel) {
     dictEntry *de;
     list *clients = NULL;
     int retval = 0;
 
     /* Add the channel to the client -> channels hash table */
-    // 将 channels 填加到 c->pubsub_channels 的集合中（值为 NULL 的字典视为集合）
+    // 将 channels 填加到 c->pubsub_channels 的集合中(值为 NULL 的字典视为集合)
     if (dictAdd(c->pubsub_channels, channel, NULL) == DICT_OK) {
         retval = 1;
         incrRefCount(channel);
         // 从 server.pubsub_channels 字典中取出保存着所有订阅了 channel 的客户端的链表
-        // 如果 channel 不存在于字典，那么添加进去
+        // 如果 channel 不存在于字典,那么添加进去
         de = dictFind(server.pubsub_channels, channel);
         if (de == NULL) {
             clients = listCreate();
@@ -173,7 +173,7 @@ int pubsubSubscribeChannel(client *c, robj *channel) {
 
 /* Unsubscribe a client from a channel. Returns 1 if the operation succeeded, or
  * 0 if the client was not subscribed to the specified channel. */
-// 如果取消成功返回 1 ，如果因为客户端未订阅频道，而造成取消失败，返回 0 。
+// 如果取消成功返回 1 ,如果因为客户端未订阅频道,而造成取消失败,返回 0 。
 int pubsubUnsubscribeChannel(client *c, robj *channel, int notify) {
     dictEntry *de;
     list *clients;
@@ -185,7 +185,7 @@ int pubsubUnsubscribeChannel(client *c, robj *channel, int notify) {
     incrRefCount(channel); /* channel may be just a pointer to the same object
                             we have in the hash tables. Protect it... */
     if (dictDelete(c->pubsub_channels, channel) == DICT_OK) {
-        // channel 移除成功，表示客户端订阅了这个频道，执行以下代码
+        // channel 移除成功,表示客户端订阅了这个频道,执行以下代码
         retval = 1;
         /* Remove the client from the channel -> clients list hash table */
         // 从通道中删除客户端 -> 客户端列表哈希表
@@ -199,7 +199,7 @@ int pubsubUnsubscribeChannel(client *c, robj *channel, int notify) {
             /* Free the list and associated hash entry at all if this was
              * the latest client, so that it will be possible to abuse
              * Redis PUBSUB creating millions of channels. */
-            // 如果这是最新的客户端，则完全释放列表和关联的哈希条目，以便有可能滥用 Redis PUBSUB 创建数百万个频道。
+            // 如果这是最新的客户端,则完全释放列表和关联的哈希条目,以便有可能滥用 Redis PUBSUB 创建数百万个频道。
             dictDelete(server.pubsub_channels, channel);
         }
     }
@@ -214,7 +214,7 @@ int pubsubUnsubscribeChannel(client *c, robj *channel, int notify) {
 
 /* Subscribe a client to a pattern. Returns 1 if the operation succeeded, or
  * 0 if the client was already subscribed to that pattern. */
-// 为客户端订阅模式。如果操作成功，则返回 1;如果客户端已订阅该模式，则返回 0。
+// 为客户端订阅模式。如果操作成功,则返回 1;如果客户端已订阅该模式,则返回 0。
 int pubsubSubscribePattern(client *c, robj *pattern) {
     dictEntry *de;
     list *clients;
@@ -248,7 +248,7 @@ int pubsubSubscribePattern(client *c, robj *pattern) {
 
 /* Unsubscribe a client from a channel. Returns 1 if the operation succeeded, or
  * 0 if the client was not subscribed to the specified channel. */
-// 从频道退订客户端。如果操作成功，则返回 1;如果客户端未订阅指定的通道，则返回 0。
+// 从频道退订客户端。如果操作成功,则返回 1;如果客户端未订阅指定的通道,则返回 0。
 int pubsubUnsubscribePattern(client *c, robj *pattern, int notify) {
     dictEntry *de;
     list *clients;
@@ -324,7 +324,7 @@ int pubsubUnsubscribeAllPatterns(client *c, int notify) {
 }
 
 /* 发布消息 */
-// 将 message 发送到所有订阅频道 channel 的客户端，
+// 将 message 发送到所有订阅频道 channel 的客户端,
 // 以及所有订阅了和 channel 频道匹配的模式的客户端。
 int pubsubPublishMessage(robj *channel, robj *message) {
     int receivers = 0;
@@ -333,14 +333,14 @@ int pubsubPublishMessage(robj *channel, robj *message) {
     listNode *ln;
     listIter li;
 
-    // 取出包含所有订阅频道 channel 的客户端的链表，并将消息发送给它们
+    // 取出包含所有订阅频道 channel 的客户端的链表,并将消息发送给它们
     de = dictFind(server.pubsub_channels, channel);
     if (de) {
         list *list = dictGetVal(de);
         listNode *ln;
         listIter li;
 
-        // 遍历客户端链表，将 message 发送给它们
+        // 遍历客户端链表,将 message 发送给它们
         listRewind(list, &li);
         while ((ln = listNext(&li)) != NULL) { // 订阅者也被存储在dictEntry中
             client *c = ln->value;
@@ -410,7 +410,7 @@ void subscribeCommand(client *c) {
          * Notice that we have a special treatment for multi because of
          * backword compatibility
          */
-        // 具有CLIENT_DENY_BLOCKING标志的客户端期望每个命令得到回复，因此无法执行订阅。
+        // 具有CLIENT_DENY_BLOCKING标志的客户端期望每个命令得到回复,因此无法执行订阅。
         addReplyError(c, "SUBSCRIBE isn't allowed for a DENY BLOCKING client");
         return;
     }
@@ -425,7 +425,7 @@ void subscribeCommand(client *c) {
 /* UNSUBSCRIBE [channel [channel ...]] */
 // 取消订阅频道
 void unsubscribeCommand(client *c) {
-    if (c->argc == 1) { // 当只有一个参数时，取消所有订阅频道
+    if (c->argc == 1) { // 当只有一个参数时,取消所有订阅频道
         pubsubUnsubscribeAllChannels(c, 1);
     } else {
         int j;
@@ -463,7 +463,7 @@ void psubscribeCommand(client *c) {
 /* PUNSUBSCRIBE [pattern [pattern ...]] */
 // 取消订阅模式
 void punsubscribeCommand(client *c) {
-    if (c->argc == 1) { // 当只有一个参数时，取消所有订阅模式
+    if (c->argc == 1) { // 当只有一个参数时,取消所有订阅模式
         pubsubUnsubscribeAllPatterns(c, 1);
     } else {
         int j;
@@ -475,7 +475,7 @@ void punsubscribeCommand(client *c) {
         c->flags &= ~CLIENT_PUBSUB;
 }
 
-// publish命令, 将 message 发送到所有订阅频道 channel 的客户端，
+// publish命令, 将 message 发送到所有订阅频道 channel 的客户端,
 void publishCommand(client *c) {
     if (pubsubCheckACLPermissionsOrReply(c, 1, 1, 0) != ACL_OK)
         return;
@@ -489,10 +489,10 @@ void publishCommand(client *c) {
 }
 
 /* PUBSUB command for Pub/Sub introspection. */
-// PUBSUB 是 Redis 发布/订阅（Pub/Sub）机制中的一个多功能命令，允许用户查询系统的状态，
+// PUBSUB 是 Redis 发布/订阅(Pub/Sub)机制中的一个多功能命令,允许用户查询系统的状态,
 // 例如当前活跃的频道、订阅者数量和模式订阅的数量。
 void pubsubCommand(client *c) {
-    // C语言中判断字符串是否相等的函数，忽略大小写。 返回0相等
+    // C语言中判断字符串是否相等的函数,忽略大小写。 返回0相等
     if (c->argc == 2 && !strcasecmp(c->argv[1]->ptr, "help")) {
         const char *help[] = {"CHANNELS [<pattern>]",
                               "    Return the currently active channels matching a <pattern> (default: '*').",
@@ -537,7 +537,7 @@ void pubsubCommand(client *c) {
     } else if (!strcasecmp(c->argv[1]->ptr, "numpat") && c->argc == 2) { // 返回当前模式订阅的数量。
         /* PUBSUB NUMPAT */
         addReplyLongLong(c, listLength(server.pubsub_patterns));
-    } else { // 如果客户端发送的子命令无效或参数不正确，函数会调用 addReplySubcommandSyntaxError 返回错误信息。
+    } else { // 如果客户端发送的子命令无效或参数不正确,函数会调用 addReplySubcommandSyntaxError 返回错误信息。
         addReplySubcommandSyntaxError(c);
     }
 }

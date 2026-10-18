@@ -9,7 +9,7 @@
 void rdbLoadProgressCallback(rio *r, const void *buf, size_t len);
 int rdbCheckMode = 0;
 
-// 用于读取RDB文件的状态信息和错误信息的字段，包括当前读取的键、键的类型、处理的键数量、
+// 用于读取RDB文件的状态信息和错误信息的字段,包括当前读取的键、键的类型、处理的键数量、
 // 带有过期时间的键数量、已过期的键数量、读取状态、错误标志以及错误信息。
 struct {
     rio *rio;
@@ -56,7 +56,7 @@ char *rdb_type_string[] = {"string",
                            "stream"};
 
 /* Show a few stats collected into 'rdbstate' */
-// 打印 RDB（Redis Database）状态中的三个统计信息：
+// 打印 RDB(Redis Database)状态中的三个统计信息:
 void rdbShowGenericInfo(void) {
     printf("[info] %lu keys read\n", rdbstate.keys);
     printf("[info] %lu expires\n", rdbstate.expires);
@@ -65,7 +65,7 @@ void rdbShowGenericInfo(void) {
 
 /* Called on RDB errors. Provides details about the RDB and the offset
  * we were when the error was detected. */
-// 用于在RDB（Redis Database）文件解析过程中检测并报告错误
+// 用于在RDB(Redis Database)文件解析过程中检测并报告错误
 void rdbCheckError(const char *fmt, ...) {
     char msg[1024];
     va_list ap;
@@ -344,7 +344,7 @@ err:
  * status code according to success (RDB is sane) or error (RDB is corrupted).
  * Otherwise if called with a non NULL fp, the function returns C_OK or
  * C_ERR depending on the success or failure. */
-// RDB check main：当 Redis 使用 redis-check-rdb 别名执行时，在 RDB 加载错误期间调用 form server.c。
+// RDB check main:当 Redis 使用 redis-check-rdb 别名执行时,在 RDB 加载错误期间调用 form server.c。
 int redis_check_rdb_main(int argc, char **argv, FILE *fp) {
     struct timeval tv;
 

@@ -6,7 +6,7 @@
 #include "lolwut.h"
 #include <math.h>
 #include "server.h"
-#include "server_cammand_define.h"
+#include "server_commands.h"
 
 #include "version.h"
 

@@ -7,7 +7,7 @@
 #include "evict.h"
 #include "intset.h"
 #include "server.h"
-#include "server_cammand_define.h"
+#include "server_commands.h"
 #include "t_hash.h"
 #include "t_list.h"
 #include "t_set.h"
@@ -28,7 +28,7 @@ struct dbBackup {
 void updateLFU(robj *val) {
     unsigned long counter = LFUDecrAndReturn(val);
     counter = LFULogIncr(counter);
-    // val->lru是个24位整数，高16位是分钟级的时间戳，低8位是count
+    // val->lru是个24位整数,高16位是分钟级的时间戳,低8位是count
     val->lru = (LFUGetTimeInMinutes() << 8) | counter;
 }
 
@@ -47,11 +47,11 @@ robj *lookupKey(redisDb *db, robj *key, int flags) {
          * a copy on write madness. */
         // 查找时更新val的LRU或LFU信息
         if (!hasActiveChildProcess() && !(flags & LOOKUP_NOTOUCH)) {
-            // 如果使用了LFU策略，更新LFU计数值
+            // 如果使用了LFU策略,更新LFU计数值
             if (server.maxmemory_policy & MAXMEMORY_FLAG_LFU) {
                 updateLFU(val);
             } else {
-                // 否则，调用LRU_CLOCK函数获取全局LRU时钟值
+                // 否则,调用LRU_CLOCK函数获取全局LRU时钟值
                 val->lru = LRU_CLOCK();
             }
         }
@@ -163,7 +163,7 @@ void dbAdd(redisDb *db, robj *key, robj *val) {
 
     serverAssertWithInfo(NULL, key, retval == DICT_OK);
     signalKeyAsReady(db, key, val->type);
-    // 如果是集群模式，还要把slot和key的关系加上去
+    // 如果是集群模式,还要把slot和key的关系加上去
     if (server.cluster_enabled)
         slotToKeyAdd(key->ptr);
 }
@@ -227,12 +227,12 @@ void dbOverwrite(redisDb *db, robj *key, robj *val) {
  * All the new keys in the database should be created via this interface.
  * The client 'c' argument may be set to NULL if the operation is performed
  * in a context where there is no clear client performing the operation. */
-// 高级集操作。此函数可用于为新对象设置键，无论它是否存在。
+// 高级集操作。此函数可用于为新对象设置键,无论它是否存在。
 // 1.值对象的引用计数递增。
 // 2.客户端正在监视已通知的目标密钥。
-// 3.密钥的过期时间被重置（密钥是永久性的），除非"keepttl"为真。
+// 3.密钥的过期时间被重置(密钥是永久性的),除非"keepttl"为真。
 void genericSetKey(client *c, redisDb *db, robj *key, robj *val, int keepttl, int signal) {
-    // 查找键是否存在，不存在则添加，存在则覆盖
+    // 查找键是否存在,不存在则添加,存在则覆盖
     if (lookupKeyWrite(db, key) == NULL) {
         dbAdd(db, key, val);
     } else {
@@ -240,7 +240,7 @@ void genericSetKey(client *c, redisDb *db, robj *key, robj *val, int keepttl, in
     }
     // 给对象增加引用计数
     incrRefCount(val);
-    // 如果变量 keepttl 的值为假（即 !keepttl 成立）
+    // 如果变量 keepttl 的值为假(即 !keepttl 成立)
     if (!keepttl)
         // removeExpire 函数的作用是从数据库 db 中移除与键 key 相关的过期信息。
         removeExpire(db, key);
@@ -253,7 +253,7 @@ void setKey(client *c, redisDb *db, robj *key, robj *val) { genericSetKey(c, db,
 
 /* Return a random key, in form of a Redis object.
  * If there are no keys, NULL is returned.
- * 随机返回redis中存在的key，如果没有返回null
+ * 随机返回redis中存在的key,如果没有返回null
  *
  * 此方法确保不会返回已过期的key */
 robj *dbRandomKey(redisDb *db) {
@@ -293,7 +293,7 @@ robj *dbRandomKey(redisDb *db) {
 }
 
 /* Delete a key, value, and associated expiration entry if any, from the DB */
-// 从数据库中删除键、值和关联的过期条目（如果有）
+// 从数据库中删除键、值和关联的过期条目(如果有)
 int dbSyncDelete(redisDb *db, robj *key) {
     /* Deleting an entry from the expires dict will not free the sds of
      * the key, because it is shared with the main dictionary. */
@@ -544,9 +544,9 @@ long long dbTotalServerKeyCount(void) {
  * Every time a DB is flushed the function signalFlushDb() is called.
  *----------------------------------------------------------------------------*/
 
-/* 注意，client *c 可能是null，因为有可能key是在client上下文之外被修改的 */
+/* 注意,client *c 可能是null,因为有可能key是在client上下文之外被修改的 */
 void signalModifiedKey(client *c, redisDb *db, robj *key) {
-    // key被修改了，需要标记下，以防防止CAS事务执行失败
+    // key被修改了,需要标记下,以防防止CAS事务执行失败
     touchWatchedKey(db, key);
     trackingInvalidateKey(c, key);
 }
@@ -602,7 +602,7 @@ void flushAllDataAndResetRDB(int flags) {
     if (server.child_type == CHILD_TYPE_RDB)
         killRDBChild();
     if (server.saveparamslen > 0) {
-        /* rdbSave()会重置dirty值，但我们这里不希望这么做，因为重置dirty后FLUSHALL不
+        /* rdbSave()会重置dirty值,但我们这里不希望这么做,因为重置dirty后FLUSHALL不
          * 会传播到副本或者保留到AOF文件中 */
         int saved_dirty = server.dirty;
         rdbSaveInfo rsi, *rsiptr;
@@ -1424,7 +1424,7 @@ void setExpire(client *c, redisDb *db, robj *key, long long when) {
 
 /* Return the expire time of the specified key, or -1 if no expire
  * is associated with this key (i.e. the key is non volatile) */
-// 返回指定键的过期时间，如果key不存在，则返回-1
+// 返回指定键的过期时间,如果key不存在,则返回-1
 long long getExpire(redisDb *db, robj *key) {
     dictEntry *de;
 
@@ -1499,7 +1499,7 @@ int keyIsExpired(redisDb *db, robj *key) {
 
     /* The key expired if the current (virtual or real) time is greater
      * than the expire time of the key. */
-    // 如果当前（虚拟或实时）时间大于key的过期时间，则key过期。
+    // 如果当前(虚拟或实时)时间大于key的过期时间,则key过期。
     return now > when;
 }
 
@@ -1527,10 +1527,10 @@ int expireIfNeeded(redisDb *db, robj *key) {
     if (!keyIsExpired(db, key))
         return 0;
 
-    /* 如果是在slave上下文中运行，直接返回1，因为slave的key过期是由master控制的，
+    /* 如果是在slave上下文中运行,直接返回1,因为slave的key过期是由master控制的,
      * master会给slave发送数据删除命令。
      *
-     * 如果返回0表示数据不需要清理，返回1表示数据这次标记为过期 */
+     * 如果返回0表示数据不需要清理,返回1表示数据这次标记为过期 */
     if (server.masterhost != NULL)
         return 1;
 
@@ -1547,7 +1547,7 @@ int expireIfNeeded(redisDb *db, robj *key) {
     propagateExpire(db, key, server.lazyfree_lazy_expire);
     notifyKeyspaceEvent(NOTIFY_EXPIRED, "expired", key, db->id);
     // 判断当前时间戳和上次更新时间戳之间的gap是否超过设定的过期时间
-    // lazyfree_lazy_expire 是Redis的配置项之一，它的作用是是否开启惰性删除(默认不开启)，很显然如果开启就会执行异步删除
+    // lazyfree_lazy_expire 是Redis的配置项之一,它的作用是是否开启惰性删除(默认不开启),很显然如果开启就会执行异步删除
     int retval = server.lazyfree_lazy_expire ? dbAsyncDelete(db, key) : dbSyncDelete(db, key);
     if (retval)
         signalModifiedKey(NULL, db, key);
@@ -1973,7 +1973,7 @@ unsigned int getKeysInSlot(unsigned int hashslot, robj **keys, unsigned int coun
     return j;
 }
 
-/* 删除指定slot中的所有key，返回删除key的个数 */
+/* 删除指定slot中的所有key,返回删除key的个数 */
 unsigned int delKeysInSlot(unsigned int hashslot) {
     raxIterator iter;
     int j = 0;

@@ -9,7 +9,7 @@
 typedef void lazy_free_fn(void *args[]);
 
 /* Exported API */
-/* 初始化后台系统，生成线程。*/
+/* 初始化后台系统,生成线程。*/
 void bioInit(void);
 // 提交任务
 unsigned long long bioPendingJobsOfType(int type);
@@ -31,9 +31,9 @@ static pthread_t bio_threads[BIO_NUM_OPS];
 // 保存互斥锁的数组, 针对bio_jobs的锁
 static pthread_mutex_t bio_mutex[BIO_NUM_OPS];
 // 保存条件变量的两个数组
-// 用于BIO线程等待任务: 每创建一个任务(bioCreateBackgroundJob)则唤醒线程；在bioProcessBackgroundJobs中如果没有任务则等待
+// 用于BIO线程等待任务: 每创建一个任务(bioCreateBackgroundJob)则唤醒线程;在bioProcessBackgroundJobs中如果没有任务则等待
 static pthread_cond_t bio_newjob_cond[BIO_NUM_OPS];
-// 用于其它线程等待BIO线程: 当其他线程等待某任务执行完成，可以调用bioWaitStepOfType进行等待，在bioProcessBackgroundJobs中最后会取消阻塞在
+// 用于其它线程等待BIO线程: 当其他线程等待某任务执行完成,可以调用bioWaitStepOfType进行等待,在bioProcessBackgroundJobs中最后会取消阻塞在
 static pthread_cond_t bio_step_cond[BIO_NUM_OPS];
 // 以后台线程方式运行的任务列表,每个数组元素是一个list
 static list *bio_jobs[BIO_NUM_OPS];
@@ -43,13 +43,13 @@ static list *bio_jobs[BIO_NUM_OPS];
  * objects shared with the background thread. The main thread will just wait
  * that there are no longer jobs of this type to be executed before performing
  * the sensible operation. This data is also useful for reporting. */
-// 用来表示每种任务中，处于等待状态的任务个数。将该数组每个元素初始化为 0，其实就是表示初始时，每种任务都没有待处理的具体任务。
+// 用来表示每种任务中,处于等待状态的任务个数。将该数组每个元素初始化为 0,其实就是表示初始时,每种任务都没有待处理的具体任务。
 static unsigned long long bio_pending[BIO_NUM_OPS];
 
 /* This structure represents a background Job. It is only used locally to this
  * file as the API does not expose the internals at all. */
-// 表示 Redis 后台 I/O（Background I/O）子系统中的任务。
-// 后台 I/O 子系统通常用于处理耗时的操作，例如文件 I/O 或延迟释放内存，以避免阻塞主线程。
+// 表示 Redis 后台 I/O(Background I/O)子系统中的任务。
+// 后台 I/O 子系统通常用于处理耗时的操作,例如文件 I/O 或延迟释放内存,以避免阻塞主线程。
 struct bio_job
 {
     time_t time; /* Time at which the job was created. */ // 任务创建时间

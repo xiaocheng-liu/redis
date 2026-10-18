@@ -16,7 +16,7 @@
 #include "latency.h"
 #include "lzf.h" /* LZF compression library */
 #include "server.h"
-#include "server_cammand_define.h"
+#include "server_commands.h"
 #include "t_hash.h"
 #include "t_list.h"
 #include "t_set.h"
@@ -1109,7 +1109,7 @@ size_t rdbSavedObjectLen(robj *o, robj *key) {
     return len;
 }
 
-/* 保存kv信息，包含过期时间，类型，key和value
+/* 保存kv信息,包含过期时间,类型,key和value
  * 失败返回-1
  * 如果key被保存成功返回1, 否则返回0 (比如key已经过期) */
 int rdbSaveKeyValuePair(rio *rdb, robj *key, robj *val, long long expiretime) {
@@ -1333,7 +1333,7 @@ int rdbSaveRio(rio *rdb, int *error, int rdbflags, rdbSaveInfo *rsi) {
             /* When this RDB is produced as part of an AOF rewrite, move
              * accumulated diff from parent to child while rewriting in
              * order to have a smaller final write. */
-            /* 如果RDB只是为了作为AOF的补充，那么可以把父进程的AOF信息合并进来，以减少最终的写入*/
+            /* 如果RDB只是为了作为AOF的补充,那么可以把父进程的AOF信息合并进来,以减少最终的写入*/
             if (rdbflags & RDBFLAGS_AOF_PREAMBLE && rdb->processed_bytes > processed + AOF_READ_DIFF_INTERVAL_BYTES) {
                 processed = rdb->processed_bytes;
                 aofReadDiffFromParent();
@@ -1439,7 +1439,7 @@ int rdbSave(char *filename, rdbSaveInfo *rsi) {
     char tmpfile[256];
     char cwd[MAXPATHLEN]; /* Current working dir path for error messages. */
     FILE *fp = NULL;
-    rio rdb; // redis文件IO的封装，有面向对象的意思
+    rio rdb; // redis文件IO的封装,有面向对象的意思
     int error = 0;
 
     // 创建一个临时文件。
@@ -1454,7 +1454,7 @@ int rdbSave(char *filename, rdbSaveInfo *rsi) {
         return C_ERR;
     }
 
-    // 初始化rio，rio是redis对io的一种抽象，提供了read、write、flush、checksum……等方法。
+    // 初始化rio,rio是redis对io的一种抽象,提供了read、write、flush、checksum……等方法。
     rioInitWithFile(&rdb, fp);
     startSaving(RDBFLAGS_NONE);
 
@@ -1493,7 +1493,7 @@ int rdbSave(char *filename, rdbSaveInfo *rsi) {
     }
 
     serverLog(LL_NOTICE, "DB saved on disk");
-    // 将server.dirty清零，server.dirty是用了记录在上次生成rdb后有多少次数据变更，会在serverCron中用到。
+    // 将server.dirty清零,server.dirty是用了记录在上次生成rdb后有多少次数据变更,会在serverCron中用到。
     server.dirty = 0;
     server.lastsave = time(NULL);
     server.lastbgsave_status = C_OK;
@@ -1513,14 +1513,14 @@ werr:
 int rdbSaveBackground(char *filename, rdbSaveInfo *rsi) {
     pid_t childpid;
 
-    // 已经有后台子进程了， 直接返回C_ERR
+    // 已经有后台子进程了, 直接返回C_ERR
     if (hasActiveChildProcess())
         return C_ERR;
 
     server.dirty_before_bgsave = server.dirty;
     server.lastbgsave_try = time(NULL);
 
-    // 创建子进程，redisFork实际就是对fork的封装
+    // 创建子进程,redisFork实际就是对fork的封装
     if ((childpid = redisFork(CHILD_TYPE_RDB)) == 0) {
         int retval;
         /* 子进程 */
@@ -1529,7 +1529,7 @@ int rdbSaveBackground(char *filename, rdbSaveInfo *rsi) {
         // 生成RDB文件
         retval = rdbSave(filename, rsi);
         if (retval == C_OK) {
-            // 子进程通过pipe通知父进程，RDB文件生成完毕
+            // 子进程通过pipe通知父进程,RDB文件生成完毕
             sendChildCOWInfo(CHILD_TYPE_RDB, 1, "RDB");
         }
         exitFromChild((retval == C_OK) ? 0 : 1);
@@ -1542,7 +1542,7 @@ int rdbSaveBackground(char *filename, rdbSaveInfo *rsi) {
         }
         serverLog(LL_NOTICE, "Background saving started by pid %ld", (long) childpid);
         server.rdb_save_time_start = time(NULL); // 记录当前开始时间
-        server.rdb_child_type = RDB_CHILD_TYPE_DISK; // RDB存储类型，RDB_CHILD_TYPE_DISK是保存到磁盘
+        server.rdb_child_type = RDB_CHILD_TYPE_DISK; // RDB存储类型,RDB_CHILD_TYPE_DISK是保存到磁盘
         return C_OK;
     }
     return C_OK; /* unreached */
@@ -2832,7 +2832,7 @@ void killRDBChild(void) {
 
 /* Spawn an RDB child that writes the RDB to the sockets of the slaves
  * that are currently in SLAVE_STATE_WAIT_BGSAVE_START state. */
-/* 通过sockets将rdb传输给slave，主要是主从之间的全量数据同步 */
+/* 通过sockets将rdb传输给slave,主要是主从之间的全量数据同步 */
 int rdbSaveToSlavesSockets(rdbSaveInfo *rsi) {
     listNode *ln;
     listIter li;
@@ -2947,7 +2947,7 @@ int rdbSaveToSlavesSockets(rdbSaveInfo *rsi) {
 
 //`SAVE` 命令的核心逻辑。
 void saveCommand(client *c) {
-    // 检查是否后台已经有进程在执行save，如果有返回错误信息。
+    // 检查是否后台已经有进程在执行save,如果有返回错误信息。
     if (server.child_type == CHILD_TYPE_RDB) {
         addReplyError(c, "Background save already in progress");
         return;
@@ -2965,8 +2965,8 @@ void saveCommand(client *c) {
 
 /* BGSAVE [SCHEDULE] */
 /* 后台生成rdb快照 */
-// bgsave提供了后台生成rdb文件的功能，bg含义就是background，具体怎么实现的? 其实就是调用fork()
-// 生成了一个子进程，然后在子进程中完成了save的过程。
+// bgsave提供了后台生成rdb文件的功能,bg含义就是background,具体怎么实现的? 其实就是调用fork()
+// 生成了一个子进程,然后在子进程中完成了save的过程。
 void bgsaveCommand(client *c) {
     int schedule = 0;
 
@@ -2988,7 +2988,7 @@ void bgsaveCommand(client *c) {
         addReplyError(c, "Background save already in progress");
     } else if (hasActiveChildProcess()) {
         if (schedule) {
-            server.rdb_bgsave_scheduled = 1; // 如果bgsave已经在执行中了，这次执行会放到serverCron中执行
+            server.rdb_bgsave_scheduled = 1; // 如果bgsave已经在执行中了,这次执行会放到serverCron中执行
             addReplyStatus(c, "Background saving scheduled");
         } else {
             addReplyError(c, "Another child process is active (AOF?): can't BGSAVE right now. "
@@ -3012,7 +3012,7 @@ void bgsaveCommand(client *c) {
  * is returned, and the RDB saving will not persist any replication related
  * information.
  */
-// 填充rdb保存信息，包含选取的dbid，rdb保存时的数据偏移量。
+// 填充rdb保存信息,包含选取的dbid,rdb保存时的数据偏移量。
 rdbSaveInfo *rdbPopulateSaveInfo(rdbSaveInfo *rsi) {
     rdbSaveInfo rsi_init = RDB_SAVE_INFO_INIT;
     *rsi = rsi_init;
@@ -3025,8 +3025,8 @@ rdbSaveInfo *rdbPopulateSaveInfo(rdbSaveInfo *rsi) {
      * synchronization, at the same time we will use a new replid and clear
      * replid2.
      * */
-    // 如果当前实例是master时，需要看下repl_backlong是否是空，如果repl_backlog是空，
-    // 意味着当前实例不在任何副本链中，副本信息是无用的，后续可能从其他节点全量同步一次。
+    // 如果当前实例是master时,需要看下repl_backlong是否是空,如果repl_backlog是空,
+    // 意味着当前实例不在任何副本链中,副本信息是无用的,后续可能从其他节点全量同步一次。
     if (!server.masterhost && server.repl_backlog) {
         /* Note that when server.slaveseldb is -1, it means that this master
          * didn't apply any write commands after a full synchronization.
@@ -3040,8 +3040,8 @@ rdbSaveInfo *rdbPopulateSaveInfo(rdbSaveInfo *rsi) {
     /* If the instance is a slave we need a connected master
      * in order to fetch the currently selected DB.
      */
-    // 检查全局变量 server.master 是否存在，表示当前服务器是否作为一个副本
-    // 如果当前实例是slave，必须和master同步当前选取的dbid
+    // 检查全局变量 server.master 是否存在,表示当前服务器是否作为一个副本
+    // 如果当前实例是slave,必须和master同步当前选取的dbid
     if (server.master) {
         rsi->repl_stream_db = server.master->db->id;
         return rsi;

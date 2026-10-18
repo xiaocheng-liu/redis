@@ -6,7 +6,7 @@
 
 #include "bio.h"
 #include "server.h"
-#include "server_cammand_define.h"
+#include "server_commands.h"
 #include "sha1.h" /* SHA1 is used for DEBUG DIGEST */
 #include "t_hash.h"
 #include "t_list.h"

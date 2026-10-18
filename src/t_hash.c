@@ -1,7 +1,7 @@
 #include "t_hash.h"
 #include <math.h>
 #include "server.h"
-#include "server_cammand_define.h"
+#include "server_commands.h"
 #include "util.h"
 #include "ziplist.h"
 
@@ -33,7 +33,7 @@ void hashTypeTryConversion(robj *o, robj **argv, int start, int end) {
 /* Get the value from a ziplist encoded hash, identified by field.
  * Returns -1 when the field cannot be found. */
 // 该代码的功能是从一个ziplist编码的哈希表中根据字段获取值。
-// 如果指定字段不存在，则返回-1。
+// 如果指定字段不存在,则返回-1。
 int hashTypeGetFromZiplist(robj *o, sds field, unsigned char **vstr, unsigned int *vlen, long long *vll) {
     unsigned char *zl, *fptr = NULL, *vptr = NULL;
     int ret;
@@ -63,8 +63,8 @@ int hashTypeGetFromZiplist(robj *o, sds field, unsigned char **vstr, unsigned in
 /* Get the value from a hash table encoded hash, identified by field.
  * Returns NULL when the field cannot be found, otherwise the SDS value
  * is returned. */
-// 这段代码的功能是从哈希表中根据字段（field）获取对应的值。
-// 如果找不到该字段，则返回NULL；否则返回对应的SDS值。
+// 这段代码的功能是从哈希表中根据字段(field)获取对应的值。
+// 如果找不到该字段,则返回NULL;否则返回对应的SDS值。
 sds hashTypeGetFromHashTable(robj *o, sds field) {
     dictEntry *de;
 
@@ -107,7 +107,7 @@ int hashTypeGetValue(robj *o, sds field, unsigned char **vstr, unsigned int *vle
  * interaction with the hash type outside t_hash.c.
  * The function returns NULL if the field is not found in the hash. Otherwise
  * a newly allocated string object with the value is returned. */
-// 该函数 hashTypeGetValueObject 的功能是从哈希类型对象中获取指定字段的值，并将其转换为 Redis 对象返回。
+// 该函数 hashTypeGetValueObject 的功能是从哈希类型对象中获取指定字段的值,并将其转换为 Redis 对象返回。
 robj *hashTypeGetValueObject(robj *o, sds field) {
     unsigned char *vstr;
     unsigned int vlen;
@@ -124,8 +124,8 @@ robj *hashTypeGetValueObject(robj *o, sds field) {
 /* Higher level function using hashTypeGet*() to return the length of the
  * object associated with the requested field, or 0 if the field does not
  * exist. */
-// 该函数通过调用hashTypeGet*()方法，返回与指定字段关联的对象长度。
-// 如果字段不存在，则返回0。
+// 该函数通过调用hashTypeGet*()方法,返回与指定字段关联的对象长度。
+// 如果字段不存在,则返回0。
 size_t hashTypeGetValueLength(robj *o, sds field) {
     size_t len = 0;
     if (o->encoding == OBJ_ENCODING_ZIPLIST) {
@@ -149,7 +149,7 @@ size_t hashTypeGetValueLength(robj *o, sds field) {
 /* Test if the specified field exists in the given hash. Returns 1 if the field
  * exists, and 0 when it doesn't. */
 // 这段代码的功能是检查指定的字段是否存在于给定的哈希表中。
-// 如果字段存在，返回1；如果字段不存在，返回0。
+// 如果字段存在,返回1;如果字段不存在,返回0。
 int hashTypeExists(robj *o, sds field) {
     if (o->encoding == OBJ_ENCODING_ZIPLIST) {
         unsigned char *vstr = NULL;
@@ -189,7 +189,7 @@ int hashTypeExists(robj *o, sds field) {
 // #define HASH_SET_TAKE_VALUE (1<<1)
 #define HASH_SET_COPY 0
 
-// 该函数 hashTypeSet 的功能是为 Redis 的哈希类型数据结构设置字段和值，支持两种编码方式：ziplist 和 hashtable。
+// 该函数 hashTypeSet 的功能是为 Redis 的哈希类型数据结构设置字段和值,支持两种编码方式:ziplist 和 hashtable。
 int hashTypeSet(robj *o, sds field, sds value, int flags) {
     int update = 0;
 
@@ -483,7 +483,7 @@ void hashTypeConvertZiplist(robj *o, int enc) {
         }
         hashTypeReleaseIterator(hi);
         zfree(o->ptr);
-        // 最后更改编码方式，设置新的指针指向
+        // 最后更改编码方式,设置新的指针指向
         o->encoding = OBJ_ENCODING_HT;
         o->ptr = dict;
     } else {
@@ -663,7 +663,7 @@ void hsetCommand(client *c) {
         return;
     }
 
-    // 查找key，没有就新建
+    // 查找key,没有就新建
     if ((o = hashTypeLookupWriteOrCreate(c, c->argv[1])) == NULL)
         return;
     // 尝试转化hash底层的编码方式
@@ -682,7 +682,7 @@ void hsetCommand(client *c) {
         /* HMSET */
         addReply(c, shared.ok);
     }
-    // key有变化，需要通知监听这个key的客户端
+    // key有变化,需要通知监听这个key的客户端
     signalModifiedKey(c, c->db, c->argv[1]);
     notifyKeyspaceEvent(NOTIFY_HASH, "hset", c->argv[1], c->db->id);
     server.dirty += (c->argc - 2) / 2;

@@ -2,7 +2,7 @@
  * Bit operations.
  */
 #include "server.h"
-#include "server_cammand_define.h"
+#include "server_commands.h"
 #include "util.h"
 
 /* -----------------------------------------------------------------------------
@@ -27,9 +27,9 @@ size_t redisPopcount(void *s, long count) {
             3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, 4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8};
 
     /* Count initial bytes not aligned to 32 bit. */
-    // 这段代码处理内存起始地址未对齐到 32 位（4 字节）的部分。
-    // 如果指针 p 的地址不是 4 的倍数（即未对齐），则逐字节统计这些字节中 1 的数量，并更新 bits 和剩余字节数 count。
-    // 目的是将指针对齐到 32 位边界，以便后续使用更高效的 32 位批量处理。
+    // 这段代码处理内存起始地址未对齐到 32 位(4 字节)的部分。
+    // 如果指针 p 的地址不是 4 的倍数(即未对齐),则逐字节统计这些字节中 1 的数量,并更新 bits 和剩余字节数 count。
+    // 目的是将指针对齐到 32 位边界,以便后续使用更高效的 32 位批量处理。
     while ((unsigned long) p & 3 && count) {
         bits += bitsinbyte[*p++];
         count--;

@@ -6,7 +6,7 @@
 #include "cluster.h"
 #include "rand.h"
 #include "server.h"
-#include "server_cammand_define.h"
+#include "server_commands.h"
 #include "sha1.h"
 #include "util.h"
 
@@ -1233,7 +1233,7 @@ void scriptingInit(int setup) {
      * inside the Lua interpreter.
      * Note: there is no need to create it again when this function is called
      * by scriptingReset(). */
-    // 创建（未连接的）客户端，用于在Lua解释器中执行Redis命令。注意：当scriptingReset（）调用这个函数时，不需要再次创建它。
+    // 创建(未连接的)客户端,用于在Lua解释器中执行Redis命令。注意:当scriptingReset()调用这个函数时,不需要再次创建它。
     if (server.lua_client == NULL) {
         server.lua_client = createClient(NULL);
         server.lua_client->flags |= CLIENT_LUA;
@@ -1484,7 +1484,7 @@ void evalGenericCommand(client *c, int evalsha) {
 
     /* We obtain the script SHA1, then check if this function is already
      * defined into the Lua state */
-    // 组合出函数的名字，例如 f_282297a0228f48cd3fc6a55de6316f31422f5d17
+    // 组合出函数的名字,例如 f_282297a0228f48cd3fc6a55de6316f31422f5d17
     funcname[0] = 'f';
     funcname[1] = '_';
     if (!evalsha) {
@@ -1514,13 +1514,13 @@ void evalGenericCommand(client *c, int evalsha) {
         /* Function not defined... let's define it if we have the
          * body of the function. If this is an EVALSHA call we can just
          * return an error. */
-        // 如果执行的是 EVALSHA ，返回脚本未找到错误
+        // 如果执行的是 EVALSHA ,返回脚本未找到错误
         if (evalsha) {
             lua_pop(lua, 1); /* remove the error handler from the stack. */
             addReply(c, shared.noscripterr);
             return;
         }
-        // 如果执行的是 EVAL ，那么创建新函数，然后将代码添加到脚本字典中
+        // 如果执行的是 EVAL ,那么创建新函数,然后将代码添加到脚本字典中
         if (luaCreateFunction(c, lua, c->argv[1]) == NULL) {
             lua_pop(lua, 1); /* remove the error handler from the stack. */
             /* The error is sent to the client by luaCreateFunction()

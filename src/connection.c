@@ -69,7 +69,7 @@ connection *connCreateSocket(void) {
  * is not in an error state (which is not possible for a socket connection,
  * but could but possible with other protocols).
  */
-// 初始化一个连接，
+// 初始化一个连接,
 connection *connCreateAcceptedSocket(int fd) {
     connection *conn = connCreateSocket();
     conn->fd = fd;
@@ -138,7 +138,7 @@ static void connSocketClose(connection *conn) {
 
 // Redis 连接层中的 socket 写入功能。
 static int connSocketWrite(connection *conn, const void *data, size_t data_len) {
-    // 调用系统 write() 向 socket 文件描述符写入数据。ret 为实际写入的字节数（可能小于 data_len）。
+    // 调用系统 write() 向 socket 文件描述符写入数据。ret 为实际写入的字节数(可能小于 data_len)。
     int ret = write(conn->fd, data, data_len);
     if (ret < 0 && errno != EAGAIN) {
         // 保存错误码到 conn->last_errno
@@ -147,7 +147,7 @@ static int connSocketWrite(connection *conn, const void *data, size_t data_len) 
         /* Don't overwrite the state of a connection that is not already
          * connected, not to mess with handler callbacks.
          */
-        // 仅当连接已建立时，将状态改为错误状态（避免覆盖未连接连接的状态）。
+        // 仅当连接已建立时,将状态改为错误状态(避免覆盖未连接连接的状态)。
         if (conn->state == CONN_STATE_CONNECTED)
             conn->state = CONN_STATE_ERROR;
     }
@@ -157,9 +157,9 @@ static int connSocketWrite(connection *conn, const void *data, size_t data_len) 
 
 // Redis 连接层中的 socket 读取功能。
 static int connSocketRead(connection *conn, void *buf, size_t buf_len) {
-    // 调用系统 read() 从 socket 文件描述符读取数据。ret 为实际读取的字节数（0 表示对端关闭连接）。
+    // 调用系统 read() 从 socket 文件描述符读取数据。ret 为实际读取的字节数(0 表示对端关闭连接)。
     int ret = read(conn->fd, buf, buf_len);
-    // 当 ret == 0 时，表示对端已关闭连接。更新连接状态为 CONN_STATE_CLOSED。
+    // 当 ret == 0 时,表示对端已关闭连接。更新连接状态为 CONN_STATE_CLOSED。
     if (!ret) {
         conn->state = CONN_STATE_CLOSED;
     } else if (ret < 0 && errno != EAGAIN) {
@@ -184,12 +184,12 @@ static int connSocketAccept(connection *conn, ConnectionCallbackFunc accept_hand
         return C_ERR;
     conn->state = CONN_STATE_CONNECTED;
 
-    // 增加连接的引用计数，防止在回调函数执行期间连接被意外释放。
+    // 增加连接的引用计数,防止在回调函数执行期间连接被意外释放。
     connIncrRefs(conn);
     // 这里又会调用到clientAcceptHandler
     if (!callHandler(conn, accept_handler))
         ret = C_ERR;
-    // 减少连接的引用计数，释放之前增加的引用。
+    // 减少连接的引用计数,释放之前增加的引用。
     connDecrRefs(conn);
 
     return ret;
@@ -203,8 +203,8 @@ static int connSocketAccept(connection *conn, ConnectionCallbackFunc accept_hand
  * always called before and not after the read handler in a single event
  * loop.
  */
-// 注册一个写处理程序，在连接可写时调用。如果为NULL，则删除现有处理程序。
-// 屏障标志表示请求写入屏障，结果为CONN_FLAG_WRITE_BARRIER集合。这将确保写入处理程序
+// 注册一个写处理程序,在连接可写时调用。如果为NULL,则删除现有处理程序。
+// 屏障标志表示请求写入屏障,结果为CONN_FLAG_WRITE_BARRIER集合。这将确保写入处理程序
 // 在单个事件中始终在读取处理程序之前而不是之后调用循环。
 static int connSocketSetWriteHandler(connection *conn, ConnectionCallbackFunc func, int barrier) {
     if (func == conn->write_handler)

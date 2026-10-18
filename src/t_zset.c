@@ -5,7 +5,7 @@
 #include <math.h>
 #include "intset.h"
 #include "server.h"
-#include "server_cammand_define.h"
+#include "server_commands.h"
 #include "util.h"
 #include "ziplist.h"
 
@@ -59,7 +59,7 @@ void zslFree(zskiplist *zsl) {
     zfree(zsl);
 }
 
-/*  随机生成跳表的层高，最高32层，实现原理就是按概率随机加1，加到不能加，每次有四分之一的可能性+1 */
+/*  随机生成跳表的层高,最高32层,实现原理就是按概率随机加1,加到不能加,每次有四分之一的可能性+1 */
 int zslRandomLevel(void) {
     int level = 1;
     while ((random() & 0xFFFF) < (ZSKIPLIST_P * 0xFFFF))
@@ -86,9 +86,9 @@ zskiplistNode *zslInsert(zskiplist *zsl, double score, sds ele) {
         }
         update[i] = x;
     }
-    /* skiplist中不会出现重复的元素，但我们允许重复的分值，因为如果是调用zslInsert()的话，不会出现重复插入两
-     * 个相同的元素，因为在zslInsert()中已经判断了hash表中是否存在*/
-    level = zslRandomLevel(); // 生成一个随机值，确定最高需要插入到第几级链表里
+    /* skiplist中不会出现重复的元素,但我们允许重复的分值,因为如果是调用zslInsert()的话,不会出现重复插入两
+     * 个相同的元素,因为在zslInsert()中已经判断了hash表中是否存在*/
+    level = zslRandomLevel(); // 生成一个随机值,确定最高需要插入到第几级链表里
     if (level > zsl->level) {
         for (i = zsl->level; i < level; i++) {
             rank[i] = 0;
@@ -107,7 +107,7 @@ zskiplistNode *zslInsert(zskiplist *zsl, double score, sds ele) {
         update[i]->level[i].span = (rank[0] - rank[i]) + 1;
     }
 
-    /* 为其他level增加span值，因为在原有俩节点之间插入了一个新节点 */
+    /* 为其他level增加span值,因为在原有俩节点之间插入了一个新节点 */
     for (i = level; i < zsl->level; i++) {
         update[i]->level[i].span++;
     }
@@ -123,7 +123,7 @@ zskiplistNode *zslInsert(zskiplist *zsl, double score, sds ele) {
 
 /* Internal function used by zslDelete, zslDeleteRangeByScore and
  * zslDeleteRangeByRank.
- * 删除节点，此函数被zslDeleteRangeByScore和zslDeleteRangeByRank使用
+ * 删除节点,此函数被zslDeleteRangeByScore和zslDeleteRangeByRank使用
  */
 void zslDeleteNode(zskiplist *zsl, zskiplistNode *x, zskiplistNode **update) {
     int i;
@@ -146,9 +146,9 @@ void zslDeleteNode(zskiplist *zsl, zskiplistNode *x, zskiplistNode **update) {
 }
 
 /*
- * 从skiplist中删除ele，如果删除成功返回1，否则返回0.
+ * 从skiplist中删除ele,如果删除成功返回1,否则返回0.
  *
- * 如果节点是null，需要调用zslFreeNode()释放掉该节点，否则只是把指向sds的指针置空，这样
+ * 如果节点是null,需要调用zslFreeNode()释放掉该节点,否则只是把指向sds的指针置空,这样
  * 后续其他的节点还可以继续使用这个sds
  *
  */
@@ -165,7 +165,7 @@ int zslDelete(zskiplist *zsl, double score, sds ele, zskiplistNode **node) {
         }
         update[i] = x;
     }
-    /* 可能有多个节点有相同的socre，都必须找出来并删除  */
+    /* 可能有多个节点有相同的socre,都必须找出来并删除  */
     x = x->level[0].forward;
     if (x && score == x->score && sdscmp(x->ele, ele) == 0) {
         zslDeleteNode(zsl, x, update);
@@ -315,9 +315,9 @@ zskiplistNode *zslLastInRange(zskiplist *zsl, zrangespec *range) {
     return x;
 }
 
-/* 从skiplis中删除score在min和max之间的节点。min和max为闭区间，所以score >= min
+/* 从skiplis中删除score在min和max之间的节点。min和max为闭区间,所以score >= min
  * 且score <= max的数据都会被删除。
- * 注意：这里操作的是sorted set中的引用，zset中hash table中的数据也需要删除才能
+ * 注意:这里操作的是sorted set中的引用,zset中hash table中的数据也需要删除才能
  * 做到真正的删除。 */
 unsigned long zslDeleteRangeByScore(zskiplist *zsl, zrangespec *range, dict *dict) {
     zskiplistNode *update[ZSKIPLIST_MAXLEVEL], *x;
@@ -377,7 +377,7 @@ unsigned long zslDeleteRangeByLex(zskiplist *zsl, zlexrangespec *range, dict *di
 
 /* Delete all the elements with rank between start and end from the skiplist.
  * Start and end are inclusive. Note that start and end need to be 1-based
- * 删除一段索引范围的节点，索引是level[0]中出现的位置
+ * 删除一段索引范围的节点,索引是level[0]中出现的位置
  */
 unsigned long zslDeleteRangeByRank(zskiplist *zsl, unsigned int start, unsigned int end, dict *dict) {
     zskiplistNode *update[ZSKIPLIST_MAXLEVEL], *x;
@@ -1408,7 +1408,7 @@ int zsetAdd(robj *zobj, double score, sds ele, int *flags, double *newscore) {
     return 0; /* Never reached. */
 }
 
-/* 从skiplist和dict中删除ele，如果删除成功返回1，0表示其中没有ele*/
+/* 从skiplist和dict中删除ele,如果删除成功返回1,0表示其中没有ele*/
 static int zsetRemoveFromSkiplist(zset *zs, sds ele) {
     dictEntry *de;
     double score;
@@ -1758,7 +1758,7 @@ void zaddGenericCommand(client *c, int flags) {
     if (zobj == NULL) {
         if (xx)
             goto reply_to_client; /* No key + XX option: nothing to do. */
-        // zset在value长度大于64(可配置)，或者zset_max_ziplist_entries为0(默认值128，不让用ziplist，可配)情况下使用跳表
+        // zset在value长度大于64(可配置),或者zset_max_ziplist_entries为0(默认值128,不让用ziplist,可配)情况下使用跳表
         if (server.zset_max_ziplist_entries == 0 ||
             server.zset_max_ziplist_value < sdslen(c->argv[scoreidx + 1]->ptr)) {
             zobj = createZsetObject();

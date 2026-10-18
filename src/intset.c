@@ -14,7 +14,7 @@
 #define INTSET_ENC_INT64 (sizeof(int64_t))
 
 /* Return the required encoding for the provided value. */
-// 返回当前的值，需要什么类型来保存
+// 返回当前的值,需要什么类型来保存
 static uint8_t _intsetValueEncoding(int64_t v) {
     if (v < INT32_MIN || v > INT32_MAX)
         return INTSET_ENC_INT64;
@@ -99,15 +99,15 @@ static uint8_t intsetSearch(intset *is, int64_t value, uint32_t *pos) {
         /* Check for the case where we know we cannot find the value,
          * but do know the insert position. */
         // 为什么这里有这么一步呢?原因就是我们不仅需要判断value是否存在,还需要更新pos的位置
-        // 因为底层数组是有序的，如果 value 比数组中最后一个值都要大
-        // 那么 value 肯定不存在于集合中，
+        // 因为底层数组是有序的,如果 value 比数组中最后一个值都要大
+        // 那么 value 肯定不存在于集合中,
         // 并且应该将 value 添加到底层数组的最末端
         if (value > _intsetGet(is, max)) {
             if (pos)
                 *pos = intrev32ifbe(is->length);
             return 0;
-            // 因为底层数组是有序的，如果 value 比数组中最前一个值都要小
-            // 那么 value 肯定不存在于集合中，
+            // 因为底层数组是有序的,如果 value 比数组中最前一个值都要小
+            // 那么 value 肯定不存在于集合中,
             // 并且应该将它添加到底层数组的最前端
         } else if (value < _intsetGet(is, 0)) {
             if (pos)
@@ -157,41 +157,41 @@ static intset *intsetUpgradeAndAdd(intset *is, int64_t value) {
     /* First set new encoding and resize */
     // 更新集合的编码方式
     is->encoding = intrev32ifbe(newenc);
-    // 根据新编码对集合（的底层数组）进行空间调整
+    // 根据新编码对集合(的底层数组)进行空间调整
     // T = O(N)
     is = intsetResize(is, intrev32ifbe(is->length) + 1);
 
     /* Upgrade back-to-front so we don't overwrite values.
      * Note that the "prepend" variable is used to make sure we have an empty
      * space at either the beginning or the end of the intset. */
-    // 根据集合原来的编码方式，从底层数组中取出集合元素
+    // 根据集合原来的编码方式,从底层数组中取出集合元素
     // 然后再将元素以新编码的方式添加到集合中
-    // 当完成了这个步骤之后，集合中所有原有的元素就完成了从旧编码到新编码的转换
-    // 因为新分配的空间都放在数组的后端，所以程序先从后端向前端移动元素
-    // 举个例子，假设原来有 curenc 编码的三个元素，它们在数组中排列如下：
+    // 当完成了这个步骤之后,集合中所有原有的元素就完成了从旧编码到新编码的转换
+    // 因为新分配的空间都放在数组的后端,所以程序先从后端向前端移动元素
+    // 举个例子,假设原来有 curenc 编码的三个元素,它们在数组中排列如下:
     // | x | y | z |
-    // 当程序对数组进行重分配之后，数组就被扩容了（符号 ？ 表示未使用的内存）：
+    // 当程序对数组进行重分配之后,数组就被扩容了(符号 ？ 表示未使用的内存):
     // | x | y | z | ? |   ?   |   ?   |
-    // 这时程序从数组后端开始，重新插入元素：
+    // 这时程序从数组后端开始,重新插入元素:
     // | x | y | z | ? |   z   |   ?   |
     // | x | y |   y   |   z   |   ?   |
     // |   x   |   y   |   z   |   ?   |
-    // 最后，程序可以将新元素添加到最后 ？ 号标示的位置中：
+    // 最后,程序可以将新元素添加到最后 ？ 号标示的位置中:
     // |   x   |   y   |   z   |  new  |
-    // 上面演示的是新元素比原来的所有元素都大的情况，也即是 prepend == 0
-    // 当新元素比原来的所有元素都小时（prepend == 1），调整的过程如下：
+    // 上面演示的是新元素比原来的所有元素都大的情况,也即是 prepend == 0
+    // 当新元素比原来的所有元素都小时(prepend == 1),调整的过程如下:
     // | x | y | z | ? |   ?   |   ?   |
     // | x | y | z | ? |   ?   |   z   |
     // | x | y | z | ? |   y   |   z   |
     // | x | y |   x   |   y   |   z   |
-    // 当添加新值时，原本的 | x | y | 的数据将被新值代替
+    // 当添加新值时,原本的 | x | y | 的数据将被新值代替
     // |  new  |   x   |   y   |   z   |
     // 这里其实就是最重点的地方,正如上面所说,我们需要把分布在前面字节上的值均分在整个整数集合上
     while (length--) // 以当前编码方式取出相应位置上的值
         _intsetSet(is, length + prepend, _intsetGetEncoded(is, length, curenc));
 
     /* Set the value at the beginning or the end. */
-    // 设置新值，根据 prepend 的值来决定是添加到数组头还是数组尾
+    // 设置新值,根据 prepend 的值来决定是添加到数组头还是数组尾
     if (prepend) // 显然当升级的时候,只有两个位置可以进行插入
         _intsetSet(is, 0, value);
     else
@@ -248,9 +248,9 @@ intset *intsetAdd(intset *is, int64_t value, uint8_t *success) {
         /* Abort if the value is already present in the set.
          * This call will populate "pos" with the right position to insert
          * the value when it cannot be found. */
-        // 在整数集合中查找 value ，看他是否存在：
-        // - 如果存在，那么将 *success 设置为 0 ，并返回未经改动的整数集合
-        // - 如果不存在，那么可以插入 value 的位置将被保存到 pos 指针中
+        // 在整数集合中查找 value ,看他是否存在:
+        // - 如果存在,那么将 *success 设置为 0 ,并返回未经改动的整数集合
+        // - 如果不存在,那么可以插入 value 的位置将被保存到 pos 指针中
         //   等待后续程序使用
         if (intsetSearch(is, value, &pos)) { // 从现有的集合中查找value 如果找到的话设置其插入的索引为pos.
             if (success)
@@ -258,20 +258,20 @@ intset *intsetAdd(intset *is, int64_t value, uint8_t *success) {
             return is;
         }
 
-        // 运行到这里，表示 value 不存在于集合中
+        // 运行到这里,表示 value 不存在于集合中
         // 为 value 在集合中分配空间
         // 这里面使用了zrmalloc,这会保存扩容前的数据,这也是为什么结构体最后一个数据要保存一个指针的原因吧
         // 将inset的长度加1
         is = intsetResize(is, intrev32ifbe(is->length) + 1);
-        // 那么需要对现有元素的数据进行移动，空出 pos 上的位置，用于设置新值
+        // 那么需要对现有元素的数据进行移动,空出 pos 上的位置,用于设置新值
         // 举个例子
-        // 如果数组为：
+        // 如果数组为:
         // | x | y | z | ? |
         //     |<----->|
-        // 而新元素 n 的 pos 为 1 ，那么数组将移动 y 和 z 两个元素
+        // 而新元素 n 的 pos 为 1 ,那么数组将移动 y 和 z 两个元素
         // | x | y | y | z |
         //         |<----->|
-        // 这样就可以将新元素设置到 pos 上了：
+        // 这样就可以将新元素设置到 pos 上了:
         // | x | n | y | z |
         // T = O(N)
         if (pos < intrev32ifbe(is->length))
@@ -311,7 +311,7 @@ intset *intsetRemove(intset *is, int64_t value, int *success) {
         if (pos < (len - 1))
             intsetMoveTail(is, pos + 1, pos); // 删除一个值,当然要把后面的值向前移动了
         // inset的长度减1
-        // 缩小数组的大小，移除被删除元素占用的空间
+        // 缩小数组的大小,移除被删除元素占用的空间
         // T = O(N)
         is = intsetResize(is, len - 1);
         // 更新集合的元素数量
@@ -323,7 +323,7 @@ intset *intsetRemove(intset *is, int64_t value, int *success) {
 /* Determine whether a value belongs to this set */
 uint8_t intsetFind(intset *is, int64_t value) {
     uint8_t valenc = _intsetValueEncoding(value);
-    // 最大范围检查，加二分查找
+    // 最大范围检查,加二分查找
     return valenc <= intrev32ifbe(is->encoding) && intsetSearch(is, value, NULL);
 }
 
@@ -346,10 +346,10 @@ uint8_t intsetGet(intset *is, uint32_t pos, int64_t *value) {
 
 /* Return intset length */
 uint32_t intsetLen(const intset *is) {
-    // 函数内部调用了 intrev32ifbe，它的作用是对 is->length 进行字节顺序转换。
-    // 这个转换通常用于处理跨平台数据的大小端问题：如果数据存储采用大端格式，
-    // 而当前系统使用小端表示（或反之），则需要将值反转为正确的字节顺序。
-    // 这样做可以保证无论数据在何种平台上存储和读取，都能返回正确的元素计数。
+    // 函数内部调用了 intrev32ifbe,它的作用是对 is->length 进行字节顺序转换。
+    // 这个转换通常用于处理跨平台数据的大小端问题:如果数据存储采用大端格式,
+    // 而当前系统使用小端表示(或反之),则需要将值反转为正确的字节顺序。
+    // 这样做可以保证无论数据在何种平台上存储和读取,都能返回正确的元素计数。
     return intrev32ifbe(is->length);
 }
 

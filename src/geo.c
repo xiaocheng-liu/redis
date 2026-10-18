@@ -2,7 +2,7 @@
 #include "debugmacro.h"
 #include "geohash_helper.h"
 #include "pqsort.h"
-#include "server_cammand_define.h"
+#include "server_commands.h"
 #include "t_zset.h"
 #include "ziplist.h"
 
@@ -428,7 +428,7 @@ void geoaddCommand(client *c) {
     }
 
     if ((c->argc - longidx) % 3 || (xx && nx)) {
-        /* 解析所有的经纬度值和member，并对其个数做校验 */
+        /* 解析所有的经纬度值和member,并对其个数做校验 */
         addReplyErrorObject(c, shared.syntaxerr);
         return;
     }
@@ -443,7 +443,7 @@ void geoaddCommand(client *c) {
         incrRefCount(argv[i]);
     }
 
-    /* 以3个参数为一组，将所有的经纬度和member信息从参数列表里解析出来，并放到zadd的参数数组中 */
+    /* 以3个参数为一组,将所有的经纬度和member信息从参数列表里解析出来,并放到zadd的参数数组中 */
     for (i = 0; i < elements; i++) {
         double xy[2];
 
@@ -642,10 +642,10 @@ void georadiusGeneric(client *c, int srcKeyIndex, int flags) {
     /* Search the zset for all matching points */
     /* 创建geoArray存储结果列表 */
     geoArray *ga = geoArrayCreate();
-    /* 扫描9个区域中是否有满足条的点，有就放到geoArray中 */
+    /* 扫描9个区域中是否有满足条的点,有就放到geoArray中 */
     membersOfAllNeighbors(zobj, georadius, &shape, ga, any ? count : 0);
 
-    /* 如果没有匹配结果，返回空对象 */
+    /* 如果没有匹配结果,返回空对象 */
     if (ga->used == 0 && storekey == NULL) {
         addReply(c, shared.emptyarray);
         geoArrayFree(ga);
@@ -779,7 +779,7 @@ void geosearchCommand(client *c) { georadiusGeneric(c, 1, GEOSEARCH); }
 
 void geosearchstoreCommand(client *c) { georadiusGeneric(c, 2, GEOSEARCH | GEOSEARCHSTORE); }
 
-/* 计算geohash值，返回11位长的geohash值
+/* 计算geohash值,返回11位长的geohash值
  *
  * Returns an array with an 11 characters geohash representation of the
  * position of the specified elements. */
@@ -827,7 +827,7 @@ void geohashCommand(client *c) {
             for (i = 0; i < 11; i++) {
                 int idx;
                 if (i == 10) {
-                    /* 需要55bits生成11位的geohash，这里只有52位，用0补齐*/
+                    /* 需要55bits生成11位的geohash,这里只有52位,用0补齐*/
                     idx = 0;
                 } else {
                     idx = (hash.bits >> (52 - ((i + 1) * 5))) & 0x1f;

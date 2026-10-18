@@ -118,8 +118,8 @@
 #define LOG_COLOR_RESET "0m"
 
 /* cliConnect() flags. */
-// cliConnect（） 标志。
-#define CC_FORCE (1 << 0) /* Re-connect if already connected. */ // 如果已连接，请重新连接。
+// cliConnect() 标志。
+#define CC_FORCE (1 << 0) /* Re-connect if already connected. */ // 如果已连接,请重新连接。
 #define CC_QUIET (1 << 1) /* Don't log connecting errors. */ // 不要记录连接错误。
 
 /* --latency-dist palettes. */
@@ -167,7 +167,7 @@ typedef struct clusterManagerCommand {
 
 static void createClusterManagerCommand(char *cmdname, int argc, char **argv);
 
-// 这行代码声明了一个静态的 redisContext 类型的指针变量 context，用于在多个函数调用之间保持对 Redis 连接上下文的引用。
+// 这行代码声明了一个静态的 redisContext 类型的指针变量 context,用于在多个函数调用之间保持对 Redis 连接上下文的引用。
 static redisContext *context;
 
 // 静态变量 config 用于存储 Redis 客户端程序的配置信息。
@@ -606,7 +606,7 @@ static void cliOutputGenericHelp(void) {
 }
 
 /* Output all command help, filtering by group or command name. */
-// 输出所有命令帮助，按组或命令名称筛选。
+// 输出所有命令帮助,按组或命令名称筛选。
 static void cliOutputHelp(int argc, char **argv) {
     int i, j, len;
     int group = -1;
@@ -1294,7 +1294,7 @@ static int cliSendCommand(int argc, char **argv, long repeat) {
     int j, output_raw;
 
     if (!config.eval_ldb &&
-        /* In debugging mode, let's pass "help" to Redis. */ // 在调试模式下，让我们将“help”传递给 Redis。
+        /* In debugging mode, let's pass "help" to Redis. */ // 在调试模式下,让我们将“help”传递给 Redis。
         (!strcasecmp(command, "help") || !strcasecmp(command, "?"))) {
         cliOutputHelp(--argc, ++argv);
         return REDIS_OK;
@@ -1742,7 +1742,7 @@ static int parseOptions(int argc, char **argv) {
 
 static void parseEnv(void) {
     /* Set auth from env, but do not overwrite CLI arguments if passed */
-    // 从 env 设置身份验证，但如果传递，则不要覆盖 CLI 参数
+    // 从 env 设置身份验证,但如果传递,则不要覆盖 CLI 参数
     char *auth = getenv(REDIS_CLI_AUTH_ENV);
     if (auth != NULL && config.auth == NULL) {
         config.auth = auth;
@@ -1944,7 +1944,7 @@ static int issueCommandRepeat(int argc, char **argv, long repeat) {
             }
         }
         /* Issue the command again if we got redirected in cluster mode */
-        // 如果我们在集群模式下被重定向，请再次发出命令
+        // 如果我们在集群模式下被重定向,请再次发出命令
         if (config.cluster_mode && config.cluster_reissue_command) {
             cliConnect(CC_FORCE);
         } else {
@@ -2199,7 +2199,7 @@ static int evalMode(int argc, char **argv) {
         keys = 0;
 
         /* Load the script from the file, as an sds string. */
-        // 从文件中加载脚本，作为 sds 字符串。
+        // 从文件中加载脚本,作为 sds 字符串。
         fp = fopen(config.eval, "r");
         if (!fp) {
             fprintf(stderr, "Can't open file '%s': %s\n", config.eval, strerror(errno));
@@ -2211,7 +2211,7 @@ static int evalMode(int argc, char **argv) {
         fclose(fp);
 
         /* If we are debugging a script, enable the Lua debugger. */
-        // 如果我们正在调试脚本，请启用 Lua 调试器。
+        // 如果我们正在调试脚本,请启用 Lua 调试器。
         if (config.eval_ldb) {
             redisReply *reply = redisCommand(context, config.eval_ldb_sync ? "SCRIPT DEBUG sync" : "SCRIPT DEBUG yes");
             if (reply)
@@ -2235,7 +2235,7 @@ static int evalMode(int argc, char **argv) {
         argv2[2] = sdscatprintf(sdsempty(), "%d", keys);
 
         /* Call it */
-        int eval_ldb = config.eval_ldb; /* Save it, may be reverted. */ // 保存它，可能会被还原。
+        int eval_ldb = config.eval_ldb; /* Save it, may be reverted. */ // 保存它,可能会被还原。
         retval = issueCommand(argc + 3 - got_comma, argv2); // 发出命令
         if (eval_ldb) {
             if (!config.eval_ldb) {
@@ -8447,8 +8447,8 @@ int main(int argc, char **argv) {
         intrinsicLatencyMode();
 
     /* Start interactive mode when no command is provided */
-    // 这段代码是一个注释，说明当未提供命令时，程序将启动交互模式。
-    // 具体实现逻辑需要结合后续代码分析，但核心功能是检测是否提供了命令，若未提供，则进入交互模式。
+    // 这段代码是一个注释,说明当未提供命令时,程序将启动交互模式。
+    // 具体实现逻辑需要结合后续代码分析,但核心功能是检测是否提供了命令,若未提供,则进入交互模式。
     if (argc == 0 && !config.eval) {
         /* Ignore SIGPIPE in interactive mode to force a reconnect */
         signal(SIGPIPE, SIG_IGN);
@@ -8456,13 +8456,13 @@ int main(int argc, char **argv) {
         /* Note that in repl mode we don't abort on connection error.
          * A new attempt will be performed for every command send. */
         cliConnect(0);
-        // repl() 函数通常用于启动一个读取-求值-打印循环（Read-Eval-Print
-        // Loop），允许用户交互式地输入命令或表达式并立即看到结果。
+        // repl() 函数通常用于启动一个读取-求值-打印循环(Read-Eval-Print
+        // Loop),允许用户交互式地输入命令或表达式并立即看到结果。
         repl();
     }
 
     /* Otherwise, we have some arguments to execute */
-    // 否则，我们有一些参数要执行
+    // 否则,我们有一些参数要执行
     if (cliConnect(0) != REDIS_OK)
         exit(1);
     if (config.eval) {

@@ -366,28 +366,28 @@ end:
 
 /**
  * anetTcpConnect是一个用于建立TCP连接的函数。
- * 它通过调用anetTcpGenericConnect函数来实现，不启用任何特殊连接选项。
+ * 它通过调用anetTcpGenericConnect函数来实现,不启用任何特殊连接选项。
  *
- * @param err 错误描述字符串的缓冲区，用于存储发生错误时的错误信息。
- * @param addr 一个包含IP地址或主机名的字符串，指示要连接到的地址。
+ * @param err 错误描述字符串的缓冲区,用于存储发生错误时的错误信息。
+ * @param addr 一个包含IP地址或主机名的字符串,指示要连接到的地址。
  * @param port 要连接到的远程主机的端口号。
  *
- * @return 返回一个整数值，表示连接的结果。具体返回值的含义依赖于具体实现。
+ * @return 返回一个整数值,表示连接的结果。具体返回值的含义依赖于具体实现。
  */
 int anetTcpConnect(char *err, const char *addr, int port) {
-    // 调用通用的TCP连接函数，不启用任何特殊选项
+    // 调用通用的TCP连接函数,不启用任何特殊选项
     return anetTcpGenericConnect(err, addr, port, NULL, ANET_CONNECT_NONE);
 }
 
 /**
  * anetTcpNonBlockConnect函数用于创建一个非阻塞的TCP连接。
  *
- * @param err 错误信息的缓冲区，如果发生错误，将被填充。
+ * @param err 错误信息的缓冲区,如果发生错误,将被填充。
  * @param addr 服务器的地址。
  * @param port 服务器的端口。
  *
- * @return 返回一个整数值，表示创建的非阻塞TCP连接的文件描述符（fd）。
- *         如果返回值为-1，则表示连接失败，此时err参数中会包含具体的错误信息。
+ * @return 返回一个整数值,表示创建的非阻塞TCP连接的文件描述符(fd)。
+ *         如果返回值为-1,则表示连接失败,此时err参数中会包含具体的错误信息。
  */
 int anetTcpNonBlockConnect(char *err, const char *addr, int port) {
     // 调用anetTcpGenericConnect函数创建一个非阻塞的TCP连接
@@ -397,15 +397,15 @@ int anetTcpNonBlockConnect(char *err, const char *addr, int port) {
 /**
  * 使用TCP协议建立非阻塞连接的函数
  *
- * @param err 错误信息的缓冲区，如果发生错误，将填充相关错误信息
- * @param addr 目标服务器的地址字符串，例如 "127.0.0.1"
+ * @param err 错误信息的缓冲区,如果发生错误,将填充相关错误信息
+ * @param addr 目标服务器的地址字符串,例如 "127.0.0.1"
  * @param port 目标服务器的端口号
- * @param source_addr 源地址字符串，用于绑定到特定的本地接口，如果不需要绑定则留空
+ * @param source_addr 源地址字符串,用于绑定到特定的本地接口,如果不需要绑定则留空
  *
- * @return 返回一个文件描述符，表示新建的非阻塞TCP连接如果发生错误，则返回-1，并在err参数中填充错误信息
+ * @return 返回一个文件描述符,表示新建的非阻塞TCP连接如果发生错误,则返回-1,并在err参数中填充错误信息
  *
- * 此函数通过调用更通用的anetTcpGenericConnect函数来实现，它使用了ANET_CONNECT_NONBLOCK标志来指示建立非阻塞连接
- * 非阻塞模式意味着在连接建立过程中，如果不能立即完成，函数将不会等待，而是直接返回
+ * 此函数通过调用更通用的anetTcpGenericConnect函数来实现,它使用了ANET_CONNECT_NONBLOCK标志来指示建立非阻塞连接
+ * 非阻塞模式意味着在连接建立过程中,如果不能立即完成,函数将不会等待,而是直接返回
  */
 int anetTcpNonBlockBindConnect(char *err, const char *addr, int port, const char *source_addr) {
     return anetTcpGenericConnect(err, addr, port, source_addr, ANET_CONNECT_NONBLOCK);
@@ -576,11 +576,11 @@ int anetUnixServer(char *err, char *path, mode_t perm, int backlog) {
     return s;
 }
 
-// 该函数 anetGenericAccept 的功能是处理套接字的接受操作，具体逻辑如下：
-// 循环调用 accept 系统调用，尝试接受一个新的连接。
-// 如果 accept 返回 -1 且错误码为 EINTR（中断错误），则继续循环重试。
-// 如果其他错误发生，则记录错误信息并返回错误标识 ANET_ERR。
-// 如果成功接受连接，则返回新创建的文件描述符 fd。
+// 该函数 anetGenericAccept 的功能是处理套接字的接受操作,具体逻辑如下:
+// 循环调用 accept 系统调用,尝试接受一个新的连接。
+// 如果 accept 返回 -1 且错误码为 EINTR(中断错误),则继续循环重试。
+// 如果其他错误发生,则记录错误信息并返回错误标识 ANET_ERR。
+// 如果成功接受连接,则返回新创建的文件描述符 fd。
 static int anetGenericAccept(char *err, int s, struct sockaddr *sa, socklen_t *len) {
     int fd;
     while (1) {
@@ -598,7 +598,7 @@ static int anetGenericAccept(char *err, int s, struct sockaddr *sa, socklen_t *l
     return fd;
 }
 
-// 用于在 TCP 服务器端接受新的连接请求，并将客户端的 IP 地址和端口返回给调用者。
+// 用于在 TCP 服务器端接受新的连接请求,并将客户端的 IP 地址和端口返回给调用者。
 int anetTcpAccept(char *err, int s, char *ip, size_t ip_len, int *port) {
     int fd;
     struct sockaddr_storage sa;

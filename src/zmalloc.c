@@ -48,13 +48,13 @@ void zlibc_free(void *ptr) { free(ptr); }
 
 // 增加内存统计 原子增加
 #define update_zmalloc_stat_alloc(__n) atomicIncr(used_memory, (__n))
-// 减少内存统计，原子减少
+// 减少内存统计,原子减少
 #define update_zmalloc_stat_free(__n) atomicDecr(used_memory, (__n))
 
-// 已使用内存的大小，原子性变量
+// 已使用内存的大小,原子性变量
 static redisAtomic size_t used_memory = 0;
 
-// 内存分配的默认的错误处理，打印错误日志，并退出程序
+// 内存分配的默认的错误处理,打印错误日志,并退出程序
 static void zmalloc_default_oom(size_t size) {
     fprintf(stderr, "zmalloc: Out of memory trying to allocate %zu bytes\n", size);
     fflush(stderr);
@@ -66,7 +66,7 @@ static void (*zmalloc_oom_handler)(size_t) = zmalloc_default_oom;
 
 /* Try allocating memory, and return NULL if failed.
  * '*usable' is set to the usable size if non NULL. */
-// 尝试分配内存，分配不了则返回NULL
+// 尝试分配内存,分配不了则返回NULL
 void *ztrymalloc_usable(size_t size, size_t *usable) {
     void *ptr = malloc(size + PREFIX_SIZE);
 
@@ -79,7 +79,7 @@ void *ztrymalloc_usable(size_t size, size_t *usable) {
     size = zmalloc_size(ptr);
     // 更新内存统计
     update_zmalloc_stat_alloc(size);
-    // 如果有指定的usable指针，则设置
+    // 如果有指定的usable指针,则设置
     if (usable)
         *usable = size;
     // 返回分配的指针
@@ -99,7 +99,7 @@ void *ztrymalloc_usable(size_t size, size_t *usable) {
 }
 
 /* Allocate memory or panic */
-// 分配指定大小的内存，没有分配成功，则调用oom处理器
+// 分配指定大小的内存,没有分配成功,则调用oom处理器
 void *zmalloc(size_t size) {
     void *ptr = ztrymalloc_usable(size, NULL);
     if (!ptr)
@@ -199,7 +199,7 @@ void *ztryrealloc_usable(void *ptr, size_t size, size_t *usable) {
     void *newptr;
 
     /* not allocating anything, just redirect to free. */
-    // 如果指针不为NULL，则要分配的内存大小为0，则相当于释放内存
+    // 如果指针不为NULL,则要分配的内存大小为0,则相当于释放内存
     if (size == 0 && ptr != NULL) {
         // 释放内存
         zfree(ptr);
@@ -210,7 +210,7 @@ void *ztryrealloc_usable(void *ptr, size_t size, size_t *usable) {
         return NULL;
     }
     /* Not freeing anything, just redirect to malloc. */
-    // 如果指针为NULL，则尝试分配内存
+    // 如果指针为NULL,则尝试分配内存
     if (ptr == NULL)
         return ztrymalloc_usable(size, usable);
 
@@ -220,7 +220,7 @@ void *ztryrealloc_usable(void *ptr, size_t size, size_t *usable) {
     oldsize = zmalloc_size(ptr);
     // 重分配给定的大小内存
     newptr = realloc(ptr, size);
-    // 没有分配到，直接返回NULL
+    // 没有分配到,直接返回NULL
     if (newptr == NULL) {
         if (usable)
             *usable = 0;
@@ -258,11 +258,11 @@ void *ztryrealloc_usable(void *ptr, size_t size, size_t *usable) {
 }
 
 /* Reallocate memory and zero it or panic */
-// 内存重分配方法，分配不成功，则报OOM
+// 内存重分配方法,分配不成功,则报OOM
 void *zrealloc(void *ptr, size_t size) {
     // 调用ztryreallloc_usable方法进行重分配
     ptr = ztryrealloc_usable(ptr, size, NULL);
-    // 如果指针不存在且要分配的大小大于0，则报内存溢出
+    // 如果指针不存在且要分配的大小大于0,则报内存溢出
     if (!ptr && size != 0)
         zmalloc_oom_handler(size);
     // 返回重新分配的指针
