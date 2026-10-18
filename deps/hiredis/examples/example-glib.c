@@ -1,15 +1,12 @@
 #include <stdlib.h>
 
-#include <hiredis.h>
-#include <async.h>
 #include <adapters/glib.h>
+#include <async.h>
+#include <hiredis.h>
 
 static GMainLoop *mainloop;
 
-static void
-connect_cb (const redisAsyncContext *ac G_GNUC_UNUSED,
-            int status)
-{
+static void connect_cb(const redisAsyncContext *ac G_GNUC_UNUSED, int status) {
     if (status != REDIS_OK) {
         g_printerr("Failed to connect: %s\n", ac->errstr);
         g_main_loop_quit(mainloop);
@@ -18,10 +15,7 @@ connect_cb (const redisAsyncContext *ac G_GNUC_UNUSED,
     }
 }
 
-static void
-disconnect_cb (const redisAsyncContext *ac G_GNUC_UNUSED,
-               int status)
-{
+static void disconnect_cb(const redisAsyncContext *ac G_GNUC_UNUSED, int status) {
     if (status != REDIS_OK) {
         g_error("Failed to disconnect: %s", ac->errstr);
     } else {
@@ -30,11 +24,7 @@ disconnect_cb (const redisAsyncContext *ac G_GNUC_UNUSED,
     }
 }
 
-static void
-command_cb(redisAsyncContext *ac,
-           gpointer r,
-           gpointer user_data G_GNUC_UNUSED)
-{
+static void command_cb(redisAsyncContext *ac, gpointer r, gpointer user_data G_GNUC_UNUSED) {
     redisReply *reply = r;
 
     if (reply) {
@@ -44,10 +34,7 @@ command_cb(redisAsyncContext *ac,
     redisAsyncDisconnect(ac);
 }
 
-gint
-main (gint argc     G_GNUC_UNUSED,
-      gchar *argv[] G_GNUC_UNUSED)
-{
+gint main(gint argc G_GNUC_UNUSED, gchar *argv[] G_GNUC_UNUSED) {
     redisAsyncContext *ac;
     GMainContext *context = NULL;
     GSource *source;

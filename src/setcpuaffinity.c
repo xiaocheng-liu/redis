@@ -5,15 +5,15 @@
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 #ifdef __linux__
 #include <sched.h>
 #endif
 #ifdef __FreeBSD__
-#include <sys/param.h>
 #include <sys/cpuset.h>
+#include <sys/param.h>
 #endif
 #ifdef __DragonFly__
 #include <pthread.h>
@@ -26,8 +26,7 @@
 #include "config.h"
 
 #ifdef USE_SETCPUAFFINITY
-static const char *next_token(const char *q, int sep)
-{
+static const char *next_token(const char *q, int sep) {
     if (q)
         q = strchr(q, sep);
     if (q)
@@ -36,8 +35,7 @@ static const char *next_token(const char *q, int sep)
     return q;
 }
 
-static int next_num(const char *str, char **end, int *result)
-{
+static int next_num(const char *str, char **end, int *result) {
     if (!str || *str == '\0' || !isdigit(*str))
         return -1;
 
@@ -51,8 +49,7 @@ static int next_num(const char *str, char **end, int *result)
 /* set current thread cpu affinity to cpu list, this function works like
  * taskset command (actually cpulist parsing logic reference to util-linux).
  * example of this function: "0,2,3", "0,2-3", "0-20:2". */
-void setcpuaffinity(const char *cpulist)
-{
+void setcpuaffinity(const char *cpulist) {
     const char *p, *q;
     char *end = NULL;
 #ifdef __linux__
@@ -75,8 +72,7 @@ void setcpuaffinity(const char *cpulist)
 #endif
 
     q = cpulist;
-    while (p = q, q = next_token(q, ','), p)
-    {
+    while (p = q, q = next_token(q, ','), p) {
         int a, b, s;
         const char *c1, *c2;
 
@@ -90,14 +86,12 @@ void setcpuaffinity(const char *cpulist)
         c1 = next_token(p, '-');
         c2 = next_token(p, ',');
 
-        if (c1 != NULL && (c2 == NULL || c1 < c2))
-        {
+        if (c1 != NULL && (c2 == NULL || c1 < c2)) {
             if (next_num(c1, &end, &b) != 0)
                 return;
 
             c1 = end && *end ? next_token(end, ':') : NULL;
-            if (c1 != NULL && (c2 == NULL || c1 < c2))
-            {
+            if (c1 != NULL && (c2 == NULL || c1 < c2)) {
                 if (next_num(c1, &end, &s) != 0)
                     return;
 
@@ -109,8 +103,7 @@ void setcpuaffinity(const char *cpulist)
         if ((a > b))
             return;
 
-        while (a <= b)
-        {
+        while (a <= b) {
 #ifndef __NetBSD__
             CPU_SET(a, &cpuset);
 #else

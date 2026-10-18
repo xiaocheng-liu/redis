@@ -1,6 +1,9 @@
 #ifndef ACL_H
 #define ACL_H
 
+typedef struct redisObject robj;
+typedef struct client client;
+
 #include "server.h"
 #include "rax.h"
 
@@ -91,12 +94,12 @@ void ACLInit(void);
 #define ACL_DENIED_CHANNEL 4 /* Only used for pub/sub commands */ // 仅用于发布订阅命令,表示权限被拒绝。
 
 int ACLCheckUserCredentials(robj *username, robj *password);
-int ACLAuthenticateUser(struct client *c, robj *username, robj *password);
+int ACLAuthenticateUser(client *c, robj *username, robj *password);
 unsigned long ACLGetCommandID(const char *cmdname);
 void ACLClearCommandID(void);
 user *ACLGetUserByName(const char *name, size_t namelen);
-int ACLCheckCommandPerm(struct client *c, int *keyidxptr);
-int ACLCheckPubsubPerm(struct client *c, int idx, int count, int literal, int *idxptr);
+int ACLCheckCommandPerm(client *c, int *keyidxptr);
+int ACLCheckPubsubPerm(client *c, int idx, int count, int literal, int *idxptr);
 int ACLSetUser(user *u, const char *op, ssize_t oplen);
 sds ACLDefaultUserFirstPassword(void);
 uint64_t ACLGetCommandCategoryFlagByName(const char *name);
@@ -108,6 +111,6 @@ void ACLLoadUsersAtStartup(void);
 
 user *ACLCreateUnlinkedUser(void);
 void ACLFreeUserAndKillClients(user *u);
-void addACLLogEntry(struct client *c, int reason, int keypos, sds username);
+void addACLLogEntry(client *c, int reason, int keypos, sds username);
 
 #endif // ACL_H

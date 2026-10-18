@@ -1,11 +1,11 @@
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <signal.h>
 
-#include <hiredis.h>
-#include <async.h>
 #include <adapters/libevent.h>
+#include <async.h>
+#include <hiredis.h>
 
 void getCallback(redisAsyncContext *c, void *r, void *privdata) {
     redisReply *reply = r;
@@ -15,7 +15,7 @@ void getCallback(redisAsyncContext *c, void *r, void *privdata) {
         }
         return;
     }
-    printf("argv[%s]: %s\n", (char*)privdata, reply->str);
+    printf("argv[%s]: %s\n", (char *) privdata, reply->str);
 
     /* Disconnect after receiving the reply to GET */
     redisAsyncDisconnect(c);
@@ -37,7 +37,7 @@ void disconnectCallback(const redisAsyncContext *c, int status) {
     printf("Disconnected...\n");
 }
 
-int main (int argc, char **argv) {
+int main(int argc, char **argv) {
 #ifndef _WIN32
     signal(SIGPIPE, SIG_IGN);
 #endif
@@ -57,11 +57,11 @@ int main (int argc, char **argv) {
         return 1;
     }
 
-    redisLibeventAttach(c,base);
-    redisAsyncSetConnectCallback(c,connectCallback);
-    redisAsyncSetDisconnectCallback(c,disconnectCallback);
-    redisAsyncCommand(c, NULL, NULL, "SET key %b", argv[argc-1], strlen(argv[argc-1]));
-    redisAsyncCommand(c, getCallback, (char*)"end-1", "GET key");
+    redisLibeventAttach(c, base);
+    redisAsyncSetConnectCallback(c, connectCallback);
+    redisAsyncSetDisconnectCallback(c, disconnectCallback);
+    redisAsyncCommand(c, NULL, NULL, "SET key %b", argv[argc - 1], strlen(argv[argc - 1]));
+    redisAsyncCommand(c, getCallback, (char *) "end-1", "GET key");
     event_base_dispatch(base);
     return 0;
 }

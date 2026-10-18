@@ -37,7 +37,8 @@ int Auth_AuthModuleUser(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 }
 
 int Auth_AuthRealUser(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    if (argc != 2) return RedisModule_WrongArity(ctx);
+    if (argc != 2)
+        return RedisModule_WrongArity(ctx);
 
     size_t length;
     uint64_t client_id;
@@ -45,9 +46,9 @@ int Auth_AuthRealUser(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModuleString *user_string = argv[1];
     const char *name = RedisModule_StringPtrLen(user_string, &length);
 
-    if (RedisModule_AuthenticateClientWithACLUser(ctx, name, length, 
-            UserChangedCallback, NULL, &client_id) == REDISMODULE_ERR) {
-        return RedisModule_ReplyWithError(ctx, "Invalid user");   
+    if (RedisModule_AuthenticateClientWithACLUser(ctx, name, length, UserChangedCallback, NULL, &client_id) ==
+        REDISMODULE_ERR) {
+        return RedisModule_ReplyWithError(ctx, "Invalid user");
     }
 
     return RedisModule_ReplyWithLongLong(ctx, (uint64_t) client_id);
@@ -67,23 +68,20 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
     REDISMODULE_NOT_USED(argv);
     REDISMODULE_NOT_USED(argc);
 
-    if (RedisModule_Init(ctx,"testacl",1,REDISMODULE_APIVER_1)
-        == REDISMODULE_ERR) return REDISMODULE_ERR;
-
-    if (RedisModule_CreateCommand(ctx,"auth.authrealuser",
-        Auth_AuthRealUser,"no-auth",0,0,0) == REDISMODULE_ERR)
+    if (RedisModule_Init(ctx, "testacl", 1, REDISMODULE_APIVER_1) == REDISMODULE_ERR)
         return REDISMODULE_ERR;
 
-    if (RedisModule_CreateCommand(ctx,"auth.createmoduleuser",
-        Auth_CreateModuleUser,"",0,0,0) == REDISMODULE_ERR)
+    if (RedisModule_CreateCommand(ctx, "auth.authrealuser", Auth_AuthRealUser, "no-auth", 0, 0, 0) == REDISMODULE_ERR)
         return REDISMODULE_ERR;
 
-    if (RedisModule_CreateCommand(ctx,"auth.authmoduleuser",
-        Auth_AuthModuleUser,"no-auth",0,0,0) == REDISMODULE_ERR)
+    if (RedisModule_CreateCommand(ctx, "auth.createmoduleuser", Auth_CreateModuleUser, "", 0, 0, 0) == REDISMODULE_ERR)
         return REDISMODULE_ERR;
 
-    if (RedisModule_CreateCommand(ctx,"auth.changecount",
-        Auth_ChangeCount,"",0,0,0) == REDISMODULE_ERR)
+    if (RedisModule_CreateCommand(ctx, "auth.authmoduleuser", Auth_AuthModuleUser, "no-auth", 0, 0, 0) ==
+        REDISMODULE_ERR)
+        return REDISMODULE_ERR;
+
+    if (RedisModule_CreateCommand(ctx, "auth.changecount", Auth_ChangeCount, "", 0, 0, 0) == REDISMODULE_ERR)
         return REDISMODULE_ERR;
 
     return REDISMODULE_OK;

@@ -31,15 +31,16 @@
  * clusterRedirectBlockedClientIfNeeded() function should also be updated.
  */
 
-#include "server_cammand_define.h"
-#include "server.h"
-#include "slowlog.h"
 #include "latency.h"
 #include "monotonic.h"
+#include "server.h"
+#include "server_cammand_define.h"
+#include "slowlog.h"
 #include "t_list.h"
 #include "t_zset.h"
 
-int serveClientBlockedOnList(client *receiver, robj *key, robj *dstkey, redisDb *db, robj *value, int wherefrom, int whereto);
+int serveClientBlockedOnList(client *receiver, robj *key, robj *dstkey, redisDb *db, robj *value, int wherefrom,
+                             int whereto);
 int getListPositionFromObjectOrReply(client *c, robj *arg, int *position);
 
 /* This structure represents the blocked key information that we store
@@ -53,8 +54,8 @@ int getListPositionFromObjectOrReply(client *c, robj *arg, int *position);
  * the only use for additional info we have is when clients are blocked
  * on streams, as we have to remember the ID it blocked for. */
 typedef struct bkinfo {
-    listNode *listnode;     /* List node for db->blocking_keys[key] list. */
-    streamID stream_id;     /* Stream ID if we blocked in a stream. */
+    listNode *listnode; /* List node for db->blocking_keys[key] list. */
+    streamID stream_id; /* Stream ID if we blocked in a stream. */
 } bkinfo;
 
 /* Block a client for the specific operation type. Once the CLIENT_BLOCKED
@@ -77,14 +78,14 @@ void blockClient(client *c, int btype) {
 /* This function is called after a client has finished a blocking operation
  * in order to update the total command duration, log the command into
  * the Slow log if needed, and log the reply duration event if needed. */
-void updateStatsOnUnblock(client *c, long blocked_us, long reply_us){
+void updateStatsOnUnblock(client *c, long blocked_us, long reply_us) {
     const ustime_t total_cmd_duration = c->duration + blocked_us + reply_us;
     c->lastcmd->microseconds += total_cmd_duration;
     /* Log the command into the Slow log if needed. */
     if (!(c->lastcmd->flags & CMD_SKIP_SLOWLOG)) {
-        slowlogPushEntryIfNeeded(c,c->argv,c->argc,total_cmd_duration);
+        slowlogPushEntryIfNeeded(c, c->argv, c->argc, total_cmd_duration);
         /* Log the reply duration event. */
-        latencyAddSampleIfNeeded("command-unblocking",reply_us/1000);
+        latencyAddSampleIfNeeded("command-unblocking", reply_us / 1000);
     }
 }
 
@@ -99,7 +100,7 @@ void processUnblockedClients(void) {
         ln = listFirst(server.unblocked_clients);
         serverAssert(ln != NULL);
         c = ln->value;
-        listDelNode(server.unblocked_clients,ln);
+        listDelNode(server.unblocked_clients, ln);
         c->flags &= ~CLIENT_UNBLOCKED;
 
         /* Process remaining data in the input buffer, unless the client
@@ -140,24 +141,23 @@ void queueClientForReprocessing(client *c) {
      * blocking operation, don't add back it into the list multiple times. */
     if (!(c->flags & CLIENT_UNBLOCKED)) {
         c->flags |= CLIENT_UNBLOCKED;
-        listAddNodeTail(server.unblocked_clients,c);
+        listAddNodeTail(server.unblocked_clients, c);
     }
 }
 
 /* Unblock a client calling the right function depending on the kind
  * of operation the client is blocking for. */
 void unblockClient(client *c) {
-    if (c->btype == BLOCKED_LIST ||
-        c->btype == BLOCKED_ZSET ||
-        c->btype == BLOCKED_STREAM) {
+    if (c->btype == BLOCKED_LIST || c->btype == BLOCKED_ZSET || c->btype == BLOCKED_STREAM) {
         unblockClientWaitingData(c);
     } else if (c->btype == BLOCKED_WAIT) {
         unblockClientWaitingReplicas(c);
     } else if (c->btype == BLOCKED_MODULE) {
-        if (moduleClientIsBlockedOnKeys(c)) unblockClientWaitingData(c);
+        if (moduleClientIsBlockedOnKeys(c))
+            unblockClientWaitingData(c);
         unblockClientFromModule(c);
     } else if (c->btype == BLOCKED_PAUSE) {
-        listDelNode(server.paused_clients,c->paused_list_node);
+        listDelNode(server.paused_clients, c->paused_list_node);
         c->paused_list_node = NULL;
     } else {
         serverPanic("Unknown btype in unblockClient().");
@@ -176,12 +176,10 @@ void unblockClient(client *c) {
  * send it a reply of some kind. After this function is called,
  * unblockClient() will be called with the same client as argument. */
 void replyToBlockedClientTimedOut(client *c) {
-    if (c->btype == BLOCKED_LIST ||
-        c->btype == BLOCKED_ZSET ||
-        c->btype == BLOCKED_STREAM) {
+    if (c->btype == BLOCKED_LIST || c->btype == BLOCKED_ZSET || c->btype == BLOCKED_STREAM) {
         addReplyNullArray(c);
     } else if (c->btype == BLOCKED_WAIT) {
-        addReplyLongLong(c,replicationCountAcksByOffset(c->bpop.reploffset));
+        addReplyLongLong(c, replicationCountAcksByOffset(c->bpop.reploffset));
     } else if (c->btype == BLOCKED_MODULE) {
         moduleBlockedClientTimedOut(c);
     } else {
@@ -200,8 +198,8 @@ void disconnectAllBlockedClients(void) {
     listNode *ln;
     listIter li;
 
-    listRewind(server.clients,&li);
-    while((ln = listNext(&li))) {
+    listRewind(server.clients, &li);
+    while ((ln = listNext(&li))) {
         client *c = listNodeValue(ln);
 
         if (c->flags & CLIENT_BLOCKED) {
@@ -212,9 +210,8 @@ void disconnectAllBlockedClients(void) {
             if (c->btype == BLOCKED_PAUSE)
                 continue;
 
-            addReplyError(c,
-                "-UNBLOCKED force unblock from blocking operation, "
-                "instance state changed (master -> replica?)");
+            addReplyError(c, "-UNBLOCKED force unblock from blocking operation, "
+                             "instance state changed (master -> replica?)");
             unblockClient(c);
             c->flags |= CLIENT_CLOSE_AFTER_REPLY;
         }
@@ -227,12 +224,12 @@ void disconnectAllBlockedClients(void) {
 void serveClientsBlockedOnListKey(robj *o, readyList *rl) {
     /* We serve clients in the same order they blocked for
      * this key, from the first blocked to the last. */
-    dictEntry *de = dictFind(rl->db->blocking_keys,rl->key);
+    dictEntry *de = dictFind(rl->db->blocking_keys, rl->key);
     if (de) {
         list *clients = dictGetVal(de);
         int numclients = listLength(clients);
 
-        while(numclients--) {
+        while (numclients--) {
             listNode *clientnode = listFirst(clients);
             client *receiver = clientnode->value;
 
@@ -252,22 +249,21 @@ void serveClientsBlockedOnListKey(robj *o, readyList *rl) {
                 /* Protect receiver->bpop.target, that will be
                  * freed by the next unblockClient()
                  * call. */
-                if (dstkey) incrRefCount(dstkey);
+                if (dstkey)
+                    incrRefCount(dstkey);
                 unblockClient(receiver);
 
                 monotime replyTimer;
                 elapsedStart(&replyTimer);
-                if (serveClientBlockedOnList(receiver,
-                    rl->key,dstkey,rl->db,value,
-                    wherefrom, whereto) == C_ERR)
-                {
+                if (serveClientBlockedOnList(receiver, rl->key, dstkey, rl->db, value, wherefrom, whereto) == C_ERR) {
                     /* If we failed serving the client we need
                      * to also undo the POP operation. */
-                    listTypePush(o,value,wherefrom);
+                    listTypePush(o, value, wherefrom);
                 }
                 updateStatsOnUnblock(receiver, 0, elapsedUs(replyTimer));
 
-                if (dstkey) decrRefCount(dstkey);
+                if (dstkey)
+                    decrRefCount(dstkey);
                 decrRefCount(value);
             } else {
                 break;
@@ -276,8 +272,8 @@ void serveClientsBlockedOnListKey(robj *o, readyList *rl) {
     }
 
     if (listTypeLength(o) == 0) {
-        dbDelete(rl->db,rl->key);
-        notifyKeyspaceEvent(NOTIFY_GENERIC,"del",rl->key,rl->db->id);
+        dbDelete(rl->db, rl->key);
+        notifyKeyspaceEvent(NOTIFY_GENERIC, "del", rl->key, rl->db->id);
     }
     /* We don't call signalModifiedKey() as it was already called
      * when an element was pushed on the list. */
@@ -289,13 +285,13 @@ void serveClientsBlockedOnListKey(robj *o, readyList *rl) {
 void serveClientsBlockedOnSortedSetKey(robj *o, readyList *rl) {
     /* We serve clients in the same order they blocked for
      * this key, from the first blocked to the last. */
-    dictEntry *de = dictFind(rl->db->blocking_keys,rl->key);
+    dictEntry *de = dictFind(rl->db->blocking_keys, rl->key);
     if (de) {
         list *clients = dictGetVal(de);
         int numclients = listLength(clients);
         unsigned long zcard = zsetLength(o);
 
-        while(numclients-- && zcard) {
+        while (numclients-- && zcard) {
             listNode *clientnode = listFirst(clients);
             client *receiver = clientnode->value;
 
@@ -306,26 +302,21 @@ void serveClientsBlockedOnSortedSetKey(robj *o, readyList *rl) {
                 continue;
             }
 
-            int where = (receiver->lastcmd &&
-                         receiver->lastcmd->proc == bzpopminCommand)
-                         ? ZSET_MIN : ZSET_MAX;
+            int where = (receiver->lastcmd && receiver->lastcmd->proc == bzpopminCommand) ? ZSET_MIN : ZSET_MAX;
             unblockClient(receiver);
             monotime replyTimer;
             elapsedStart(&replyTimer);
-            genericZpopCommand(receiver,&rl->key,1,where,1,NULL);
+            genericZpopCommand(receiver, &rl->key, 1, where, 1, NULL);
             updateStatsOnUnblock(receiver, 0, elapsedUs(replyTimer));
             zcard--;
 
             /* Replicate the command. */
             robj *argv[2];
-            struct redisCommand *cmd = where == ZSET_MIN ?
-                                       server.zpopminCommand :
-                                       server.zpopmaxCommand;
-            argv[0] = createStringObject(cmd->name,strlen(cmd->name));
+            struct redisCommand *cmd = where == ZSET_MIN ? server.zpopminCommand : server.zpopmaxCommand;
+            argv[0] = createStringObject(cmd->name, strlen(cmd->name));
             argv[1] = rl->key;
             incrRefCount(rl->key);
-            propagate(cmd,receiver->db->id,
-                      argv,2,PROPAGATE_AOF|PROPAGATE_REPL);
+            propagate(cmd, receiver->db->id, argv, 2, PROPAGATE_AOF | PROPAGATE_REPL);
             decrRefCount(argv[0]);
             decrRefCount(argv[1]);
         }
@@ -336,7 +327,7 @@ void serveClientsBlockedOnSortedSetKey(robj *o, readyList *rl) {
  * when there may be clients blocked on a stream key, and there may be new
  * data to fetch (the key is ready). */
 void serveClientsBlockedOnStreamKey(robj *o, readyList *rl) {
-    dictEntry *de = dictFind(rl->db->blocking_keys,rl->key);
+    dictEntry *de = dictFind(rl->db->blocking_keys, rl->key);
     stream *s = o->ptr;
 
     /* We need to provide the new data arrived on the stream
@@ -346,12 +337,13 @@ void serveClientsBlockedOnStreamKey(robj *o, readyList *rl) {
         list *clients = dictGetVal(de);
         listNode *ln;
         listIter li;
-        listRewind(clients,&li);
+        listRewind(clients, &li);
 
-        while((ln = listNext(&li))) {
+        while ((ln = listNext(&li))) {
             client *receiver = listNodeValue(ln);
-            if (receiver->btype != BLOCKED_STREAM) continue;
-            bkinfo *bki = dictFetchValue(receiver->bpop.keys,rl->key);
+            if (receiver->btype != BLOCKED_STREAM)
+                continue;
+            bkinfo *bki = dictFetchValue(receiver->bpop.keys, rl->key);
             streamID *gt = &bki->stream_id;
 
             /* If we blocked in the context of a consumer
@@ -365,14 +357,12 @@ void serveClientsBlockedOnStreamKey(robj *o, readyList *rl) {
              * otherwise. */
             streamCG *group = NULL;
             if (receiver->bpop.xread_group) {
-                group = streamLookupCG(s,
-                        receiver->bpop.xread_group->ptr);
+                group = streamLookupCG(s, receiver->bpop.xread_group->ptr);
                 /* If the group was not found, send an error
                  * to the consumer. */
                 if (!group) {
-                    addReplyError(receiver,
-                        "-NOGROUP the consumer group this client "
-                        "was blocked on no longer exists");
+                    addReplyError(receiver, "-NOGROUP the consumer group this client "
+                                            "was blocked on no longer exists");
                     unblockClient(receiver);
                     continue;
                 } else {
@@ -390,16 +380,10 @@ void serveClientsBlockedOnStreamKey(robj *o, readyList *rl) {
 
                 if (group) {
                     int created = 0;
-                    consumer =
-                        streamLookupConsumer(group,
-                                             receiver->bpop.xread_consumer->ptr,
-                                             SLC_NONE,
-                                             &created);
+                    consumer = streamLookupConsumer(group, receiver->bpop.xread_consumer->ptr, SLC_NONE, &created);
                     noack = receiver->bpop.xread_group_noack;
                     if (created && noack) {
-                        streamPropagateConsumerCreation(receiver,rl->key,
-                                                        receiver->bpop.xread_group,
-                                                        consumer->name);
+                        streamPropagateConsumerCreation(receiver, rl->key, receiver->bpop.xread_group, consumer->name);
                     }
                 }
 
@@ -410,20 +394,16 @@ void serveClientsBlockedOnStreamKey(robj *o, readyList *rl) {
                  * extracted from it. Wrapped in a single-item
                  * array, since we have just one key. */
                 if (receiver->resp == 2) {
-                    addReplyArrayLen(receiver,1);
-                    addReplyArrayLen(receiver,2);
+                    addReplyArrayLen(receiver, 1);
+                    addReplyArrayLen(receiver, 2);
                 } else {
-                    addReplyMapLen(receiver,1);
+                    addReplyMapLen(receiver, 1);
                 }
-                addReplyBulk(receiver,rl->key);
+                addReplyBulk(receiver, rl->key);
 
-                streamPropInfo pi = {
-                    rl->key,
-                    receiver->bpop.xread_group
-                };
-                streamReplyWithRange(receiver,s,&start,NULL,
-                                     receiver->bpop.xread_count,
-                                     0, group, consumer, noack, &pi);
+                streamPropInfo pi = {rl->key, receiver->bpop.xread_group};
+                streamReplyWithRange(receiver, s, &start, NULL, receiver->bpop.xread_count, 0, group, consumer, noack,
+                                     &pi);
                 updateStatsOnUnblock(receiver, 0, elapsedUs(replyTimer));
 
                 /* Note that after we unblock the client, 'gt'
@@ -447,12 +427,12 @@ void serveClientsBlockedOnKeyByModule(readyList *rl) {
 
     /* We serve clients in the same order they blocked for
      * this key, from the first blocked to the last. */
-    de = dictFind(rl->db->blocking_keys,rl->key);
+    de = dictFind(rl->db->blocking_keys, rl->key);
     if (de) {
         list *clients = dictGetVal(de);
         int numclients = listLength(clients);
 
-        while(numclients--) {
+        while (numclients--) {
             listNode *clientnode = listFirst(clients);
             client *receiver = clientnode->value;
 
@@ -463,7 +443,8 @@ void serveClientsBlockedOnKeyByModule(readyList *rl) {
              * not blocked for the MODULE type safely. */
             listRotateHeadToTail(clients);
 
-            if (receiver->btype != BLOCKED_MODULE) continue;
+            if (receiver->btype != BLOCKED_MODULE)
+                continue;
 
             /* Note that if *this* client cannot be served by this key,
              * it does not mean that another client that is next into the
@@ -473,7 +454,8 @@ void serveClientsBlockedOnKeyByModule(readyList *rl) {
              * to continue after the first failure. */
             monotime replyTimer;
             elapsedStart(&replyTimer);
-            if (!moduleTryServeClientBlockedOnKey(receiver, rl->key)) continue;
+            if (!moduleTryServeClientBlockedOnKey(receiver, rl->key))
+                continue;
             updateStatsOnUnblock(receiver, 0, elapsedUs(replyTimer));
 
             moduleUnblockClient(receiver);
@@ -503,7 +485,7 @@ void serveClientsBlockedOnKeyByModule(readyList *rl) {
  * be used only for a single type, like virtually any Redis application will
  * do, the function is already fair. */
 void handleClientsBlockedOnKeys(void) {
-    while(listLength(server.ready_keys) != 0) {
+    while (listLength(server.ready_keys) != 0) {
         list *l;
 
         /* Point server.ready_keys to a fresh list and save the current one
@@ -513,13 +495,13 @@ void handleClientsBlockedOnKeys(void) {
         l = server.ready_keys;
         server.ready_keys = listCreate();
 
-        while(listLength(l) != 0) {
+        while (listLength(l) != 0) {
             listNode *ln = listFirst(l);
             readyList *rl = ln->value;
 
             /* First of all remove this key from db->ready_keys so that
              * we can safely call signalKeyAsReady() against this key. */
-            dictDelete(rl->db->ready_keys,rl->key);
+            dictDelete(rl->db->ready_keys, rl->key);
 
             /* Even if we are not inside call(), increment the call depth
              * in order to make sure that keys are expired against a fixed
@@ -532,15 +514,15 @@ void handleClientsBlockedOnKeys(void) {
             updateCachedTime(0);
 
             /* Serve clients blocked on the key. */
-            robj *o = lookupKeyWrite(rl->db,rl->key);
+            robj *o = lookupKeyWrite(rl->db, rl->key);
 
             if (o != NULL) {
                 if (o->type == OBJ_LIST)
-                    serveClientsBlockedOnListKey(o,rl);
+                    serveClientsBlockedOnListKey(o, rl);
                 else if (o->type == OBJ_ZSET)
-                    serveClientsBlockedOnSortedSetKey(o,rl);
+                    serveClientsBlockedOnSortedSetKey(o, rl);
                 else if (o->type == OBJ_STREAM)
-                    serveClientsBlockedOnStreamKey(o,rl);
+                    serveClientsBlockedOnStreamKey(o, rl);
                 /* We want to serve clients blocked on module keys
                  * regardless of the object type: we don't know what the
                  * module is trying to accomplish right now. */
@@ -551,7 +533,7 @@ void handleClientsBlockedOnKeys(void) {
             /* Free this item. */
             decrRefCount(rl->key);
             zfree(rl);
-            listDelNode(l,ln);
+            listDelNode(l, ln);
         }
         listRelease(l); /* We have the new list on place at this point. */
     }
@@ -583,9 +565,10 @@ void handleClientsBlockedOnKeys(void) {
  * for all the 'numkeys' keys as in the 'keys' argument. When we block for
  * stream keys, we also provide an array of streamID structures: clients will
  * be unblocked only when items with an ID greater or equal to the specified
- * one is appended to the stream. 
+ * one is appended to the stream.
  * 将client阻塞在key上，*/
-void blockForKeys(client *c, int btype, robj **keys, int numkeys, mstime_t timeout, robj *target, struct listPos *listpos, streamID *ids) {
+void blockForKeys(client *c, int btype, robj **keys, int numkeys, mstime_t timeout, robj *target,
+                  struct listPos *listpos, streamID *ids) {
     dictEntry *de;
     list *l;
     int j;
@@ -593,9 +576,11 @@ void blockForKeys(client *c, int btype, robj **keys, int numkeys, mstime_t timeo
     c->bpop.timeout = timeout;
     c->bpop.target = target;
 
-    if (listpos != NULL) c->bpop.listpos = *listpos;
+    if (listpos != NULL)
+        c->bpop.listpos = *listpos;
 
-    if (target != NULL) incrRefCount(target);
+    if (target != NULL)
+        incrRefCount(target);
 
     for (j = 0; j < numkeys; j++) {
         /* Allocate our bkinfo structure, associated to each key the client
@@ -605,29 +590,29 @@ void blockForKeys(client *c, int btype, robj **keys, int numkeys, mstime_t timeo
             bki->stream_id = ids[j];
 
         /* 添加client到key的映射，如果已有则忽略. */
-        if (dictAdd(c->bpop.keys,keys[j],bki) != DICT_OK) {
+        if (dictAdd(c->bpop.keys, keys[j], bki) != DICT_OK) {
             zfree(bki);
             continue;
         }
         incrRefCount(keys[j]);
 
         /* 添加key到client的映射 */
-        de = dictFind(c->db->blocking_keys,keys[j]);
+        de = dictFind(c->db->blocking_keys, keys[j]);
         if (de == NULL) {
             int retval;
 
             /* For every key we take a list of clients blocked for it */
             l = listCreate();
-            retval = dictAdd(c->db->blocking_keys,keys[j],l);
+            retval = dictAdd(c->db->blocking_keys, keys[j], l);
             incrRefCount(keys[j]);
-            serverAssertWithInfo(c,keys[j],retval == DICT_OK);
+            serverAssertWithInfo(c, keys[j], retval == DICT_OK);
         } else {
             l = dictGetVal(de);
         }
-        listAddNodeTail(l,c);
+        listAddNodeTail(l, c);
         bki->listnode = listLast(l);
     }
-    blockClient(c,btype);
+    blockClient(c, btype);
 }
 
 /* Unblock a client that's waiting in a blocking operation such as BLPOP.
@@ -637,25 +622,25 @@ void unblockClientWaitingData(client *c) {
     dictIterator *di;
     list *l;
 
-    serverAssertWithInfo(c,NULL,dictSize(c->bpop.keys) != 0);
+    serverAssertWithInfo(c, NULL, dictSize(c->bpop.keys) != 0);
     di = dictGetIterator(c->bpop.keys);
     /* The client may wait for multiple keys, so unblock it for every key. */
-    while((de = dictNext(di)) != NULL) {
+    while ((de = dictNext(di)) != NULL) {
         robj *key = dictGetKey(de);
         bkinfo *bki = dictGetVal(de);
 
         /* Remove this client from the list of clients waiting for this key. */
-        l = dictFetchValue(c->db->blocking_keys,key);
-        serverAssertWithInfo(c,key,l != NULL);
-        listDelNode(l,bki->listnode);
+        l = dictFetchValue(c->db->blocking_keys, key);
+        serverAssertWithInfo(c, key, l != NULL);
+        listDelNode(l, bki->listnode);
         /* If the list is empty we need to remove it to avoid wasting memory */
         if (listLength(l) == 0)
-            dictDelete(c->db->blocking_keys,key);
+            dictDelete(c->db->blocking_keys, key);
     }
     dictReleaseIterator(di);
 
     /* Cleanup the client structure */
-    dictEmpty(c->bpop.keys,NULL);
+    dictEmpty(c->bpop.keys, NULL);
     if (c->bpop.target) {
         decrRefCount(c->bpop.target);
         c->bpop.target = NULL;
@@ -670,11 +655,16 @@ void unblockClientWaitingData(client *c) {
 
 static int getBlockedTypeByType(int type) {
     switch (type) {
-        case OBJ_LIST: return BLOCKED_LIST;
-        case OBJ_ZSET: return BLOCKED_ZSET;
-        case OBJ_MODULE: return BLOCKED_MODULE;
-        case OBJ_STREAM: return BLOCKED_STREAM;
-        default: return BLOCKED_NONE;
+        case OBJ_LIST:
+            return BLOCKED_LIST;
+        case OBJ_ZSET:
+            return BLOCKED_ZSET;
+        case OBJ_MODULE:
+            return BLOCKED_MODULE;
+        case OBJ_STREAM:
+            return BLOCKED_STREAM;
+        default:
+            return BLOCKED_NONE;
     }
 }
 
@@ -694,8 +684,7 @@ void signalKeyAsReady(redisDb *db, robj *key, int type) {
         /* The type can never block. */
         return;
     }
-    if (!server.blocked_clients_by_type[btype] &&
-        !server.blocked_clients_by_type[BLOCKED_MODULE]) {
+    if (!server.blocked_clients_by_type[btype] && !server.blocked_clients_by_type[BLOCKED_MODULE]) {
         /* No clients block on this type. Note: Blocked modules are represented
          * by BLOCKED_MODULE, even if the intention is to wake up by normal
          * types (list, zset, stream), so we need to check that there are no
@@ -704,22 +693,23 @@ void signalKeyAsReady(redisDb *db, robj *key, int type) {
     }
 
     /* No clients blocking for this key? No need to queue it. */
-    if (dictFind(db->blocking_keys,key) == NULL) return;
+    if (dictFind(db->blocking_keys, key) == NULL)
+        return;
 
     /* Key was already signaled? No need to queue it again. */
-    if (dictFind(db->ready_keys,key) != NULL) return;
+    if (dictFind(db->ready_keys, key) != NULL)
+        return;
 
     /* Ok, we need to queue this key into server.ready_keys. */
     rl = zmalloc(sizeof(*rl));
     rl->key = key;
     rl->db = db;
     incrRefCount(key);
-    listAddNodeTail(server.ready_keys,rl);
+    listAddNodeTail(server.ready_keys, rl);
 
     /* We also add the key in the db->ready_keys dictionary in order
      * to avoid adding it multiple times into a list with a simple O(1)
      * check. */
     incrRefCount(key);
-    serverAssert(dictAdd(db->ready_keys,key,NULL) == DICT_OK);
+    serverAssert(dictAdd(db->ready_keys, key, NULL) == DICT_OK);
 }
-

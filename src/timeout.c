@@ -1,6 +1,6 @@
-#include "server.h"
 #include "cluster.h"
 #include "endianconv.h"
+#include "server.h"
 
 /* ========================== Clients timeouts ============================= */
 
@@ -10,10 +10,7 @@
  * 检查阻塞的client是否超时，如果没有什么都不做，如果超时，回复client，并去掉阻塞，
  * 返回1。否则返回0 */
 int checkBlockedClientTimeout(client *c, mstime_t now) {
-    if (c->flags & CLIENT_BLOCKED &&
-        c->bpop.timeout != 0
-        && c->bpop.timeout < now)
-    {
+    if (c->flags & CLIENT_BLOCKED && c->bpop.timeout != 0 && c->bpop.timeout < now) {
         /* 处理阻塞超时. */
         replyToBlockedClientTimedOut(c);
         unblockClient(c);
@@ -28,17 +25,16 @@ int checkBlockedClientTimeout(client *c, mstime_t now) {
  * it gets called multiple times in a loop, so calling gettimeofday() for
  * each iteration would be costly without any actual gain. */
 int clientsCronHandleTimeout(client *c, mstime_t now_ms) {
-    time_t now = now_ms/1000;
+    time_t now = now_ms / 1000;
 
     if (server.maxidletime &&
         /* This handles the idle clients connection timeout if set. */
-        !(c->flags & CLIENT_SLAVE) &&   /* No timeout for slaves and monitors */
-        !(c->flags & CLIENT_MASTER) &&  /* No timeout for masters */
+        !(c->flags & CLIENT_SLAVE) && /* No timeout for slaves and monitors */
+        !(c->flags & CLIENT_MASTER) && /* No timeout for masters */
         !(c->flags & CLIENT_BLOCKED) && /* No timeout for BLPOP */
-        !(c->flags & CLIENT_PUBSUB) &&  /* No timeout for Pub/Sub clients */
-        (now - c->lastinteraction > server.maxidletime))
-    {
-        serverLog(LL_VERBOSE,"Closing idle client");
+        !(c->flags & CLIENT_PUBSUB) && /* No timeout for Pub/Sub clients */
+        (now - c->lastinteraction > server.maxidletime)) {
+        serverLog(LL_VERBOSE, "Closing idle client");
         freeClient(c);
         return 1;
     } else if (c->flags & CLIENT_BLOCKED) {
@@ -65,33 +61,35 @@ int clientsCronHandleTimeout(client *c, mstime_t now_ms) {
  * the tree. In beforeSleep() we call handleBlockedClientsTimeout() to run
  * the tree and unblock the clients. */
 
-#define CLIENT_ST_KEYLEN 16    /* 8 bytes mstime + 8 bytes client ID. */
+#define CLIENT_ST_KEYLEN 16 /* 8 bytes mstime + 8 bytes client ID. */
 
-/* 用timeout和client生成radix tree中的key，主要是timeout从小端表示改大端表示法 */ 
+/* 用timeout和client生成radix tree中的key，主要是timeout从小端表示改大端表示法 */
 void encodeTimeoutKey(unsigned char *buf, uint64_t timeout, client *c) {
     timeout = htonu64(timeout);
-    memcpy(buf,&timeout,sizeof(timeout));
-    memcpy(buf+8,&c,sizeof(c));
-    if (sizeof(c) == 4) memset(buf+12,0,4); /* Zero padding for 32bit target. */
+    memcpy(buf, &timeout, sizeof(timeout));
+    memcpy(buf + 8, &c, sizeof(c));
+    if (sizeof(c) == 4)
+        memset(buf + 12, 0, 4); /* Zero padding for 32bit target. */
 }
 
 /* Given a key encoded with encodeTimeoutKey(), resolve the fields and write
  * the timeout into *toptr and the client pointer into *cptr. */
 void decodeTimeoutKey(unsigned char *buf, uint64_t *toptr, client **cptr) {
-    memcpy(toptr,buf,sizeof(*toptr));
+    memcpy(toptr, buf, sizeof(*toptr));
     *toptr = ntohu64(*toptr);
-    memcpy(cptr,buf+8,sizeof(*cptr));
+    memcpy(cptr, buf + 8, sizeof(*cptr));
 }
 
 /* Add the specified client id / timeout as a key in the radix tree we use
  * to handle blocked clients timeouts. The client is not added to the list
  * if its timeout is zero (block forever). */
 void addClientToTimeoutTable(client *c) {
-    if (c->bpop.timeout == 0) return;
+    if (c->bpop.timeout == 0)
+        return;
     uint64_t timeout = c->bpop.timeout;
     unsigned char buf[CLIENT_ST_KEYLEN];
-    encodeTimeoutKey(buf,timeout,c);
-    if (raxTryInsert(server.clients_timeout_table,buf,sizeof(buf),NULL,NULL))
+    encodeTimeoutKey(buf, timeout, c);
+    if (raxTryInsert(server.clients_timeout_table, buf, sizeof(buf), NULL, NULL))
         c->flags |= CLIENT_IN_TO_TABLE;
 }
 
@@ -99,34 +97,37 @@ void addClientToTimeoutTable(client *c) {
  * different than timing out. */
 // 当客户端因超时以外的原因而取消阻止时，将其从表中删除。
 void removeClientFromTimeoutTable(client *c) {
-    if (!(c->flags & CLIENT_IN_TO_TABLE)) return;
+    if (!(c->flags & CLIENT_IN_TO_TABLE))
+        return;
     c->flags &= ~CLIENT_IN_TO_TABLE;
     uint64_t timeout = c->bpop.timeout;
     unsigned char buf[CLIENT_ST_KEYLEN];
-    encodeTimeoutKey(buf,timeout,c);
-    raxRemove(server.clients_timeout_table,buf,sizeof(buf),NULL);
+    encodeTimeoutKey(buf, timeout, c);
+    raxRemove(server.clients_timeout_table, buf, sizeof(buf), NULL);
 }
 
 /* This function is called in beforeSleep() in order to unblock clients
  * that are waiting in blocking operations with a timeout set.
  * 处理那些等待timeout的阻塞请求 client */
 void handleBlockedClientsTimeout(void) {
-    if (raxSize(server.clients_timeout_table) == 0) return;
+    if (raxSize(server.clients_timeout_table) == 0)
+        return;
     uint64_t now = mstime();
     raxIterator ri;
-    raxStart(&ri,server.clients_timeout_table);
-    raxSeek(&ri,"^",NULL,0);
+    raxStart(&ri, server.clients_timeout_table);
+    raxSeek(&ri, "^", NULL, 0);
 
-    while(raxNext(&ri)) {
+    while (raxNext(&ri)) {
         uint64_t timeout;
         client *c;
-        // 从radix树节点中解析出timeout时间和对应的client指针 
-        decodeTimeoutKey(ri.key,&timeout,&c);
-        if (timeout >= now) break; /* 因为是timeout从大到小遍历，如果说当前节点没有超时，那后面一定也没有超时的了 */
+        // 从radix树节点中解析出timeout时间和对应的client指针
+        decodeTimeoutKey(ri.key, &timeout, &c);
+        if (timeout >= now)
+            break; /* 因为是timeout从大到小遍历，如果说当前节点没有超时，那后面一定也没有超时的了 */
         c->flags &= ~CLIENT_IN_TO_TABLE;
-        checkBlockedClientTimeout(c,now);
-        raxRemove(server.clients_timeout_table,ri.key,ri.key_len,NULL);
-        raxSeek(&ri,"^",NULL,0);
+        checkBlockedClientTimeout(c, now);
+        raxRemove(server.clients_timeout_table, ri.key, ri.key_len, NULL);
+        raxSeek(&ri, "^", NULL, 0);
     }
     raxStop(&ri);
 }
@@ -144,18 +145,16 @@ int getTimeoutFromObjectOrReply(client *c, robj *object, mstime_t *timeout, int 
     long double ftval;
 
     if (unit == UNIT_SECONDS) {
-        if (getLongDoubleFromObjectOrReply(c,object,&ftval,
-            "timeout is not a float or out of range") != C_OK)
+        if (getLongDoubleFromObjectOrReply(c, object, &ftval, "timeout is not a float or out of range") != C_OK)
             return C_ERR;
         tval = (long long) (ftval * 1000.0);
     } else {
-        if (getLongLongFromObjectOrReply(c,object,&tval,
-            "timeout is not an integer or out of range") != C_OK)
+        if (getLongLongFromObjectOrReply(c, object, &tval, "timeout is not an integer or out of range") != C_OK)
             return C_ERR;
     }
 
     if (tval < 0) {
-        addReplyError(c,"timeout is negative");
+        addReplyError(c, "timeout is negative");
         return C_ERR;
     }
 

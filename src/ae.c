@@ -3,20 +3,20 @@
  * it in form of a library for easy reuse.
  */
 
+#include <errno.h>
+#include <poll.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <poll.h>
-#include <string.h>
 #include <time.h>
-#include <errno.h>
+#include <unistd.h>
 
 #include "ae.h"
 #include "anet.h"
-#include "zmalloc.h"
 #include "config.h"
+#include "zmalloc.h"
 
 /*
  * ae.c里封装了不同操作系统的IO多路复用机制，通过条件编译的方式编译不同的多路复用库。
@@ -44,17 +44,17 @@ aeEventLoop *aeCreateEventLoop(int setsize) {
     aeEventLoop *eventLoop;
     int i;
 
-    monotonicInit();    /* just in case the calling app didn't initialize */
+    monotonicInit(); /* just in case the calling app didn't initialize */
 
     // 分配eventLoop内存
-    if ((eventLoop = zmalloc(sizeof(*eventLoop))) == NULL){
+    if ((eventLoop = zmalloc(sizeof(*eventLoop))) == NULL) {
         aeDeleteEventLoop(eventLoop);
         return NULL;
     }
     // 分配IO事件内存
     eventLoop->events = zmalloc(sizeof(aeFileEvent) * setsize);
     eventLoop->fired = zmalloc(sizeof(aeFiredEvent) * setsize);
-    if (eventLoop->events == NULL || eventLoop->fired == NULL){
+    if (eventLoop->events == NULL || eventLoop->fired == NULL) {
         aeDeleteEventLoop(eventLoop);
         return NULL;
     }
@@ -68,7 +68,7 @@ aeEventLoop *aeCreateEventLoop(int setsize) {
     eventLoop->flags = 0;
 
     // 创建poll实例
-    if (aeApiCreate(eventLoop) == -1){
+    if (aeApiCreate(eventLoop) == -1) {
         aeDeleteEventLoop(eventLoop);
         return NULL;
     }
@@ -84,9 +84,7 @@ aeEventLoop *aeCreateEventLoop(int setsize) {
 
 /* Return the current set size. */
 // 返回当前setsize的值
-int aeGetSetSize(aeEventLoop *eventLoop) {
-    return eventLoop->setsize;
-}
+int aeGetSetSize(aeEventLoop *eventLoop) { return eventLoop->setsize; }
 
 /* Tells the next iteration/s of the event processing to set timeout of 0. */
 void aeSetDontWait(aeEventLoop *eventLoop, int noWait) {
@@ -107,9 +105,12 @@ void aeSetDontWait(aeEventLoop *eventLoop, int noWait) {
 int aeResizeSetSize(aeEventLoop *eventLoop, int setsize) {
     int i;
 
-    if (setsize == eventLoop->setsize) return AE_OK;
-    if (eventLoop->maxfd >= setsize) return AE_ERR;
-    if (aeApiResize(eventLoop, setsize) == -1) return AE_ERR;
+    if (setsize == eventLoop->setsize)
+        return AE_OK;
+    if (eventLoop->maxfd >= setsize)
+        return AE_ERR;
+    if (aeApiResize(eventLoop, setsize) == -1)
+        return AE_ERR;
 
     eventLoop->events = zrealloc(eventLoop->events, sizeof(aeFileEvent) * setsize);
     eventLoop->fired = zrealloc(eventLoop->fired, sizeof(aeFiredEvent) * setsize);
@@ -140,15 +141,12 @@ void aeDeleteEventLoop(aeEventLoop *eventLoop) {
 }
 
 // 停止事件循环，即stop值设为1
-void aeStop(aeEventLoop *eventLoop) {
-    eventLoop->stop = 1;
-}
+void aeStop(aeEventLoop *eventLoop) { eventLoop->stop = 1; }
 
 /* fd事件监听的统一注册入口，最开始监听了redis端口的fd，有新的连接进来是其fd也会被加进来
  * 另外这里还有aof和rdb的异步时间，后端依赖于不同的aeApiAddEvent实现 */
-int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, int mask,
-                      aeFileProc *proc, void *clientData) {
-    if (fd >= eventLoop->setsize) {     // eventLoop->setsize为事件数组的大小
+int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, int mask, aeFileProc *proc, void *clientData) {
+    if (fd >= eventLoop->setsize) { // eventLoop->setsize为事件数组的大小
         errno = ERANGE;
         return AE_ERR;
     }
@@ -160,8 +158,10 @@ int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, int mask,
         return AE_ERR;
     // 设置文件事件类型，以及事件的处理器
     fe->mask |= mask;
-    if (mask & AE_READABLE) fe->rfileProc = proc;   // 设置写事件的回调函数
-    if (mask & AE_WRITABLE) fe->wfileProc = proc;   // 设置读事件的回调函数
+    if (mask & AE_READABLE)
+        fe->rfileProc = proc; // 设置写事件的回调函数
+    if (mask & AE_WRITABLE)
+        fe->wfileProc = proc; // 设置读事件的回调函数
     // 私有数据
     fe->clientData = clientData;
     // 如果有需要，更新事件处理器的最大fd
@@ -172,14 +172,17 @@ int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, int mask,
 
 /* 删除文件事件 */
 void aeDeleteFileEvent(aeEventLoop *eventLoop, int fd, int mask) {
-    if (fd >= eventLoop->setsize) return;
+    if (fd >= eventLoop->setsize)
+        return;
     aeFileEvent *fe = &eventLoop->events[fd];
-    if (fe->mask == AE_NONE) return;
+    if (fe->mask == AE_NONE)
+        return;
 
     /* We want to always remove AE_BARRIER if set when AE_WRITABLE
      * is removed. */
     // 我们希望始终删除AE_BARRIER如果在删除AE_WRITABLE时设置。
-    if (mask & AE_WRITABLE) mask |= AE_BARRIER;
+    if (mask & AE_WRITABLE)
+        mask |= AE_BARRIER;
 
     aeApiDelEvent(eventLoop, fd, mask);
     fe->mask = fe->mask & (~mask);
@@ -188,22 +191,23 @@ void aeDeleteFileEvent(aeEventLoop *eventLoop, int fd, int mask) {
         int j;
 
         for (j = eventLoop->maxfd - 1; j >= 0; j--)
-            if (eventLoop->events[j].mask != AE_NONE) break;
+            if (eventLoop->events[j].mask != AE_NONE)
+                break;
         eventLoop->maxfd = j;
     }
 }
 
 // 获取文件事件
 int aeGetFileEvents(aeEventLoop *eventLoop, int fd) {
-    if (fd >= eventLoop->setsize) return 0;
+    if (fd >= eventLoop->setsize)
+        return 0;
     aeFileEvent *fe = &eventLoop->events[fd];
 
     return fe->mask;
 }
 
 // 创建时间事件
-long long aeCreateTimeEvent(aeEventLoop *eventLoop, long long milliseconds,
-                            aeTimeProc *proc, void *clientData,
+long long aeCreateTimeEvent(aeEventLoop *eventLoop, long long milliseconds, aeTimeProc *proc, void *clientData,
                             aeEventFinalizerProc *finalizerProc) {
     // 更新ID记录
     long long id = eventLoop->timeEventNextId++;
@@ -211,7 +215,8 @@ long long aeCreateTimeEvent(aeEventLoop *eventLoop, long long milliseconds,
     aeTimeEvent *te;
 
     te = zmalloc(sizeof(*te));
-    if (te == NULL) return AE_ERR;
+    if (te == NULL)
+        return AE_ERR;
     // 设置 ID
     te->id = id;
     // 设定处理事件的时间 milliseconds后触发
@@ -242,7 +247,7 @@ int aeDeleteTimeEvent(aeEventLoop *eventLoop, long long id) {
         }
         te = te->next;
     }
-    return AE_ERR; /* NO event with the specified ID found */   // 未找到具有指定 ID 的事件
+    return AE_ERR; /* NO event with the specified ID found */ // 未找到具有指定 ID 的事件
 }
 
 /* How many milliseconds until the first timer should fire.
@@ -257,7 +262,8 @@ int aeDeleteTimeEvent(aeEventLoop *eventLoop, long long id) {
 // 距离第一个计时器应触发的毫秒数。如果没有计时器，则返回 -1。
 static long msUntilEarliestTimer(aeEventLoop *eventLoop) {
     aeTimeEvent *te = eventLoop->timeEventHead;
-    if (te == NULL) return -1;
+    if (te == NULL)
+        return -1;
 
     aeTimeEvent *earliest = NULL;
     while (te) {
@@ -267,8 +273,7 @@ static long msUntilEarliestTimer(aeEventLoop *eventLoop) {
     }
 
     monotime now = getMonotonicUs();
-    return (now >= earliest->when)
-           ? 0 : (long) ((earliest->when - now) / 1000);
+    return (now >= earliest->when) ? 0 : (long) ((earliest->when - now) / 1000);
 }
 
 /*
@@ -288,7 +293,7 @@ static int processTimeEvents(aeEventLoop *eventLoop) {
         long long id;
 
         /* Remove events scheduled for deletion. */
-        // timeEvent也是lazy_free, 执行时遇到已删除的time_evnet才真正删除  
+        // timeEvent也是lazy_free, 执行时遇到已删除的time_evnet才真正删除
         if (te->id == AE_DELETED_EVENT_ID) {
             aeTimeEvent *next = te->next;
             /* If a reference exists for this timer event,
@@ -323,19 +328,19 @@ static int processTimeEvents(aeEventLoop *eventLoop) {
             te = te->next;
             continue;
         }
-        // 达到或者超过预定执行时间才可以执行  
+        // 达到或者超过预定执行时间才可以执行
         if (te->when <= now) {
             int retval;
 
             id = te->id;
             te->refcount++;
-            // 执行真正的timeEvent 
+            // 执行真正的timeEvent
             retval = te->timeProc(eventLoop, id, te->clientData);
             te->refcount--;
             processed++;
             now = getMonotonicUs();
             if (retval != AE_NOMORE) {
-                // 这里把when_sec和when_ms更新为下次执行的时间  
+                // 这里把when_sec和when_ms更新为下次执行的时间
                 te->when = now + retval * 1000;
             } else {
                 te->id = AE_DELETED_EVENT_ID;
@@ -372,11 +377,12 @@ static int processTimeEvents(aeEventLoop *eventLoop) {
 // 如果设置了AE_CALL_AFTER_SLEEP标志，调用aftersleep回调。
 // 如果设置了AE_CALL_BEFORE_SLEEP标志，调用beforesleep回调。
 int aeProcessEvents(aeEventLoop *eventLoop, int flags) {
-    int processed = 0, numevents;       //  1.定义临时变量processed(已经处理好的事件数)并初始化；
-                                        //  2.定义临时变量numevents(事件数)
+    int processed = 0, numevents; //  1.定义临时变量processed(已经处理好的事件数)并初始化；
+                                  //  2.定义临时变量numevents(事件数)
 
     /* 如果没有事件。如果flag位既不是时间事件，又不是文件事件，返回0 */
-    if (!(flags & AE_TIME_EVENTS) && !(flags & AE_FILE_EVENTS)) return 0;
+    if (!(flags & AE_TIME_EVENTS) && !(flags & AE_FILE_EVENTS))
+        return 0;
 
     /* Note that we want to call select() even if there are no
      * file events to process as long as we want to process time
@@ -415,7 +421,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags) {
             } else {
                 // 文件事件可以阻塞直到有事件到达为止
                 /* Otherwise we can block */
-                tvp = NULL; /* wait forever */      // 永远等待
+                tvp = NULL; /* wait forever */ // 永远等待
             }
         }
 
@@ -438,7 +444,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags) {
          */
         /* 阻塞等待文件事件,这个方法在超时或者有事件触发时才会返回 */
         /* Call the multiplexing API, will return only on timeout or when
-         * some event fires. 
+         * some event fires.
          * 通过aeApiPoll获取当前就绪的事件数量*/
         // 处理文件事件,执行epoll_wait,就绪链表存在fired中 阻塞时间由 tvp 决定
         // 这样也可以保证epoll_wait不会阻塞太长时间
@@ -453,7 +459,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags) {
             eventLoop->aftersleep(eventLoop);
 
         /* 循环处理触发的文件事件 */
-        for (j = 0; j < numevents; j++) {   //下面细说 做的事情就是把epoll_wait中就绪事件放到fired中
+        for (j = 0; j < numevents; j++) { // 下面细说 做的事情就是把epoll_wait中就绪事件放到fired中
             /* 获取触发的文件事件 */
             // aeApiPoll中已将就绪的事件放在了fired中,通过fired可以获取到产生事件的文件描述符fd
             // 根据文件描述符fd获取对应的事件aeFileEvent,aeFileEvent中记录了事件的回调函数
@@ -493,7 +499,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags) {
                 fe = &eventLoop->events[fd]; /* Refresh in case of resize. */
             }
 
-            /*  
+            /*
                  如果是写事件，且在【没有翻转读写顺序】或【fe->wfileProc与fe->rfileProc】
                  的情况下，执行写事件处理函数
                  疑问：为什么要做【fe->wfileProc与fe->rfileProc】的判断？
@@ -514,14 +520,13 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags) {
             if (invert) {
                 /* 重新获取一下文件事件防止被更新 */
                 fe = &eventLoop->events[fd]; /* Refresh in case of resize. */
-                /* 
+                /*
                   如果是读事件且没有被置成触发状态且【fe->wfileProc != fe->rfileProc】
                   执行读文件事件处理函数.
                 */
-                if ((fe->mask & mask & AE_READABLE) &&
-                    (!fired || fe->wfileProc != fe->rfileProc)) {
+                if ((fe->mask & mask & AE_READABLE) && (!fired || fe->wfileProc != fe->rfileProc)) {
                     fe->rfileProc(eventLoop, fd, fe->clientData, mask);
-                    fired++;  // 触发统计值加一
+                    fired++; // 触发统计值加一
                 }
             }
             /* 处理值加一 */
@@ -544,14 +549,20 @@ int aeWait(int fd, int mask, long long milliseconds) {
 
     memset(&pfd, 0, sizeof(pfd));
     pfd.fd = fd;
-    if (mask & AE_READABLE) pfd.events |= POLLIN;
-    if (mask & AE_WRITABLE) pfd.events |= POLLOUT;
+    if (mask & AE_READABLE)
+        pfd.events |= POLLIN;
+    if (mask & AE_WRITABLE)
+        pfd.events |= POLLOUT;
 
     if ((retval = poll(&pfd, 1, milliseconds)) == 1) {
-        if (pfd.revents & POLLIN) retmask |= AE_READABLE;
-        if (pfd.revents & POLLOUT) retmask |= AE_WRITABLE;
-        if (pfd.revents & POLLERR) retmask |= AE_WRITABLE;
-        if (pfd.revents & POLLHUP) retmask |= AE_WRITABLE;
+        if (pfd.revents & POLLIN)
+            retmask |= AE_READABLE;
+        if (pfd.revents & POLLOUT)
+            retmask |= AE_WRITABLE;
+        if (pfd.revents & POLLERR)
+            retmask |= AE_WRITABLE;
+        if (pfd.revents & POLLHUP)
+            retmask |= AE_WRITABLE;
         return retmask;
     } else {
         return retval;
@@ -563,16 +574,12 @@ void aeMain(aeEventLoop *eventLoop) {
     eventLoop->stop = 0;
     while (!eventLoop->stop) {
         // 调用了aeProcessEvents处理事件
-        aeProcessEvents(eventLoop, AE_ALL_EVENTS |
-                                   AE_CALL_BEFORE_SLEEP |
-                                   AE_CALL_AFTER_SLEEP);
+        aeProcessEvents(eventLoop, AE_ALL_EVENTS | AE_CALL_BEFORE_SLEEP | AE_CALL_AFTER_SLEEP);
     }
 }
 
 // 获取当前用的Api的名称
-char *aeGetApiName(void) {
-    return aeApiName();
-}
+char *aeGetApiName(void) { return aeApiName(); }
 
 // 注册回调函数，即每次主循环在休眠之前被调用
 void aeSetBeforeSleepProc(aeEventLoop *eventLoop, aeBeforeSleepProc *beforesleep) {
@@ -580,6 +587,4 @@ void aeSetBeforeSleepProc(aeEventLoop *eventLoop, aeBeforeSleepProc *beforesleep
 }
 
 // 注册回调函数，即每次主循环在休眠之后被调用
-void aeSetAfterSleepProc(aeEventLoop *eventLoop, aeBeforeSleepProc *aftersleep) {
-    eventLoop->aftersleep = aftersleep;
-}
+void aeSetAfterSleepProc(aeEventLoop *eventLoop, aeBeforeSleepProc *aftersleep) { eventLoop->aftersleep = aftersleep; }

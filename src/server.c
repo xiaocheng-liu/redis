@@ -1,5 +1,3 @@
-#include <stdarg.h>
-#include <stdio.h>
 #include <arpa/inet.h>
 #include <ctype.h>
 #include <errno.h>
@@ -7,7 +5,9 @@
 #include <limits.h>
 #include <locale.h>
 #include <signal.h>
+#include <stdarg.h>
 #include <stdatomic.h>
+#include <stdio.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/syslog.h>
@@ -597,9 +597,7 @@ uint64_t dictObjHash(const void *key) {
     return dictGenHashFunction(o->ptr, sdslen((sds) o->ptr));
 }
 
-uint64_t dictSdsHash(const void *key) {
-    return dictGenHashFunction((unsigned char *) key, sdslen((char *) key));
-}
+uint64_t dictSdsHash(const void *key) { return dictGenHashFunction((unsigned char *) key, sdslen((char *) key)); }
 
 uint64_t dictSdsCaseHash(const void *key) {
     return dictGenCaseHashFunction((unsigned char *) key, sdslen((char *) key));
@@ -934,11 +932,9 @@ const char *strChildType(int type) {
 /* Return true if there are active children processes doing RDB saving,
  * AOF rewriting, or some side process spawned by a loaded module. */
 // 如果有活动的子进程执行 RDB 保存、AOF 重写或加载模块生成的某些支进程，则返回 true。
-int hasActiveChildProcess(void) {
-    return server.child_pid != -1;
-}
+int hasActiveChildProcess(void) { return server.child_pid != -1; }
 
-//这个函数的主要作用是重置与子进程相关的状态信息，并清理一些资源。
+// 这个函数的主要作用是重置与子进程相关的状态信息，并清理一些资源。
 void resetChildState(void) {
     server.child_type = CHILD_TYPE_NONE;
     server.child_pid = -1;
@@ -956,10 +952,8 @@ int isMutuallyExclusiveChildType(int type) {
 
 /* Return true if this instance has persistence completely turned off:
  * both RDB and AOF are disabled. */
-//判断 Redis 实例是否完全关闭了持久化功能。
-int allPersistenceDisabled(void) {
-    return server.saveparamslen == 0 && server.aof_state == AOF_OFF;
-}
+// 判断 Redis 实例是否完全关闭了持久化功能。
+int allPersistenceDisabled(void) { return server.saveparamslen == 0 && server.aof_state == AOF_OFF; }
 
 /* ======================= Cron: called every 100 ms ======================== */
 /* Add a sample to the operations per second array of samples. */
@@ -4066,7 +4060,7 @@ void commandCommand(client *c) {
 
 /* Convert an amount of bytes into a human readable string in the form
  * of 100B, 2G, 100M, 4K, and so forth. */
-//将一个表示字节数的整数值 `n` 转换为更易读的格式（如 KB、MB、GB 等）
+// 将一个表示字节数的整数值 `n` 转换为更易读的格式（如 KB、MB、GB 等）
 void bytesToHuman(char *s, unsigned long long n) {
     double d;
 
@@ -4097,13 +4091,14 @@ void bytesToHuman(char *s, unsigned long long n) {
 /* Create the string returned by the INFO command. This is decoupled
  * by the INFO command itself as we need to report the same information
  * on memory corruption problems. */
-//用于生成信息字符串的函数`genRedisInfoString`的一部分，主要目的是根据传入的 `section` 参数生成 Redis 服务器的相关信息。
+// 用于生成信息字符串的函数`genRedisInfoString`的一部分，主要目的是根据传入的 `section` 参数生成 Redis
+// 服务器的相关信息。
 sds genRedisInfoString(const char *section) {
     sds info = sdsempty();
     time_t uptime = server.unixtime - server.stat_starttime;
     int j;
     int allsections = 0, defsections = 0, everything = 0, modules = 0;
-    //记录已经处理的 section 数量，用于在不同部分之间插入换行符 `\r\n`。
+    // 记录已经处理的 section 数量，用于在不同部分之间插入换行符 `\r\n`。
     int sections = 0;
 
     if (section == NULL)
@@ -4130,7 +4125,7 @@ sds genRedisInfoString(const char *section) {
         else
             mode = "standalone";
 
-        //获取监督模式
+        // 获取监督模式
         if (server.supervised) {
             if (server.supervised_mode == SUPERVISED_UPSTART)
                 supervised = "upstart";

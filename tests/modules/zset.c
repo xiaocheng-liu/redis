@@ -6,7 +6,8 @@
  * number of removed elements (0 or 1).
  */
 int zset_rem(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
-    if (argc != 3) return RedisModule_WrongArity(ctx);
+    if (argc != 3)
+        return RedisModule_WrongArity(ctx);
     RedisModule_AutoMemory(ctx);
     int keymode = REDISMODULE_READ | REDISMODULE_WRITE;
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], keymode);
@@ -20,10 +21,8 @@ int zset_rem(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
 int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     REDISMODULE_NOT_USED(argv);
     REDISMODULE_NOT_USED(argc);
-    if (RedisModule_Init(ctx, "zset", 1, REDISMODULE_APIVER_1) ==
-        REDISMODULE_OK &&
-        RedisModule_CreateCommand(ctx, "zset.rem", zset_rem, "",
-                                  1, 1, 1) == REDISMODULE_OK)
+    if (RedisModule_Init(ctx, "zset", 1, REDISMODULE_APIVER_1) == REDISMODULE_OK &&
+        RedisModule_CreateCommand(ctx, "zset.rem", zset_rem, "", 1, 1, 1) == REDISMODULE_OK)
         return REDISMODULE_OK;
     else
         return REDISMODULE_ERR;

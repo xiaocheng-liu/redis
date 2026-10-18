@@ -94,15 +94,13 @@ static int _wsaErrorToErrno(int err) {
     }
 }
 
-static void _updateErrno(int success) {
-    errno = success ? 0 : _wsaErrorToErrno(WSAGetLastError());
-}
+static void _updateErrno(int success) { errno = success ? 0 : _wsaErrorToErrno(WSAGetLastError()); }
 
 static int _initWinsock() {
     static int s_initialized = 0;
     if (!s_initialized) {
         static WSADATA wsadata;
-        int err = WSAStartup(MAKEWORD(2,2), &wsadata);
+        int err = WSAStartup(MAKEWORD(2, 2), &wsadata);
         if (err != 0) {
             errno = _wsaErrorToErrno(err);
             return 0;
@@ -119,36 +117,61 @@ int win32_getaddrinfo(const char *node, const char *service, const struct addrin
     }
 
     switch (getaddrinfo(node, service, hints, res)) {
-        case 0:                     return 0;
-        case WSATRY_AGAIN:          return EAI_AGAIN;
-        case WSAEINVAL:             return EAI_BADFLAGS;
-        case WSAEAFNOSUPPORT:       return EAI_FAMILY;
-        case WSA_NOT_ENOUGH_MEMORY: return EAI_MEMORY;
-        case WSAHOST_NOT_FOUND:     return EAI_NONAME;
-        case WSATYPE_NOT_FOUND:     return EAI_SERVICE;
-        case WSAESOCKTNOSUPPORT:    return EAI_SOCKTYPE;
-        default:                    return EAI_FAIL;     /* Including WSANO_RECOVERY */
+        case 0:
+            return 0;
+        case WSATRY_AGAIN:
+            return EAI_AGAIN;
+        case WSAEINVAL:
+            return EAI_BADFLAGS;
+        case WSAEAFNOSUPPORT:
+            return EAI_FAMILY;
+        case WSA_NOT_ENOUGH_MEMORY:
+            return EAI_MEMORY;
+        case WSAHOST_NOT_FOUND:
+            return EAI_NONAME;
+        case WSATYPE_NOT_FOUND:
+            return EAI_SERVICE;
+        case WSAESOCKTNOSUPPORT:
+            return EAI_SOCKTYPE;
+        default:
+            return EAI_FAIL; /* Including WSANO_RECOVERY */
     }
 }
 
 const char *win32_gai_strerror(int errcode) {
     switch (errcode) {
-        case 0:            errcode = 0;                     break;
-        case EAI_AGAIN:    errcode = WSATRY_AGAIN;          break;
-        case EAI_BADFLAGS: errcode = WSAEINVAL;             break;
-        case EAI_FAMILY:   errcode = WSAEAFNOSUPPORT;       break;
-        case EAI_MEMORY:   errcode = WSA_NOT_ENOUGH_MEMORY; break;
-        case EAI_NONAME:   errcode = WSAHOST_NOT_FOUND;     break;
-        case EAI_SERVICE:  errcode = WSATYPE_NOT_FOUND;     break;
-        case EAI_SOCKTYPE: errcode = WSAESOCKTNOSUPPORT;    break;
-        default:           errcode = WSANO_RECOVERY;        break; /* Including EAI_FAIL */
+        case 0:
+            errcode = 0;
+            break;
+        case EAI_AGAIN:
+            errcode = WSATRY_AGAIN;
+            break;
+        case EAI_BADFLAGS:
+            errcode = WSAEINVAL;
+            break;
+        case EAI_FAMILY:
+            errcode = WSAEAFNOSUPPORT;
+            break;
+        case EAI_MEMORY:
+            errcode = WSA_NOT_ENOUGH_MEMORY;
+            break;
+        case EAI_NONAME:
+            errcode = WSAHOST_NOT_FOUND;
+            break;
+        case EAI_SERVICE:
+            errcode = WSATYPE_NOT_FOUND;
+            break;
+        case EAI_SOCKTYPE:
+            errcode = WSAESOCKTNOSUPPORT;
+            break;
+        default:
+            errcode = WSANO_RECOVERY;
+            break; /* Including EAI_FAIL */
     }
     return gai_strerror(errcode);
 }
 
-void win32_freeaddrinfo(struct addrinfo *res) {
-    freeaddrinfo(res);
-}
+void win32_freeaddrinfo(struct addrinfo *res) { freeaddrinfo(res); }
 
 SOCKET win32_socket(int domain, int type, int protocol) {
     SOCKET s;
@@ -163,7 +186,7 @@ SOCKET win32_socket(int domain, int type, int protocol) {
 }
 
 int win32_ioctl(SOCKET fd, unsigned long request, unsigned long *argp) {
-    int ret = ioctlsocket(fd, (long)request, argp);
+    int ret = ioctlsocket(fd, (long) request, argp);
     _updateErrno(ret != SOCKET_ERROR);
     return ret != SOCKET_ERROR ? ret : -1;
 }
@@ -187,8 +210,7 @@ int win32_connect(SOCKET sockfd, const struct sockaddr *addr, socklen_t addrlen)
     int err = errno;
     if (err == EWOULDBLOCK) {
         errno = EINPROGRESS;
-    }
-    else if (err == EIO) {
+    } else if (err == EIO) {
         errno = EALREADY;
     }
 
@@ -198,26 +220,26 @@ int win32_connect(SOCKET sockfd, const struct sockaddr *addr, socklen_t addrlen)
 int win32_getsockopt(SOCKET sockfd, int level, int optname, void *optval, socklen_t *optlen) {
     int ret = 0;
     if ((level == SOL_SOCKET) && ((optname == SO_RCVTIMEO) || (optname == SO_SNDTIMEO))) {
-        if (*optlen >= sizeof (struct timeval)) {
+        if (*optlen >= sizeof(struct timeval)) {
             struct timeval *tv = optval;
             DWORD timeout = 0;
             socklen_t dwlen = 0;
-            ret = getsockopt(sockfd, level, optname, (char *)&timeout, &dwlen);
+            ret = getsockopt(sockfd, level, optname, (char *) &timeout, &dwlen);
             tv->tv_sec = timeout / 1000;
             tv->tv_usec = (timeout * 1000) % 1000000;
         } else {
             ret = WSAEFAULT;
         }
-        *optlen = sizeof (struct timeval);
+        *optlen = sizeof(struct timeval);
     } else {
-        ret = getsockopt(sockfd, level, optname, (char*)optval, optlen);
+        ret = getsockopt(sockfd, level, optname, (char *) optval, optlen);
     }
     if (ret != SOCKET_ERROR && level == SOL_SOCKET && optname == SO_ERROR) {
         /* translate SO_ERROR codes, if non-zero */
-        int err = *(int*)optval;
+        int err = *(int *) optval;
         if (err != 0) {
             err = _wsaErrorToErrno(err);
-            *(int*)optval = err;
+            *(int *) optval = err;
         }
     }
     _updateErrno(ret != SOCKET_ERROR);
@@ -229,9 +251,9 @@ int win32_setsockopt(SOCKET sockfd, int level, int optname, const void *optval, 
     if ((level == SOL_SOCKET) && ((optname == SO_RCVTIMEO) || (optname == SO_SNDTIMEO))) {
         const struct timeval *tv = optval;
         DWORD timeout = tv->tv_sec * 1000 + tv->tv_usec / 1000;
-        ret = setsockopt(sockfd, level, optname, (const char*)&timeout, sizeof(DWORD));
+        ret = setsockopt(sockfd, level, optname, (const char *) &timeout, sizeof(DWORD));
     } else {
-        ret = setsockopt(sockfd, level, optname, (const char*)optval, optlen);
+        ret = setsockopt(sockfd, level, optname, (const char *) optval, optlen);
     }
     _updateErrno(ret != SOCKET_ERROR);
     return ret != SOCKET_ERROR ? ret : -1;
@@ -244,13 +266,13 @@ int win32_close(SOCKET fd) {
 }
 
 ssize_t win32_recv(SOCKET sockfd, void *buf, size_t len, int flags) {
-    int ret = recv(sockfd, (char*)buf, (int)len, flags);
+    int ret = recv(sockfd, (char *) buf, (int) len, flags);
     _updateErrno(ret != SOCKET_ERROR);
     return ret != SOCKET_ERROR ? ret : -1;
 }
 
 ssize_t win32_send(SOCKET sockfd, const void *buf, size_t len, int flags) {
-    int ret = send(sockfd, (const char*)buf, (int)len, flags);
+    int ret = send(sockfd, (const char *) buf, (int) len, flags);
     _updateErrno(ret != SOCKET_ERROR);
     return ret != SOCKET_ERROR ? ret : -1;
 }
@@ -270,9 +292,7 @@ int win32_redisKeepAlive(SOCKET sockfd, int interval_ms) {
     cfg.keepaliveinterval = interval_ms;
     cfg.keepalivetime = interval_ms;
 
-    res = WSAIoctl(sockfd, SIO_KEEPALIVE_VALS, &cfg,
-                   sizeof(struct tcp_keepalive), NULL, 0,
-                   &bytes_in, NULL, NULL);
+    res = WSAIoctl(sockfd, SIO_KEEPALIVE_VALS, &cfg, sizeof(struct tcp_keepalive), NULL, 0, &bytes_in, NULL, NULL);
 
     return res == 0 ? 0 : _wsaErrorToErrno(res);
 }

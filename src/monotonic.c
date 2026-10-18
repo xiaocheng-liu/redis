@@ -1,7 +1,7 @@
 #include "monotonic.h"
 #include <stddef.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 
 #undef NDEBUG
@@ -32,9 +32,7 @@ static char monotonic_info_string[32];
 
 static long mono_ticksPerMicrosecond = 0;
 
-static monotime getMonotonicUs_x86() {
-    return __rdtsc() / mono_ticksPerMicrosecond;
-}
+static monotime getMonotonicUs_x86() { return __rdtsc() / mono_ticksPerMicrosecond; }
 
 static void monotonicInit_x86linux() {
     const int bufflen = 256;
@@ -63,7 +61,7 @@ static void monotonicInit_x86linux() {
             if (regexec(&cpuGhzRegex, buf, nmatch, pmatch, 0) == 0) {
                 buf[pmatch[1].rm_eo] = '\0';
                 double ghz = atof(&buf[pmatch[1].rm_so]);
-                mono_ticksPerMicrosecond = (long)(ghz * 1000);
+                mono_ticksPerMicrosecond = (long) (ghz * 1000);
                 break;
             }
         }
@@ -88,8 +86,7 @@ static void monotonicInit_x86linux() {
         return;
     }
 
-    snprintf(monotonic_info_string, sizeof(monotonic_info_string),
-            "X86 TSC @ %ld ticks/us", mono_ticksPerMicrosecond);
+    snprintf(monotonic_info_string, sizeof(monotonic_info_string), "X86 TSC @ %ld ticks/us", mono_ticksPerMicrosecond);
     getMonotonicUs = getMonotonicUs_x86;
 }
 #endif
@@ -109,22 +106,20 @@ static inline uint64_t __cntvct() {
 static inline uint32_t cntfrq_hz() {
     uint64_t virtual_freq_value;
     __asm__ volatile("mrs %0, cntfrq_el0" : "=r"(virtual_freq_value));
-    return (uint32_t)virtual_freq_value;    /* top 32 bits are reserved */
+    return (uint32_t) virtual_freq_value; /* top 32 bits are reserved */
 }
 
-static monotime getMonotonicUs_aarch64() {
-    return __cntvct() / mono_ticksPerMicrosecond;
-}
+static monotime getMonotonicUs_aarch64() { return __cntvct() / mono_ticksPerMicrosecond; }
 
 static void monotonicInit_aarch64() {
-    mono_ticksPerMicrosecond = (long)cntfrq_hz() / 1000L / 1000L;
+    mono_ticksPerMicrosecond = (long) cntfrq_hz() / 1000L / 1000L;
     if (mono_ticksPerMicrosecond == 0) {
         fprintf(stderr, "monotonic: aarch64, unable to determine clock rate");
         return;
     }
 
-    snprintf(monotonic_info_string, sizeof(monotonic_info_string),
-            "ARM CNTVCT @ %ld ticks/us", mono_ticksPerMicrosecond);
+    snprintf(monotonic_info_string, sizeof(monotonic_info_string), "ARM CNTVCT @ %ld ticks/us",
+             mono_ticksPerMicrosecond);
     getMonotonicUs = getMonotonicUs_aarch64;
 }
 #endif
@@ -137,7 +132,7 @@ static monotime getMonotonicUs_posix(void) {
      * If this is not supported, provide a system-specific alternate version.  */
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ((uint64_t)ts.tv_sec) * 1000000 + ts.tv_nsec / 1000;
+    return ((uint64_t) ts.tv_sec) * 1000000 + ts.tv_nsec / 1000;
 }
 
 static void monotonicInit_posix(void) {
@@ -148,23 +143,24 @@ static void monotonicInit_posix(void) {
     int rc = clock_gettime(CLOCK_MONOTONIC, &ts);
     assert(rc == 0);
 
-    snprintf(monotonic_info_string, sizeof(monotonic_info_string),
-            "POSIX clock_gettime");
+    snprintf(monotonic_info_string, sizeof(monotonic_info_string), "POSIX clock_gettime");
     getMonotonicUs = getMonotonicUs_posix;
 }
 
 
+const char *monotonicInit(void) {
+#if defined(USE_PROCESSOR_CLOCK) && defined(__x86_64__) && defined(__linux__)
+    if (getMonotonicUs == NULL)
+        monotonicInit_x86linux();
+#endif
 
-const char * monotonicInit(void) {
-    #if defined(USE_PROCESSOR_CLOCK) && defined(__x86_64__) && defined(__linux__)
-    if (getMonotonicUs == NULL) monotonicInit_x86linux();
-    #endif
+#if defined(USE_PROCESSOR_CLOCK) && defined(__aarch64__)
+    if (getMonotonicUs == NULL)
+        monotonicInit_aarch64();
+#endif
 
-    #if defined(USE_PROCESSOR_CLOCK) && defined(__aarch64__)
-    if (getMonotonicUs == NULL) monotonicInit_aarch64();
-    #endif
-
-    if (getMonotonicUs == NULL) monotonicInit_posix();
+    if (getMonotonicUs == NULL)
+        monotonicInit_posix();
 
     return monotonic_info_string;
 }

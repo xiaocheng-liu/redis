@@ -1,6 +1,8 @@
 #ifndef T_STREAM_H
 #define T_STREAM_H
 
+typedef struct redisObject robj;
+
 #include "server.h"
 
 #include "rax.h"
@@ -10,8 +12,7 @@
  * a sequence counter. IDs generated in the same millisecond (or in a past
  * millisecond if the clock jumped backward) will use the millisecond time
  * of the latest generated ID and an incremented sequence. */
-typedef struct streamID
-{
+typedef struct streamID {
     uint64_t ms;  /* Unix time in milliseconds. */
     uint64_t seq; /* Sequence number. */
 } streamID;

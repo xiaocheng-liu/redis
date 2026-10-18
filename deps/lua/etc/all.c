@@ -1,6 +1,6 @@
 /*
-* all.c -- Lua core, libraries and interpreter in a single file
-*/
+ * all.c -- Lua core, libraries and interpreter in a single file
+ */
 
 #define luaall_c
 
@@ -27,8 +27,8 @@
 #include "lauxlib.c"
 #include "lbaselib.c"
 #include "ldblib.c"
-#include "liolib.c"
 #include "linit.c"
+#include "liolib.c"
 #include "lmathlib.c"
 #include "loadlib.c"
 #include "loslib.c"

@@ -3,15 +3,11 @@
 /* Emit an item in Gopher directory listing format:
  * <type><descr><TAB><selector><TAB><hostname><TAB><port>
  * If descr or selector are NULL, then the "(NULL)" string is used instead. */
-void addReplyGopherItem(client *c, const char *type, const char *descr,
-                        const char *selector, const char *hostname, int port)
-{
-    sds item = sdscatfmt(sdsempty(),"%s%s\t%s\t%s\t%i\r\n",
-                         type, descr,
-                         selector ? selector : "(NULL)",
-                         hostname ? hostname : "(NULL)",
-                         port);
-    addReplyProto(c,item,sdslen(item));
+void addReplyGopherItem(client *c, const char *type, const char *descr, const char *selector, const char *hostname,
+                        int port) {
+    sds item = sdscatfmt(sdsempty(), "%s%s\t%s\t%s\t%i\r\n", type, descr, selector ? selector : "(NULL)",
+                         hostname ? hostname : "(NULL)", port);
+    addReplyProto(c, item, sdslen(item));
     sdsfree(item);
 }
 
@@ -20,8 +16,8 @@ void addReplyGopherItem(client *c, const char *type, const char *descr,
  * argument. In such case we get the relevant key and reply using the Gopher
  * protocol. */
 void processGopherRequest(client *c) {
-    robj *keyname = c->argc == 0 ? createStringObject("/",1) : c->argv[0];
-    robj *o = lookupKeyRead(c->db,keyname);
+    robj *keyname = c->argc == 0 ? createStringObject("/", 1) : c->argv[0];
+    robj *o = lookupKeyRead(c->db, keyname);
 
     /* If there is no such key, return with a Gopher error. */
     if (o == NULL || o->type != OBJ_STRING) {
@@ -31,17 +27,18 @@ void processGopherRequest(client *c) {
         else
             errstr = "Error: selected key type is invalid "
                      "for Gopher output";
-        addReplyGopherItem(c,"i",errstr,NULL,NULL,0);
-        addReplyGopherItem(c,"i","Redis Gopher server",NULL,NULL,0);
+        addReplyGopherItem(c, "i", errstr, NULL, NULL, 0);
+        addReplyGopherItem(c, "i", "Redis Gopher server", NULL, NULL, 0);
     } else {
-        addReply(c,o);
+        addReply(c, o);
     }
 
     /* Cleanup, also make sure to emit the final ".CRLF" line. Note that
      * the connection will be closed immediately after this because the client
      * will be flagged with CLIENT_CLOSE_AFTER_REPLY, in accordance with the
      * Gopher protocol. */
-    if (c->argc == 0) decrRefCount(keyname);
+    if (c->argc == 0)
+        decrRefCount(keyname);
 
     /* Note that in theory we should terminate the Gopher request with
      * ".<CR><LF>" (called Lastline in the RFC) like that:

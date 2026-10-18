@@ -1,13 +1,13 @@
-#include <lua.h>
-#include <lauxlib.h>
-#include <lualib.h>
 #include <ctype.h>
+#include <lauxlib.h>
+#include <lua.h>
+#include <lualib.h>
 #include <math.h>
-#include "server.h"
-#include "sha1.h"
-#include "rand.h"
 #include "cluster.h"
+#include "rand.h"
+#include "server.h"
 #include "server_cammand_define.h"
+#include "sha1.h"
 #include "util.h"
 
 char *redisProtocolToLuaType_Int(lua_State *lua, char *reply);
@@ -30,26 +30,25 @@ void ldbLogRedisReply(char *reply);
 sds ldbCatStackValue(sds s, lua_State *lua, int idx);
 
 /* Debugger shared state is stored inside this global structure. */
-#define LDB_BREAKPOINTS_MAX 64  /* Max number of breakpoints. */
+#define LDB_BREAKPOINTS_MAX 64 /* Max number of breakpoints. */
 #define LDB_MAX_LEN_DEFAULT 256 /* Default len limit for replies / var dumps. */
-struct ldbState
-{
-    connection *conn;            /* Connection of the debugging client. */
-    int active;                  /* Are we debugging EVAL right now? */
-    int forked;                  /* Is this a fork()ed debugging session? */
-    list *logs;                  /* List of messages to send to the client. */
-    list *traces;                /* Messages about Redis commands executed since last stop.*/
-    list *children;              /* All forked debugging sessions pids. */
+struct ldbState {
+    connection *conn; /* Connection of the debugging client. */
+    int active; /* Are we debugging EVAL right now? */
+    int forked; /* Is this a fork()ed debugging session? */
+    list *logs; /* List of messages to send to the client. */
+    list *traces; /* Messages about Redis commands executed since last stop.*/
+    list *children; /* All forked debugging sessions pids. */
     int bp[LDB_BREAKPOINTS_MAX]; /* An array of breakpoints line numbers. */
-    int bpcount;                 /* Number of valid entries inside bp. */
-    int step;                    /* Stop at next line regardless of breakpoints. */
-    int luabp;                   /* Stop at next line because redis.breakpoint() was called. */
-    sds *src;                    /* Lua script source code split by line. */
-    int lines;                   /* Number of lines in 'src'. */
-    int currentline;             /* Current line number. */
-    sds cbuf;                    /* Debugger client command buffer. */
-    size_t maxlen;               /* Max var dump / reply length. */
-    int maxlen_hint_sent;        /* Did we already hint about "set maxlen"? */
+    int bpcount; /* Number of valid entries inside bp. */
+    int step; /* Stop at next line regardless of breakpoints. */
+    int luabp; /* Stop at next line because redis.breakpoint() was called. */
+    sds *src; /* Lua script source code split by line. */
+    int lines; /* Number of lines in 'src'. */
+    int currentline; /* Current line number. */
+    sds cbuf; /* Debugger client command buffer. */
+    size_t maxlen; /* Max var dump / reply length. */
+    int maxlen_hint_sent; /* Did we already hint about "set maxlen"? */
 } ldb;
 
 /* ---------------------------------------------------------------------------
@@ -62,19 +61,17 @@ struct ldbState
  *
  * 'digest' should point to a 41 bytes buffer: 40 for SHA1 converted into an
  * hexadecimal number, plus 1 byte for null term. */
-void sha1hex(char *digest, char *script, size_t len)
-{
+void sha1hex(char *digest, char *script, size_t len) {
     SHA1_CTX ctx;
     unsigned char hash[20];
     char *cset = "0123456789abcdef";
     int j;
 
     SHA1Init(&ctx);
-    SHA1Update(&ctx, (unsigned char *)script, len);
+    SHA1Update(&ctx, (unsigned char *) script, len);
     SHA1Final(hash, &ctx);
 
-    for (j = 0; j < 20; j++)
-    {
+    for (j = 0; j < 20; j++) {
         digest[j * 2] = cset[((hash[j] & 0xF0) >> 4)];
         digest[j * 2 + 1] = cset[(hash[j] & 0xF)];
     }
@@ -102,76 +99,68 @@ void sha1hex(char *digest, char *script, size_t len)
  * error string.
  */
 
-char *redisProtocolToLuaType(lua_State *lua, char *reply)
-{
+char *redisProtocolToLuaType(lua_State *lua, char *reply) {
     char *p = reply;
 
-    switch (*p)
-    {
-    case ':':
-        p = redisProtocolToLuaType_Int(lua, reply);
-        break;
-    case '$':
-        p = redisProtocolToLuaType_Bulk(lua, reply);
-        break;
-    case '+':
-        p = redisProtocolToLuaType_Status(lua, reply);
-        break;
-    case '-':
-        p = redisProtocolToLuaType_Error(lua, reply);
-        break;
-    case '*':
-        p = redisProtocolToLuaType_Aggregate(lua, reply, *p);
-        break;
-    case '%':
-        p = redisProtocolToLuaType_Aggregate(lua, reply, *p);
-        break;
-    case '~':
-        p = redisProtocolToLuaType_Aggregate(lua, reply, *p);
-        break;
-    case '_':
-        p = redisProtocolToLuaType_Null(lua, reply);
-        break;
-    case '#':
-        p = redisProtocolToLuaType_Bool(lua, reply, p[1]);
-        break;
-    case ',':
-        p = redisProtocolToLuaType_Double(lua, reply);
-        break;
+    switch (*p) {
+        case ':':
+            p = redisProtocolToLuaType_Int(lua, reply);
+            break;
+        case '$':
+            p = redisProtocolToLuaType_Bulk(lua, reply);
+            break;
+        case '+':
+            p = redisProtocolToLuaType_Status(lua, reply);
+            break;
+        case '-':
+            p = redisProtocolToLuaType_Error(lua, reply);
+            break;
+        case '*':
+            p = redisProtocolToLuaType_Aggregate(lua, reply, *p);
+            break;
+        case '%':
+            p = redisProtocolToLuaType_Aggregate(lua, reply, *p);
+            break;
+        case '~':
+            p = redisProtocolToLuaType_Aggregate(lua, reply, *p);
+            break;
+        case '_':
+            p = redisProtocolToLuaType_Null(lua, reply);
+            break;
+        case '#':
+            p = redisProtocolToLuaType_Bool(lua, reply, p[1]);
+            break;
+        case ',':
+            p = redisProtocolToLuaType_Double(lua, reply);
+            break;
     }
     return p;
 }
 
-char *redisProtocolToLuaType_Int(lua_State *lua, char *reply)
-{
+char *redisProtocolToLuaType_Int(lua_State *lua, char *reply) {
     char *p = strchr(reply + 1, '\r');
     long long value;
 
     string2ll(reply + 1, p - reply - 1, &value);
-    lua_pushnumber(lua, (lua_Number)value);
+    lua_pushnumber(lua, (lua_Number) value);
     return p + 2;
 }
 
-char *redisProtocolToLuaType_Bulk(lua_State *lua, char *reply)
-{
+char *redisProtocolToLuaType_Bulk(lua_State *lua, char *reply) {
     char *p = strchr(reply + 1, '\r');
     long long bulklen;
 
     string2ll(reply + 1, p - reply - 1, &bulklen);
-    if (bulklen == -1)
-    {
+    if (bulklen == -1) {
         lua_pushboolean(lua, 0);
         return p + 2;
-    }
-    else
-    {
+    } else {
         lua_pushlstring(lua, p + 2, bulklen);
         return p + 2 + bulklen + 2;
     }
 }
 
-char *redisProtocolToLuaType_Status(lua_State *lua, char *reply)
-{
+char *redisProtocolToLuaType_Status(lua_State *lua, char *reply) {
     char *p = strchr(reply + 1, '\r');
 
     lua_newtable(lua);
@@ -181,8 +170,7 @@ char *redisProtocolToLuaType_Status(lua_State *lua, char *reply)
     return p + 2;
 }
 
-char *redisProtocolToLuaType_Error(lua_State *lua, char *reply)
-{
+char *redisProtocolToLuaType_Error(lua_State *lua, char *reply) {
     char *p = strchr(reply + 1, '\r');
 
     lua_newtable(lua);
@@ -192,31 +180,25 @@ char *redisProtocolToLuaType_Error(lua_State *lua, char *reply)
     return p + 2;
 }
 
-char *redisProtocolToLuaType_Aggregate(lua_State *lua, char *reply, int atype)
-{
+char *redisProtocolToLuaType_Aggregate(lua_State *lua, char *reply, int atype) {
     char *p = strchr(reply + 1, '\r');
     long long mbulklen;
     int j = 0;
 
     string2ll(reply + 1, p - reply - 1, &mbulklen);
-    if (server.lua_client->resp == 2 || atype == '*')
-    {
+    if (server.lua_client->resp == 2 || atype == '*') {
         p += 2;
-        if (mbulklen == -1)
-        {
+        if (mbulklen == -1) {
             lua_pushboolean(lua, 0);
             return p;
         }
         lua_newtable(lua);
-        for (j = 0; j < mbulklen; j++)
-        {
+        for (j = 0; j < mbulklen; j++) {
             lua_pushnumber(lua, j + 1);
             p = redisProtocolToLuaType(lua, p);
             lua_settable(lua, -3);
         }
-    }
-    else if (server.lua_client->resp == 3)
-    {
+    } else if (server.lua_client->resp == 3) {
         /* Here we handle only Set and Map replies in RESP3 mode, since arrays
          * follow the above RESP2 code path. Note that those are represented
          * as a table with the "map" or "set" field populated with the actual
@@ -225,15 +207,11 @@ char *redisProtocolToLuaType_Aggregate(lua_State *lua, char *reply, int atype)
         lua_newtable(lua);
         lua_pushstring(lua, atype == '%' ? "map" : "set");
         lua_newtable(lua);
-        for (j = 0; j < mbulklen; j++)
-        {
+        for (j = 0; j < mbulklen; j++) {
             p = redisProtocolToLuaType(lua, p);
-            if (atype == '%')
-            {
+            if (atype == '%') {
                 p = redisProtocolToLuaType(lua, p);
-            }
-            else
-            {
+            } else {
                 lua_pushboolean(lua, 1);
             }
             lua_settable(lua, -3);
@@ -243,35 +221,29 @@ char *redisProtocolToLuaType_Aggregate(lua_State *lua, char *reply, int atype)
     return p;
 }
 
-char *redisProtocolToLuaType_Null(lua_State *lua, char *reply)
-{
+char *redisProtocolToLuaType_Null(lua_State *lua, char *reply) {
     char *p = strchr(reply + 1, '\r');
     lua_pushnil(lua);
     return p + 2;
 }
 
-char *redisProtocolToLuaType_Bool(lua_State *lua, char *reply, int tf)
-{
+char *redisProtocolToLuaType_Bool(lua_State *lua, char *reply, int tf) {
     char *p = strchr(reply + 1, '\r');
     lua_pushboolean(lua, tf == 't');
     return p + 2;
 }
 
-char *redisProtocolToLuaType_Double(lua_State *lua, char *reply)
-{
+char *redisProtocolToLuaType_Double(lua_State *lua, char *reply) {
     char *p = strchr(reply + 1, '\r');
     char buf[MAX_LONG_DOUBLE_CHARS + 1];
     size_t len = p - reply - 1;
     double d;
 
-    if (len <= MAX_LONG_DOUBLE_CHARS)
-    {
+    if (len <= MAX_LONG_DOUBLE_CHARS) {
         memcpy(buf, reply + 1, len);
         buf[len] = '\0';
         d = strtod(buf, NULL); /* We expect a valid representation. */
-    }
-    else
-    {
+    } else {
         d = 0;
     }
 
@@ -287,14 +259,12 @@ char *redisProtocolToLuaType_Double(lua_State *lua, char *reply)
  * with a single "err" field set to the error string. Note that this
  * table is never a valid reply by proper commands, since the returned
  * tables are otherwise always indexed by integers, never by strings. */
-void luaPushError(lua_State *lua, char *error)
-{
+void luaPushError(lua_State *lua, char *error) {
     lua_Debug dbg;
 
     /* If debugging is active and in step mode, log errors resulting from
      * Redis commands. */
-    if (ldb.active && ldb.step)
-    {
+    if (ldb.active && ldb.step) {
         ldbLog(sdscatprintf(sdsempty(), "<error> %s", error));
     }
 
@@ -302,15 +272,11 @@ void luaPushError(lua_State *lua, char *error)
     lua_pushstring(lua, "err");
 
     /* Attempt to figure out where this function was called, if possible */
-    if (lua_getstack(lua, 1, &dbg) && lua_getinfo(lua, "nSl", &dbg))
-    {
-        sds msg = sdscatprintf(sdsempty(), "%s: %d: %s",
-                               dbg.source, dbg.currentline, error);
+    if (lua_getstack(lua, 1, &dbg) && lua_getinfo(lua, "nSl", &dbg)) {
+        sds msg = sdscatprintf(sdsempty(), "%s: %d: %s", dbg.source, dbg.currentline, error);
         lua_pushstring(lua, msg);
         sdsfree(msg);
-    }
-    else
-    {
+    } else {
         lua_pushstring(lua, error);
     }
     lua_settable(lua, -3);
@@ -320,8 +286,7 @@ void luaPushError(lua_State *lua, char *error)
  * by the non-error-trapping version of redis.pcall(), which is redis.call(),
  * this function will raise the Lua error so that the execution of the
  * script will be halted. */
-int luaRaiseError(lua_State *lua)
-{
+int luaRaiseError(lua_State *lua) {
     lua_pushstring(lua, "err");
     lua_gettable(lua, -2);
     return lua_error(lua);
@@ -333,25 +298,23 @@ int luaRaiseError(lua_State *lua)
  *
  * The array is sorted using table.sort itself, and assuming all the
  * list elements are strings. */
-void luaSortArray(lua_State *lua)
-{
+void luaSortArray(lua_State *lua) {
     /* Initial Stack: array */
     lua_getglobal(lua, "table");
     lua_pushstring(lua, "sort");
-    lua_gettable(lua, -2);  /* Stack: array, table, table.sort */
+    lua_gettable(lua, -2); /* Stack: array, table, table.sort */
     lua_pushvalue(lua, -3); /* Stack: array, table, table.sort, array */
-    if (lua_pcall(lua, 1, 0, 0))
-    {
+    if (lua_pcall(lua, 1, 0, 0)) {
         /* Stack: array, table, error */
 
         /* We are not interested in the error, we assume that the problem is
          * that there are 'false' elements inside the array, so we try
          * again with a slower function but able to handle this case, that
          * is: table.sort(table, __redis__compare_helper) */
-        lua_pop(lua, 1);             /* Stack: array, table */
+        lua_pop(lua, 1); /* Stack: array, table */
         lua_pushstring(lua, "sort"); /* Stack: array, table, sort */
-        lua_gettable(lua, -2);       /* Stack: array, table, table.sort */
-        lua_pushvalue(lua, -3);      /* Stack: array, table, table.sort, array */
+        lua_gettable(lua, -2); /* Stack: array, table, table.sort */
+        lua_pushvalue(lua, -3); /* Stack: array, table, table.sort, array */
         lua_getglobal(lua, "__redis__compare_helper");
         /* Stack: array, table, table.sort, array, __redis__compare_helper */
         lua_call(lua, 2, 0);
@@ -366,137 +329,126 @@ void luaSortArray(lua_State *lua)
 
 /* Reply to client 'c' converting the top element in the Lua stack to a
  * Redis reply. As a side effect the element is consumed from the stack.  */
-void luaReplyToRedisReply(client *c, lua_State *lua)
-{
+void luaReplyToRedisReply(client *c, lua_State *lua) {
     int t = lua_type(lua, -1);
 
-    switch (t)
-    {
-    case LUA_TSTRING:
-        addReplyBulkCBuffer(c, (char *)lua_tostring(lua, -1), lua_strlen(lua, -1));
-        break;
-    case LUA_TBOOLEAN:
-        if (server.lua_client->resp == 2)
-            addReply(c, lua_toboolean(lua, -1) ? shared.cone : shared.null[c->resp]);
-        else
-            addReplyBool(c, lua_toboolean(lua, -1));
-        break;
-    case LUA_TNUMBER:
-        addReplyLongLong(c, (long long)lua_tonumber(lua, -1));
-        break;
-    case LUA_TTABLE:
-        /* We need to check if it is an array, an error, or a status reply.
-         * Error are returned as a single element table with 'err' field.
-         * Status replies are returned as single element table with 'ok'
-         * field. */
+    switch (t) {
+        case LUA_TSTRING:
+            addReplyBulkCBuffer(c, (char *) lua_tostring(lua, -1), lua_strlen(lua, -1));
+            break;
+        case LUA_TBOOLEAN:
+            if (server.lua_client->resp == 2)
+                addReply(c, lua_toboolean(lua, -1) ? shared.cone : shared.null[c->resp]);
+            else
+                addReplyBool(c, lua_toboolean(lua, -1));
+            break;
+        case LUA_TNUMBER:
+            addReplyLongLong(c, (long long) lua_tonumber(lua, -1));
+            break;
+        case LUA_TTABLE:
+            /* We need to check if it is an array, an error, or a status reply.
+             * Error are returned as a single element table with 'err' field.
+             * Status replies are returned as single element table with 'ok'
+             * field. */
 
-        /* Handle error reply. */
-        lua_pushstring(lua, "err");
-        lua_gettable(lua, -2);
-        t = lua_type(lua, -1);
-        if (t == LUA_TSTRING)
-        {
-            addReplyErrorFormat(c, "-%s", lua_tostring(lua, -1));
-            lua_pop(lua, 2);
-            return;
-        }
-        lua_pop(lua, 1); /* Discard field name pushed before. */
-
-        /* Handle status reply. */
-        lua_pushstring(lua, "ok");
-        lua_gettable(lua, -2);
-        t = lua_type(lua, -1);
-        if (t == LUA_TSTRING)
-        {
-            sds ok = sdsnew(lua_tostring(lua, -1));
-            sdsmapchars(ok, "\r\n", "  ", 2);
-            addReplySds(c, sdscatprintf(sdsempty(), "+%s\r\n", ok));
-            sdsfree(ok);
-            lua_pop(lua, 2);
-            return;
-        }
-        lua_pop(lua, 1); /* Discard field name pushed before. */
-
-        /* Handle double reply. */
-        lua_pushstring(lua, "double");
-        lua_gettable(lua, -2);
-        t = lua_type(lua, -1);
-        if (t == LUA_TNUMBER)
-        {
-            addReplyDouble(c, lua_tonumber(lua, -1));
-            lua_pop(lua, 2);
-            return;
-        }
-        lua_pop(lua, 1); /* Discard field name pushed before. */
-
-        /* Handle map reply. */
-        lua_pushstring(lua, "map");
-        lua_gettable(lua, -2);
-        t = lua_type(lua, -1);
-        if (t == LUA_TTABLE)
-        {
-            int maplen = 0;
-            void *replylen = addReplyDeferredLen(c);
-            lua_pushnil(lua); /* Use nil to start iteration. */
-            while (lua_next(lua, -2))
-            {
-                /* Stack now: table, key, value */
-                lua_pushvalue(lua, -2);       /* Dup key before consuming. */
-                luaReplyToRedisReply(c, lua); /* Return key. */
-                luaReplyToRedisReply(c, lua); /* Return value. */
-                /* Stack now: table, key. */
-                maplen++;
-            }
-            setDeferredMapLen(c, replylen, maplen);
-            lua_pop(lua, 2);
-            return;
-        }
-        lua_pop(lua, 1); /* Discard field name pushed before. */
-
-        /* Handle set reply. */
-        lua_pushstring(lua, "set");
-        lua_gettable(lua, -2);
-        t = lua_type(lua, -1);
-        if (t == LUA_TTABLE)
-        {
-            int setlen = 0;
-            void *replylen = addReplyDeferredLen(c);
-            lua_pushnil(lua); /* Use nil to start iteration. */
-            while (lua_next(lua, -2))
-            {
-                /* Stack now: table, key, true */
-                lua_pop(lua, 1);              /* Discard the boolean value. */
-                lua_pushvalue(lua, -1);       /* Dup key before consuming. */
-                luaReplyToRedisReply(c, lua); /* Return key. */
-                /* Stack now: table, key. */
-                setlen++;
-            }
-            setDeferredSetLen(c, replylen, setlen);
-            lua_pop(lua, 2);
-            return;
-        }
-        lua_pop(lua, 1); /* Discard field name pushed before. */
-
-        /* Handle the array reply. */
-        void *replylen = addReplyDeferredLen(c);
-        int j = 1, mbulklen = 0;
-        while (1)
-        {
-            lua_pushnumber(lua, j++);
+            /* Handle error reply. */
+            lua_pushstring(lua, "err");
             lua_gettable(lua, -2);
             t = lua_type(lua, -1);
-            if (t == LUA_TNIL)
-            {
-                lua_pop(lua, 1);
-                break;
+            if (t == LUA_TSTRING) {
+                addReplyErrorFormat(c, "-%s", lua_tostring(lua, -1));
+                lua_pop(lua, 2);
+                return;
             }
-            luaReplyToRedisReply(c, lua);
-            mbulklen++;
-        }
-        setDeferredArrayLen(c, replylen, mbulklen);
-        break;
-    default:
-        addReplyNull(c);
+            lua_pop(lua, 1); /* Discard field name pushed before. */
+
+            /* Handle status reply. */
+            lua_pushstring(lua, "ok");
+            lua_gettable(lua, -2);
+            t = lua_type(lua, -1);
+            if (t == LUA_TSTRING) {
+                sds ok = sdsnew(lua_tostring(lua, -1));
+                sdsmapchars(ok, "\r\n", "  ", 2);
+                addReplySds(c, sdscatprintf(sdsempty(), "+%s\r\n", ok));
+                sdsfree(ok);
+                lua_pop(lua, 2);
+                return;
+            }
+            lua_pop(lua, 1); /* Discard field name pushed before. */
+
+            /* Handle double reply. */
+            lua_pushstring(lua, "double");
+            lua_gettable(lua, -2);
+            t = lua_type(lua, -1);
+            if (t == LUA_TNUMBER) {
+                addReplyDouble(c, lua_tonumber(lua, -1));
+                lua_pop(lua, 2);
+                return;
+            }
+            lua_pop(lua, 1); /* Discard field name pushed before. */
+
+            /* Handle map reply. */
+            lua_pushstring(lua, "map");
+            lua_gettable(lua, -2);
+            t = lua_type(lua, -1);
+            if (t == LUA_TTABLE) {
+                int maplen = 0;
+                void *replylen = addReplyDeferredLen(c);
+                lua_pushnil(lua); /* Use nil to start iteration. */
+                while (lua_next(lua, -2)) {
+                    /* Stack now: table, key, value */
+                    lua_pushvalue(lua, -2); /* Dup key before consuming. */
+                    luaReplyToRedisReply(c, lua); /* Return key. */
+                    luaReplyToRedisReply(c, lua); /* Return value. */
+                    /* Stack now: table, key. */
+                    maplen++;
+                }
+                setDeferredMapLen(c, replylen, maplen);
+                lua_pop(lua, 2);
+                return;
+            }
+            lua_pop(lua, 1); /* Discard field name pushed before. */
+
+            /* Handle set reply. */
+            lua_pushstring(lua, "set");
+            lua_gettable(lua, -2);
+            t = lua_type(lua, -1);
+            if (t == LUA_TTABLE) {
+                int setlen = 0;
+                void *replylen = addReplyDeferredLen(c);
+                lua_pushnil(lua); /* Use nil to start iteration. */
+                while (lua_next(lua, -2)) {
+                    /* Stack now: table, key, true */
+                    lua_pop(lua, 1); /* Discard the boolean value. */
+                    lua_pushvalue(lua, -1); /* Dup key before consuming. */
+                    luaReplyToRedisReply(c, lua); /* Return key. */
+                    /* Stack now: table, key. */
+                    setlen++;
+                }
+                setDeferredSetLen(c, replylen, setlen);
+                lua_pop(lua, 2);
+                return;
+            }
+            lua_pop(lua, 1); /* Discard field name pushed before. */
+
+            /* Handle the array reply. */
+            void *replylen = addReplyDeferredLen(c);
+            int j = 1, mbulklen = 0;
+            while (1) {
+                lua_pushnumber(lua, j++);
+                lua_gettable(lua, -2);
+                t = lua_type(lua, -1);
+                if (t == LUA_TNIL) {
+                    lua_pop(lua, 1);
+                    break;
+                }
+                luaReplyToRedisReply(c, lua);
+                mbulklen++;
+            }
+            setDeferredArrayLen(c, replylen, mbulklen);
+            break;
+        default:
+            addReplyNull(c);
     }
     lua_pop(lua, 1);
 }
@@ -507,8 +459,7 @@ void luaReplyToRedisReply(client *c, lua_State *lua)
 
 #define LUA_CMD_OBJCACHE_SIZE 32
 #define LUA_CMD_OBJCACHE_MAX_LEN 64
-int luaRedisGenericCommand(lua_State *lua, int raise_error)
-{
+int luaRedisGenericCommand(lua_State *lua, int raise_error) {
     int j, argc = lua_gettop(lua);
     struct redisCommand *cmd;
     client *c = server.lua_client;
@@ -525,11 +476,9 @@ int luaRedisGenericCommand(lua_State *lua, int raise_error)
      * to luaRedisGenericCommand(), which normally should never happen.
      * To make this function reentrant is futile and makes it slower, but
      * we should at least detect such a misuse, and abort. */
-    if (inuse)
-    {
-        char *recursion_warning =
-            "luaRedisGenericCommand() recursive call detected. "
-            "Are you doing funny stuff with Lua debug hooks?";
+    if (inuse) {
+        char *recursion_warning = "luaRedisGenericCommand() recursive call detected. "
+                                  "Are you doing funny stuff with Lua debug hooks?";
         serverLog(LL_WARNING, "%s", recursion_warning);
         luaPushError(lua, recursion_warning);
         return 1;
@@ -537,55 +486,44 @@ int luaRedisGenericCommand(lua_State *lua, int raise_error)
     inuse++;
 
     /* Require at least one argument */
-    if (argc == 0)
-    {
-        luaPushError(lua,
-                     "Please specify at least one argument for redis.call()");
+    if (argc == 0) {
+        luaPushError(lua, "Please specify at least one argument for redis.call()");
         inuse--;
         return raise_error ? luaRaiseError(lua) : 1;
     }
 
     /* Build the arguments vector */
-    if (argv_size < argc)
-    {
+    if (argv_size < argc) {
         argv = zrealloc(argv, sizeof(robj *) * argc);
         argv_size = argc;
     }
 
-    for (j = 0; j < argc; j++)
-    {
+    for (j = 0; j < argc; j++) {
         char *obj_s;
         size_t obj_len;
         char dbuf[64];
 
-        if (lua_type(lua, j + 1) == LUA_TNUMBER)
-        {
+        if (lua_type(lua, j + 1) == LUA_TNUMBER) {
             /* We can't use lua_tolstring() for number -> string conversion
              * since Lua uses a format specifier that loses precision. */
             lua_Number num = lua_tonumber(lua, j + 1);
 
-            obj_len = snprintf(dbuf, sizeof(dbuf), "%.17g", (double)num);
+            obj_len = snprintf(dbuf, sizeof(dbuf), "%.17g", (double) num);
             obj_s = dbuf;
-        }
-        else
-        {
-            obj_s = (char *)lua_tolstring(lua, j + 1, &obj_len);
+        } else {
+            obj_s = (char *) lua_tolstring(lua, j + 1, &obj_len);
             if (obj_s == NULL)
                 break; /* Not a string. */
         }
 
         /* Try to use a cached object. */
-        if (j < LUA_CMD_OBJCACHE_SIZE && cached_objects[j] &&
-            cached_objects_len[j] >= obj_len)
-        {
+        if (j < LUA_CMD_OBJCACHE_SIZE && cached_objects[j] && cached_objects_len[j] >= obj_len) {
             sds s = cached_objects[j]->ptr;
             argv[j] = cached_objects[j];
             cached_objects[j] = NULL;
             memcpy(s, obj_s, obj_len + 1);
             sdssetlen(s, obj_len);
-        }
-        else
-        {
+        } else {
             argv[j] = createStringObject(obj_s, obj_len);
         }
     }
@@ -593,16 +531,13 @@ int luaRedisGenericCommand(lua_State *lua, int raise_error)
     /* Check if one of the arguments passed by the Lua script
      * is not a string or an integer (lua_isstring() return true for
      * integers as well). */
-    if (j != argc)
-    {
+    if (j != argc) {
         j--;
-        while (j >= 0)
-        {
+        while (j >= 0) {
             decrRefCount(argv[j]);
             j--;
         }
-        luaPushError(lua,
-                     "Lua redis() command arguments must be strings or integers");
+        luaPushError(lua, "Lua redis() command arguments must be strings or integers");
         inuse--;
         return raise_error ? luaRaiseError(lua) : 1;
     }
@@ -618,19 +553,13 @@ int luaRedisGenericCommand(lua_State *lua, int raise_error)
     argc = c->argc;
 
     /* Log the command if debugging is active. */
-    if (ldb.active && ldb.step)
-    {
+    if (ldb.active && ldb.step) {
         sds cmdlog = sdsnew("<redis>");
-        for (j = 0; j < c->argc; j++)
-        {
-            if (j == 10)
-            {
-                cmdlog = sdscatprintf(cmdlog, " ... (%d more)",
-                                      c->argc - j - 1);
+        for (j = 0; j < c->argc; j++) {
+            if (j == 10) {
+                cmdlog = sdscatprintf(cmdlog, " ... (%d more)", c->argc - j - 1);
                 break;
-            }
-            else
-            {
+            } else {
                 cmdlog = sdscatlen(cmdlog, " ", 1);
                 cmdlog = sdscatsds(cmdlog, c->argv[j]->ptr);
             }
@@ -640,12 +569,9 @@ int luaRedisGenericCommand(lua_State *lua, int raise_error)
 
     /* Command lookup */
     cmd = lookupCommand(argv[0]->ptr);
-    if (!cmd || ((cmd->arity > 0 && cmd->arity != argc) ||
-                 (argc < -cmd->arity)))
-    {
+    if (!cmd || ((cmd->arity > 0 && cmd->arity != argc) || (argc < -cmd->arity))) {
         if (cmd)
-            luaPushError(lua,
-                         "Wrong number of args calling Redis command From Lua script");
+            luaPushError(lua, "Wrong number of args calling Redis command From Lua script");
         else
             luaPushError(lua, "Unknown Redis command called from Lua script");
         goto cleanup;
@@ -653,8 +579,7 @@ int luaRedisGenericCommand(lua_State *lua, int raise_error)
     c->cmd = c->lastcmd = cmd;
 
     /* There are commands that are not allowed inside scripts. */
-    if (cmd->flags & CMD_NOSCRIPT)
-    {
+    if (cmd->flags & CMD_NOSCRIPT) {
         luaPushError(lua, "This Redis command is not allowed from scripts");
         goto cleanup;
     }
@@ -664,28 +589,26 @@ int luaRedisGenericCommand(lua_State *lua, int raise_error)
     int acl_retval = ACLCheckCommandPerm(c, &acl_errpos);
     if (acl_retval == ACL_OK && c->cmd->proc == publishCommand)
         acl_retval = ACLCheckPubsubPerm(c, 1, 1, 0, &acl_errpos);
-    if (acl_retval != ACL_OK)
-    {
+    if (acl_retval != ACL_OK) {
         addACLLogEntry(c, acl_retval, acl_errpos, NULL);
-        switch (acl_retval)
-        {
-        case ACL_DENIED_CMD:
-            luaPushError(lua, "The user executing the script can't run this "
-                              "command or subcommand");
-            break;
-        case ACL_DENIED_KEY:
-            luaPushError(lua, "The user executing the script can't access "
-                              "at least one of the keys mentioned in the "
-                              "command arguments");
-            break;
-        case ACL_DENIED_AUTH:
-            luaPushError(lua, "The user executing the script can't publish "
-                              "to the channel mentioned in the command");
-            break;
-        default:
-            luaPushError(lua, "The user executing the script is lacking the "
-                              "permissions for the command");
-            break;
+        switch (acl_retval) {
+            case ACL_DENIED_CMD:
+                luaPushError(lua, "The user executing the script can't run this "
+                                  "command or subcommand");
+                break;
+            case ACL_DENIED_KEY:
+                luaPushError(lua, "The user executing the script can't access "
+                                  "at least one of the keys mentioned in the "
+                                  "command arguments");
+                break;
+            case ACL_DENIED_AUTH:
+                luaPushError(lua, "The user executing the script can't publish "
+                                  "to the channel mentioned in the command");
+                break;
+            default:
+                luaPushError(lua, "The user executing the script is lacking the "
+                                  "permissions for the command");
+                break;
         }
         goto cleanup;
     }
@@ -693,32 +616,22 @@ int luaRedisGenericCommand(lua_State *lua, int raise_error)
     /* Write commands are forbidden against read-only slaves, or if a
      * command marked as non-deterministic was already called in the context
      * of this script. */
-    if (cmd->flags & CMD_WRITE)
-    {
+    if (cmd->flags & CMD_WRITE) {
         int deny_write_type = writeCommandsDeniedByDiskError();
-        if (server.lua_random_dirty && !server.lua_replicate_commands)
-        {
+        if (server.lua_random_dirty && !server.lua_replicate_commands) {
             luaPushError(lua,
-                         "Write commands not allowed after non deterministic commands. Call redis.replicate_commands() at the start of your script in order to switch to single commands replication mode.");
+                         "Write commands not allowed after non deterministic commands. Call redis.replicate_commands() "
+                         "at the start of your script in order to switch to single commands replication mode.");
             goto cleanup;
-        }
-        else if (server.masterhost && server.repl_slave_ro &&
-                 !server.loading &&
-                 !(server.lua_caller->flags & CLIENT_MASTER))
-        {
+        } else if (server.masterhost && server.repl_slave_ro && !server.loading &&
+                   !(server.lua_caller->flags & CLIENT_MASTER)) {
             luaPushError(lua, shared.roslaveerr->ptr);
             goto cleanup;
-        }
-        else if (deny_write_type != DISK_ERROR_TYPE_NONE)
-        {
-            if (deny_write_type == DISK_ERROR_TYPE_RDB)
-            {
+        } else if (deny_write_type != DISK_ERROR_TYPE_NONE) {
+            if (deny_write_type == DISK_ERROR_TYPE_RDB) {
                 luaPushError(lua, shared.bgsaveerr->ptr);
-            }
-            else
-            {
-                sds aof_write_err = sdscatfmt(sdsempty(),
-                                              "-MISCONF Errors writing to the AOF file: %s\r\n",
+            } else {
+                sds aof_write_err = sdscatfmt(sdsempty(), "-MISCONF Errors writing to the AOF file: %s\r\n",
                                               strerror(server.aof_last_write_errno));
                 luaPushError(lua, aof_write_err);
                 sdsfree(aof_write_err);
@@ -731,13 +644,12 @@ int luaRedisGenericCommand(lua_State *lua, int raise_error)
      * could enlarge the memory usage are not allowed, but only if this is the
      * first write in the context of this script, otherwise we can't stop
      * in the middle. */
-    if (server.maxmemory &&            /* Maxmemory is actually enabled. */
-        !server.loading &&             /* Don't care about mem if loading. */
-        !server.masterhost &&          /* Slave must execute the script. */
+    if (server.maxmemory && /* Maxmemory is actually enabled. */
+        !server.loading && /* Don't care about mem if loading. */
+        !server.masterhost && /* Slave must execute the script. */
         server.lua_write_dirty == 0 && /* Script had no side effects so far. */
-        server.lua_oom &&              /* Detected OOM when script start. */
-        (cmd->flags & CMD_DENYOOM))
-    {
+        server.lua_oom && /* Detected OOM when script start. */
+        (cmd->flags & CMD_DENYOOM)) {
         luaPushError(lua, shared.oomerr->ptr);
         goto cleanup;
     }
@@ -750,33 +662,21 @@ int luaRedisGenericCommand(lua_State *lua, int raise_error)
     /* If this is a Redis Cluster node, we need to make sure Lua is not
      * trying to access non-local keys, with the exception of commands
      * received from our master or when loading the AOF back in memory. */
-    if (server.cluster_enabled && !server.loading &&
-        !(server.lua_caller->flags & CLIENT_MASTER))
-    {
+    if (server.cluster_enabled && !server.loading && !(server.lua_caller->flags & CLIENT_MASTER)) {
         int error_code;
         /* Duplicate relevant flags in the lua client. */
         c->flags &= ~(CLIENT_READONLY | CLIENT_ASKING);
         c->flags |= server.lua_caller->flags & (CLIENT_READONLY | CLIENT_ASKING);
-        if (getNodeByQuery(c, c->cmd, c->argv, c->argc, NULL, &error_code) !=
-            server.cluster->myself)
-        {
-            if (error_code == CLUSTER_REDIR_DOWN_RO_STATE)
-            {
-                luaPushError(lua,
-                             "Lua script attempted to execute a write command while the "
-                             "cluster is down and readonly");
-            }
-            else if (error_code == CLUSTER_REDIR_DOWN_STATE)
-            {
-                luaPushError(lua,
-                             "Lua script attempted to execute a command while the "
-                             "cluster is down");
-            }
-            else
-            {
-                luaPushError(lua,
-                             "Lua script attempted to access a non local key in a "
-                             "cluster node");
+        if (getNodeByQuery(c, c->cmd, c->argv, c->argc, NULL, &error_code) != server.cluster->myself) {
+            if (error_code == CLUSTER_REDIR_DOWN_RO_STATE) {
+                luaPushError(lua, "Lua script attempted to execute a write command while the "
+                                  "cluster is down and readonly");
+            } else if (error_code == CLUSTER_REDIR_DOWN_STATE) {
+                luaPushError(lua, "Lua script attempted to execute a command while the "
+                                  "cluster is down");
+            } else {
+                luaPushError(lua, "Lua script attempted to access a non local key in a "
+                                  "cluster node");
             }
 
             goto cleanup;
@@ -786,12 +686,8 @@ int luaRedisGenericCommand(lua_State *lua, int raise_error)
     /* If we are using single commands replication, we need to wrap what
      * we propagate into a MULTI/EXEC block, so that it will be atomic like
      * a Lua script in the context of AOF and slaves. */
-    if (server.lua_replicate_commands &&
-        !server.lua_multi_emitted &&
-        !(server.lua_caller->flags & CLIENT_MULTI) &&
-        server.lua_write_dirty &&
-        server.lua_repl != PROPAGATE_NONE)
-    {
+    if (server.lua_replicate_commands && !server.lua_multi_emitted && !(server.lua_caller->flags & CLIENT_MULTI) &&
+        server.lua_write_dirty && server.lua_repl != PROPAGATE_NONE) {
         execCommandPropagateMulti(server.lua_caller->db->id);
         server.lua_multi_emitted = 1;
         /* Now we are in the MULTI context, the lua_client should be
@@ -801,8 +697,7 @@ int luaRedisGenericCommand(lua_State *lua, int raise_error)
 
     /* Run the command */
     int call_flags = CMD_CALL_SLOWLOG | CMD_CALL_STATS;
-    if (server.lua_replicate_commands)
-    {
+    if (server.lua_replicate_commands) {
         /* Set flags according to redis.set_repl() settings. */
         if (server.lua_repl & PROPAGATE_AOF)
             call_flags |= CMD_CALL_PROPAGATE_AOF;
@@ -815,21 +710,17 @@ int luaRedisGenericCommand(lua_State *lua, int raise_error)
     /* Convert the result of the Redis command into a suitable Lua type.
      * The first thing we need is to create a single string from the client
      * output buffers. */
-    if (listLength(c->reply) == 0 && c->bufpos < PROTO_REPLY_CHUNK_BYTES)
-    {
+    if (listLength(c->reply) == 0 && c->bufpos < PROTO_REPLY_CHUNK_BYTES) {
         /* This is a fast path for the common case of a reply inside the
          * client static buffer. Don't create an SDS string but just use
          * the client buffer directly. */
         c->buf[c->bufpos] = '\0';
         reply = c->buf;
         c->bufpos = 0;
-    }
-    else
-    {
+    } else {
         reply = sdsnewlen(c->buf, c->bufpos);
         c->bufpos = 0;
-        while (listLength(c->reply))
-        {
+        while (listLength(c->reply)) {
             clientReplyBlock *o = listNodeValue(listFirst(c->reply));
 
             reply = sdscatlen(reply, o->buf, o->used);
@@ -846,10 +737,8 @@ int luaRedisGenericCommand(lua_State *lua, int raise_error)
 
     /* Sort the output array if needed, assuming it is a non-null multi bulk
      * reply as expected. */
-    if ((cmd->flags & CMD_SORT_FOR_SCRIPT) &&
-        (server.lua_replicate_commands == 0) &&
-        (reply[0] == '*' && reply[1] != '-'))
-    {
+    if ((cmd->flags & CMD_SORT_FOR_SCRIPT) && (server.lua_replicate_commands == 0) &&
+        (reply[0] == '*' && reply[1] != '-')) {
         luaSortArray(lua);
     }
     if (reply != c->buf)
@@ -859,33 +748,26 @@ int luaRedisGenericCommand(lua_State *lua, int raise_error)
 cleanup:
     /* Clean up. Command code may have changed argv/argc so we use the
      * argv/argc of the client instead of the local variables. */
-    for (j = 0; j < c->argc; j++)
-    {
+    for (j = 0; j < c->argc; j++) {
         robj *o = c->argv[j];
 
         /* Try to cache the object in the cached_objects array.
          * The object must be small, SDS-encoded, and with refcount = 1
          * (we must be the only owner) for us to cache it. */
-        if (j < LUA_CMD_OBJCACHE_SIZE &&
-            o->refcount == 1 &&
-            (o->encoding == OBJ_ENCODING_RAW ||
-             o->encoding == OBJ_ENCODING_EMBSTR) &&
-            sdslen(o->ptr) <= LUA_CMD_OBJCACHE_MAX_LEN)
-        {
+        if (j < LUA_CMD_OBJCACHE_SIZE && o->refcount == 1 &&
+            (o->encoding == OBJ_ENCODING_RAW || o->encoding == OBJ_ENCODING_EMBSTR) &&
+            sdslen(o->ptr) <= LUA_CMD_OBJCACHE_MAX_LEN) {
             sds s = o->ptr;
             if (cached_objects[j])
                 decrRefCount(cached_objects[j]);
             cached_objects[j] = o;
             cached_objects_len[j] = sdsalloc(s);
-        }
-        else
-        {
+        } else {
             decrRefCount(o);
         }
     }
 
-    if (c->argv != argv)
-    {
+    if (c->argv != argv) {
         zfree(c->argv);
         argv = NULL;
         argv_size = 0;
@@ -893,8 +775,7 @@ cleanup:
 
     c->user = NULL;
 
-    if (raise_error)
-    {
+    if (raise_error) {
         /* If we are here we should have an error in the stack, in the
          * form of a table with an "err" field. Extract the string to
          * return the plain error. */
@@ -906,33 +787,25 @@ cleanup:
 }
 
 /* redis.call() */
-int luaRedisCallCommand(lua_State *lua)
-{
-    return luaRedisGenericCommand(lua, 1);
-}
+int luaRedisCallCommand(lua_State *lua) { return luaRedisGenericCommand(lua, 1); }
 
 /* redis.pcall() */
-int luaRedisPCallCommand(lua_State *lua)
-{
-    return luaRedisGenericCommand(lua, 0);
-}
+int luaRedisPCallCommand(lua_State *lua) { return luaRedisGenericCommand(lua, 0); }
 
 /* This adds redis.sha1hex(string) to Lua scripts using the same hashing
  * function used for sha1ing lua scripts. */
-int luaRedisSha1hexCommand(lua_State *lua)
-{
+int luaRedisSha1hexCommand(lua_State *lua) {
     int argc = lua_gettop(lua);
     char digest[41];
     size_t len;
     char *s;
 
-    if (argc != 1)
-    {
+    if (argc != 1) {
         lua_pushstring(lua, "wrong number of arguments");
         return lua_error(lua);
     }
 
-    s = (char *)lua_tolstring(lua, 1, &len);
+    s = (char *) lua_tolstring(lua, 1, &len);
     sha1hex(digest, s, len);
     lua_pushstring(lua, digest);
     return 1;
@@ -945,10 +818,8 @@ int luaRedisSha1hexCommand(lua_State *lua)
  * return redis.error_reply("ERR Some Error")
  * return redis.status_reply("ERR Some Error")
  */
-int luaRedisReturnSingleFieldTable(lua_State *lua, char *field)
-{
-    if (lua_gettop(lua) != 1 || lua_type(lua, -1) != LUA_TSTRING)
-    {
+int luaRedisReturnSingleFieldTable(lua_State *lua, char *field) {
+    if (lua_gettop(lua) != 1 || lua_type(lua, -1) != LUA_TSTRING) {
         luaPushError(lua, "wrong number or type of arguments");
         return 1;
     }
@@ -961,16 +832,10 @@ int luaRedisReturnSingleFieldTable(lua_State *lua, char *field)
 }
 
 /* redis.error_reply() */
-int luaRedisErrorReplyCommand(lua_State *lua)
-{
-    return luaRedisReturnSingleFieldTable(lua, "err");
-}
+int luaRedisErrorReplyCommand(lua_State *lua) { return luaRedisReturnSingleFieldTable(lua, "err"); }
 
 /* redis.status_reply() */
-int luaRedisStatusReplyCommand(lua_State *lua)
-{
-    return luaRedisReturnSingleFieldTable(lua, "ok");
-}
+int luaRedisStatusReplyCommand(lua_State *lua) { return luaRedisReturnSingleFieldTable(lua, "ok"); }
 
 /* redis.replicate_commands()
  *
@@ -978,14 +843,10 @@ int luaRedisStatusReplyCommand(lua_State *lua)
  * a write command so far, and returns true. Otherwise if the script
  * already started to write, returns false and stick to whole scripts
  * replication, which is our default. */
-int luaRedisReplicateCommandsCommand(lua_State *lua)
-{
-    if (server.lua_write_dirty)
-    {
+int luaRedisReplicateCommandsCommand(lua_State *lua) {
+    if (server.lua_write_dirty) {
         lua_pushboolean(lua, 0);
-    }
-    else
-    {
+    } else {
         server.lua_replicate_commands = 1;
         /* When we switch to single commands replication, we can provide
          * different math.random() sequences at every call, which is what
@@ -1001,15 +862,11 @@ int luaRedisReplicateCommandsCommand(lua_State *lua)
  * Allows to stop execution during a debugging session from within
  * the Lua code implementation, like if a breakpoint was set in the code
  * immediately after the function. */
-int luaRedisBreakpointCommand(lua_State *lua)
-{
-    if (ldb.active)
-    {
+int luaRedisBreakpointCommand(lua_State *lua) {
+    if (ldb.active) {
         ldb.luabp = 1;
         lua_pushboolean(lua, 1);
-    }
-    else
-    {
+    } else {
         lua_pushboolean(lua, 0);
     }
     return 1;
@@ -1020,14 +877,12 @@ int luaRedisBreakpointCommand(lua_State *lua)
  * Log a string message into the output console.
  * Can take multiple arguments that will be separated by commas.
  * Nothing is returned to the caller. */
-int luaRedisDebugCommand(lua_State *lua)
-{
+int luaRedisDebugCommand(lua_State *lua) {
     if (!ldb.active)
         return 0;
     int argc = lua_gettop(lua);
     sds log = sdscatprintf(sdsempty(), "<debug> line %d: ", ldb.currentline);
-    while (argc--)
-    {
+    while (argc--) {
         log = ldbCatStackValue(log, lua, -1 - argc);
         if (argc != 0)
             log = sdscatlen(log, ", ", 2);
@@ -1040,25 +895,21 @@ int luaRedisDebugCommand(lua_State *lua)
  *
  * Set the propagation of write commands executed in the context of the
  * script to on/off for AOF and slaves. */
-int luaRedisSetReplCommand(lua_State *lua)
-{
+int luaRedisSetReplCommand(lua_State *lua) {
     int argc = lua_gettop(lua);
     int flags;
 
-    if (server.lua_replicate_commands == 0)
-    {
-        lua_pushstring(lua, "You can set the replication behavior only after turning on single commands replication with redis.replicate_commands().");
+    if (server.lua_replicate_commands == 0) {
+        lua_pushstring(lua, "You can set the replication behavior only after turning on single commands replication "
+                            "with redis.replicate_commands().");
         return lua_error(lua);
-    }
-    else if (argc != 1)
-    {
+    } else if (argc != 1) {
         lua_pushstring(lua, "redis.set_repl() requires two arguments.");
         return lua_error(lua);
     }
 
     flags = lua_tonumber(lua, -1);
-    if ((flags & ~(PROPAGATE_AOF | PROPAGATE_REPL)) != 0)
-    {
+    if ((flags & ~(PROPAGATE_AOF | PROPAGATE_REPL)) != 0) {
         lua_pushstring(lua, "Invalid replication flags. Use REPL_AOF, REPL_REPLICA, REPL_ALL or REPL_NONE.");
         return lua_error(lua);
     }
@@ -1067,25 +918,20 @@ int luaRedisSetReplCommand(lua_State *lua)
 }
 
 /* redis.log() */
-int luaLogCommand(lua_State *lua)
-{
+int luaLogCommand(lua_State *lua) {
     int j, argc = lua_gettop(lua);
     int level;
     sds log;
 
-    if (argc < 2)
-    {
+    if (argc < 2) {
         lua_pushstring(lua, "redis.log() requires two arguments or more.");
         return lua_error(lua);
-    }
-    else if (!lua_isnumber(lua, -argc))
-    {
+    } else if (!lua_isnumber(lua, -argc)) {
         lua_pushstring(lua, "First argument must be a number (log level).");
         return lua_error(lua);
     }
     level = lua_tonumber(lua, -argc);
-    if (level < LL_DEBUG || level > LL_WARNING)
-    {
+    if (level < LL_DEBUG || level > LL_WARNING) {
         lua_pushstring(lua, "Invalid debug level.");
         return lua_error(lua);
     }
@@ -1094,14 +940,12 @@ int luaLogCommand(lua_State *lua)
 
     /* Glue together all the arguments */
     log = sdsempty();
-    for (j = 1; j < argc; j++)
-    {
+    for (j = 1; j < argc; j++) {
         size_t len;
         char *s;
 
-        s = (char *)lua_tolstring(lua, (-argc) + j, &len);
-        if (s)
-        {
+        s = (char *) lua_tolstring(lua, (-argc) + j, &len);
+        if (s) {
             if (j != 1)
                 log = sdscatlen(log, " ", 1);
             log = sdscatlen(log, s, len);
@@ -1113,19 +957,16 @@ int luaLogCommand(lua_State *lua)
 }
 
 /* redis.setresp() */
-int luaSetResp(lua_State *lua)
-{
+int luaSetResp(lua_State *lua) {
     int argc = lua_gettop(lua);
 
-    if (argc != 1)
-    {
+    if (argc != 1) {
         lua_pushstring(lua, "redis.setresp() requires one argument.");
         return lua_error(lua);
     }
 
     int resp = lua_tonumber(lua, -argc);
-    if (resp != 2 && resp != 3)
-    {
+    if (resp != 2 && resp != 3) {
         lua_pushstring(lua, "RESP version must be 2 or 3.");
         return lua_error(lua);
     }
@@ -1138,8 +979,7 @@ int luaSetResp(lua_State *lua)
  * Lua engine initialization and reset.
  * ------------------------------------------------------------------------- */
 
-void luaLoadLib(lua_State *lua, const char *libname, lua_CFunction luafunc)
-{
+void luaLoadLib(lua_State *lua, const char *libname, lua_CFunction luafunc) {
     lua_pushcfunction(lua, luafunc);
     lua_pushstring(lua, libname);
     lua_call(lua, 1, 0);
@@ -1150,8 +990,7 @@ LUALIB_API int(luaopen_struct)(lua_State *L);
 LUALIB_API int(luaopen_cmsgpack)(lua_State *L);
 LUALIB_API int(luaopen_bit)(lua_State *L);
 
-void luaLoadLibraries(lua_State *lua)
-{
+void luaLoadLibraries(lua_State *lua) {
     luaLoadLib(lua, "", luaopen_base);
     luaLoadLib(lua, LUA_TABLIBNAME, luaopen_table);
     luaLoadLib(lua, LUA_STRLIBNAME, luaopen_string);
@@ -1170,8 +1009,7 @@ void luaLoadLibraries(lua_State *lua)
 
 /* Remove a functions that we don't want to expose to the Redis scripting
  * environment. */
-void luaRemoveUnsupportedFunctions(lua_State *lua)
-{
+void luaRemoveUnsupportedFunctions(lua_State *lua) {
     lua_pushnil(lua);
     lua_setglobal(lua, "loadfile");
     lua_pushnil(lua);
@@ -1183,8 +1021,7 @@ void luaRemoveUnsupportedFunctions(lua_State *lua)
  *
  * It should be the last to be called in the scripting engine initialization
  * sequence, because it may interact with creation of globals. */
-void scriptingEnableGlobalsProtection(lua_State *lua)
-{
+void scriptingEnableGlobalsProtection(lua_State *lua) {
     char *s[32];
     sds code = sdsempty();
     int j = 0;
@@ -1230,12 +1067,10 @@ void scriptingEnableGlobalsProtection(lua_State *lua)
  *
  * However it is simpler to just call scriptingReset() that does just that. */
 // 初始化脚本环境。
-void scriptingInit(int setup)
-{
+void scriptingInit(int setup) {
     lua_State *lua = lua_open();
 
-    if (setup)
-    {
+    if (setup) {
         server.lua_client = NULL;
         server.lua_caller = NULL;
         server.lua_cur_script = NULL;
@@ -1399,8 +1234,7 @@ void scriptingInit(int setup)
      * Note: there is no need to create it again when this function is called
      * by scriptingReset(). */
     // 创建（未连接的）客户端，用于在Lua解释器中执行Redis命令。注意：当scriptingReset（）调用这个函数时，不需要再次创建它。
-    if (server.lua_client == NULL)
-    {
+    if (server.lua_client == NULL) {
         server.lua_client = createClient(NULL);
         server.lua_client->flags |= CLIENT_LUA;
 
@@ -1419,8 +1253,7 @@ void scriptingInit(int setup)
 
 /* Release resources related to Lua scripting.
  * This function is used in order to reset the scripting environment. */
-void scriptingRelease(int async)
-{
+void scriptingRelease(int async) {
     if (async)
         freeLuaScriptsAsync(server.lua_scripts);
     else
@@ -1429,22 +1262,19 @@ void scriptingRelease(int async)
     lua_close(server.lua);
 }
 
-void scriptingReset(int async)
-{
+void scriptingReset(int async) {
     scriptingRelease(async);
     scriptingInit(0);
 }
 
 /* Set an array of Redis String Objects as a Lua array (table) stored into a
  * global variable. */
-void luaSetGlobalArray(lua_State *lua, char *var, robj **elev, int elec)
-{
+void luaSetGlobalArray(lua_State *lua, char *var, robj **elev, int elec) {
     int j;
 
     lua_newtable(lua);
-    for (j = 0; j < elec; j++)
-    {
-        lua_pushlstring(lua, (char *)elev[j]->ptr, sdslen(elev[j]->ptr));
+    for (j = 0; j < elec; j++) {
+        lua_pushlstring(lua, (char *) elev[j]->ptr, sdslen(elev[j]->ptr));
         lua_rawseti(lua, -2, j + 1);
     }
     lua_setglobal(lua, var);
@@ -1460,42 +1290,35 @@ void luaSetGlobalArray(lua_State *lua, char *var, robj **elev, int elec)
 
 /* The following implementation is the one shipped with Lua itself but with
  * rand() replaced by redisLrand48(). */
-int redis_math_random(lua_State *L)
-{
+int redis_math_random(lua_State *L) {
     /* the `%' avoids the (rare) case of r==1, and is needed also because on
        some systems (SunOS!) `rand()' may return a value larger than RAND_MAX */
-    lua_Number r = (lua_Number)(redisLrand48() % REDIS_LRAND48_MAX) /
-                   (lua_Number)REDIS_LRAND48_MAX;
-    switch (lua_gettop(L))
-    { /* check number of arguments */
-    case 0:
-    {                         /* no arguments */
-        lua_pushnumber(L, r); /* Number between 0 and 1 */
-        break;
-    }
-    case 1:
-    { /* only upper limit */
-        int u = luaL_checkint(L, 1);
-        luaL_argcheck(L, 1 <= u, 1, "interval is empty");
-        lua_pushnumber(L, floor(r * u) + 1); /* int between 1 and `u' */
-        break;
-    }
-    case 2:
-    { /* lower and upper limits */
-        int l = luaL_checkint(L, 1);
-        int u = luaL_checkint(L, 2);
-        luaL_argcheck(L, l <= u, 2, "interval is empty");
-        lua_pushnumber(L, floor(r * (u - l + 1)) + l); /* int between `l' and `u' */
-        break;
-    }
-    default:
-        return luaL_error(L, "wrong number of arguments");
+    lua_Number r = (lua_Number) (redisLrand48() % REDIS_LRAND48_MAX) / (lua_Number) REDIS_LRAND48_MAX;
+    switch (lua_gettop(L)) { /* check number of arguments */
+        case 0: { /* no arguments */
+            lua_pushnumber(L, r); /* Number between 0 and 1 */
+            break;
+        }
+        case 1: { /* only upper limit */
+            int u = luaL_checkint(L, 1);
+            luaL_argcheck(L, 1 <= u, 1, "interval is empty");
+            lua_pushnumber(L, floor(r * u) + 1); /* int between 1 and `u' */
+            break;
+        }
+        case 2: { /* lower and upper limits */
+            int l = luaL_checkint(L, 1);
+            int u = luaL_checkint(L, 2);
+            luaL_argcheck(L, l <= u, 2, "interval is empty");
+            lua_pushnumber(L, floor(r * (u - l + 1)) + l); /* int between `l' and `u' */
+            break;
+        }
+        default:
+            return luaL_error(L, "wrong number of arguments");
     }
     return 1;
 }
 
-int redis_math_randomseed(lua_State *L)
-{
+int redis_math_randomseed(lua_State *L) {
     redisSrand48(luaL_checkint(L, 1));
     return 0;
 }
@@ -1521,8 +1344,7 @@ int redis_math_randomseed(lua_State *L)
  *
  * If 'c' is not NULL, on error the client is informed with an appropriate
  * error describing the nature of the problem and the Lua interpreter error. */
-sds luaCreateFunction(client *c, lua_State *lua, robj *body)
-{
+sds luaCreateFunction(client *c, lua_State *lua, robj *body) {
     char funcname[43];
     dictEntry *de;
 
@@ -1531,8 +1353,7 @@ sds luaCreateFunction(client *c, lua_State *lua, robj *body)
     sha1hex(funcname + 2, body->ptr, sdslen(body->ptr));
 
     sds sha = sdsnewlen(funcname + 2, 40);
-    if ((de = dictFind(server.lua_scripts, sha)) != NULL)
-    {
+    if ((de = dictFind(server.lua_scripts, sha)) != NULL) {
         sdsfree(sha);
         return dictGetKey(de);
     }
@@ -1544,13 +1365,9 @@ sds luaCreateFunction(client *c, lua_State *lua, robj *body)
     funcdef = sdscatlen(funcdef, body->ptr, sdslen(body->ptr));
     funcdef = sdscatlen(funcdef, "\nend", 4);
 
-    if (luaL_loadbuffer(lua, funcdef, sdslen(funcdef), "@user_script"))
-    {
-        if (c != NULL)
-        {
-            addReplyErrorFormat(c,
-                                "Error compiling script (new function): %s\n",
-                                lua_tostring(lua, -1));
+    if (luaL_loadbuffer(lua, funcdef, sdslen(funcdef), "@user_script")) {
+        if (c != NULL) {
+            addReplyErrorFormat(c, "Error compiling script (new function): %s\n", lua_tostring(lua, -1));
         }
         lua_pop(lua, 1);
         sdsfree(sha);
@@ -1559,12 +1376,9 @@ sds luaCreateFunction(client *c, lua_State *lua, robj *body)
     }
     sdsfree(funcdef);
 
-    if (lua_pcall(lua, 0, 0, 0))
-    {
-        if (c != NULL)
-        {
-            addReplyErrorFormat(c, "Error running script (new function): %s\n",
-                                lua_tostring(lua, -1));
+    if (lua_pcall(lua, 0, 0, 0)) {
+        if (c != NULL) {
+            addReplyErrorFormat(c, "Error running script (new function): %s\n", lua_tostring(lua, -1));
         }
         lua_pop(lua, 1);
         sdsfree(sha);
@@ -1582,16 +1396,14 @@ sds luaCreateFunction(client *c, lua_State *lua, robj *body)
 }
 
 /* This is the Lua script "count" hook that we use to detect scripts timeout. */
-void luaMaskCountHook(lua_State *lua, lua_Debug *ar)
-{
+void luaMaskCountHook(lua_State *lua, lua_Debug *ar) {
     long long elapsed = mstime() - server.lua_time_start;
     UNUSED(ar);
     UNUSED(lua);
 
     /* Set the timeout condition if not already set and the maximum
      * execution time was reached. */
-    if (elapsed >= server.lua_time_limit && server.lua_timedout == 0)
-    {
+    if (elapsed >= server.lua_time_limit && server.lua_timedout == 0) {
         serverLog(LL_WARNING,
                   "Lua slow script detected: still in execution after %lld milliseconds. "
                   "You can try killing the script using the SCRIPT KILL command. "
@@ -1608,35 +1420,30 @@ void luaMaskCountHook(lua_State *lua, lua_Debug *ar)
     }
     if (server.lua_timedout)
         processEventsWhileBlocked();
-    if (server.lua_kill)
-    {
+    if (server.lua_kill) {
         serverLog(LL_WARNING, "Lua script killed by user with SCRIPT KILL.");
         lua_pushstring(lua, "Script killed by user with SCRIPT KILL...");
         lua_error(lua);
     }
 }
 
-void prepareLuaClient(void)
-{
+void prepareLuaClient(void) {
     /* Select the right DB in the context of the Lua client */
     selectDb(server.lua_client, server.lua_caller->db->id);
     server.lua_client->resp = 2; /* Default is RESP2, scripts can change it. */
 
     /* If we are in MULTI context, flag Lua client as CLIENT_MULTI. */
-    if (server.lua_caller->flags & CLIENT_MULTI)
-    {
+    if (server.lua_caller->flags & CLIENT_MULTI) {
         server.lua_client->flags |= CLIENT_MULTI;
     }
 }
 
-void resetLuaClient(void)
-{
+void resetLuaClient(void) {
     /* After the script done, remove the MULTI state. */
     server.lua_client->flags &= ~CLIENT_MULTI;
 }
 
-void evalGenericCommand(client *c, int evalsha)
-{
+void evalGenericCommand(client *c, int evalsha) {
     lua_State *lua = server.lua;
     char funcname[43];
     long long numkeys;
@@ -1667,13 +1474,10 @@ void evalGenericCommand(client *c, int evalsha)
     if (getLongLongFromObjectOrReply(c, c->argv[2], &numkeys, NULL) != C_OK)
         return;
     // 对键的正确性做一个快速检查
-    if (numkeys > (c->argc - 3))
-    {
+    if (numkeys > (c->argc - 3)) {
         addReplyError(c, "Number of keys can't be greater than number of args");
         return;
-    }
-    else if (numkeys < 0)
-    {
+    } else if (numkeys < 0) {
         addReplyError(c, "Number of keys can't be negative");
         return;
     }
@@ -1683,13 +1487,10 @@ void evalGenericCommand(client *c, int evalsha)
     // 组合出函数的名字，例如 f_282297a0228f48cd3fc6a55de6316f31422f5d17
     funcname[0] = 'f';
     funcname[1] = '_';
-    if (!evalsha)
-    {
+    if (!evalsha) {
         /* Hash the code if this is an EVAL call */
         sha1hex(funcname + 2, c->argv[1]->ptr, sdslen(c->argv[1]->ptr));
-    }
-    else
-    {
+    } else {
         /* We already have the SHA if it is an EVALSHA */
         int j;
         char *sha = c->argv[1]->ptr;
@@ -1708,22 +1509,19 @@ void evalGenericCommand(client *c, int evalsha)
     /* Try to lookup the Lua function */
     lua_getglobal(lua, funcname);
     // 如果没有找到对应的函数
-    if (lua_isnil(lua, -1))
-    {
+    if (lua_isnil(lua, -1)) {
         lua_pop(lua, 1); /* remove the nil from the stack */
         /* Function not defined... let's define it if we have the
          * body of the function. If this is an EVALSHA call we can just
          * return an error. */
         // 如果执行的是 EVALSHA ，返回脚本未找到错误
-        if (evalsha)
-        {
+        if (evalsha) {
             lua_pop(lua, 1); /* remove the error handler from the stack. */
             addReply(c, shared.noscripterr);
             return;
         }
         // 如果执行的是 EVAL ，那么创建新函数，然后将代码添加到脚本字典中
-        if (luaCreateFunction(c, lua, c->argv[1]) == NULL)
-        {
+        if (luaCreateFunction(c, lua, c->argv[1]) == NULL) {
             lua_pop(lua, 1); /* remove the error handler from the stack. */
             /* The error is sent to the client by luaCreateFunction()
              * itself when it returns NULL. */
@@ -1750,13 +1548,10 @@ void evalGenericCommand(client *c, int evalsha)
     server.lua_cur_script = funcname + 2;
     server.lua_time_start = mstime();
     server.lua_kill = 0;
-    if (server.lua_time_limit > 0 && ldb.active == 0)
-    {
+    if (server.lua_time_limit > 0 && ldb.active == 0) {
         lua_sethook(lua, luaMaskCountHook, LUA_MASKCOUNT, 100000);
         delhook = 1;
-    }
-    else if (ldb.active)
-    {
+    } else if (ldb.active) {
         lua_sethook(server.lua, luaLdbLineHook, LUA_MASKLINE | LUA_MASKCOUNT, 100000);
         delhook = 1;
     }
@@ -1773,8 +1568,7 @@ void evalGenericCommand(client *c, int evalsha)
     /* Perform some cleanup that we need to do both on error and success. */
     if (delhook)
         lua_sethook(lua, NULL, 0, 0); /* Disable hook */
-    if (server.lua_timedout)
-    {
+    if (server.lua_timedout) {
         server.lua_timedout = 0;
         blockingOperationEnds();
         /* Restore the client that was protected when the script timeout
@@ -1797,34 +1591,27 @@ void evalGenericCommand(client *c, int evalsha)
         static long gc_count = 0;
 
         gc_count++;
-        if (gc_count == LUA_GC_CYCLE_PERIOD)
-        {
+        if (gc_count == LUA_GC_CYCLE_PERIOD) {
             lua_gc(lua, LUA_GCSTEP, LUA_GC_CYCLE_PERIOD);
             gc_count = 0;
         }
     }
 
-    if (err)
-    {
-        addReplyErrorFormat(c, "Error running script (call to %s): %s\n",
-                            funcname, lua_tostring(lua, -1));
+    if (err) {
+        addReplyErrorFormat(c, "Error running script (call to %s): %s\n", funcname, lua_tostring(lua, -1));
         lua_pop(lua, 2); /* Consume the Lua reply and remove error handler. */
-    }
-    else
-    {
+    } else {
         /* On success convert the Lua return value into Redis protocol, and
          * send it to * the client. */
         luaReplyToRedisReply(c, lua); /* Convert and consume the reply. */
-        lua_pop(lua, 1);              /* Remove the error handler. */
+        lua_pop(lua, 1); /* Remove the error handler. */
     }
 
     /* If we are using single commands replication, emit EXEC if there
      * was at least a write. */
-    if (server.lua_replicate_commands)
-    {
+    if (server.lua_replicate_commands) {
         preventCommandPropagation(c);
-        if (server.lua_multi_emitted)
-        {
+        if (server.lua_multi_emitted) {
             execCommandPropagateExec(c->db->id);
         }
     }
@@ -1839,10 +1626,8 @@ void evalGenericCommand(client *c, int evalsha)
      * For replication, everytime a new slave attaches to the master, we need to
      * flush our cache of scripts that can be replicated as EVALSHA, while
      * for AOF we need to do so every time we rewrite the AOF file. */
-    if (evalsha && !server.lua_replicate_commands)
-    {
-        if (!replicationScriptCacheExists(c->argv[1]->ptr))
-        {
+    if (evalsha && !server.lua_replicate_commands) {
+        if (!replicationScriptCacheExists(c->argv[1]->ptr)) {
             /* This script is not in our script cache, replicate it as
              * EVAL, then add it into the script cache, as from now on
              * slaves and AOF know about it. */
@@ -1855,15 +1640,9 @@ void evalGenericCommand(client *c, int evalsha)
              * just to replicate it as SCRIPT LOAD, otherwise we risk running
              * an aborted script on slaves (that may then produce results there)
              * or just running a CPU costly read-only script on the slaves. */
-            if (server.dirty == initial_server_dirty)
-            {
-                rewriteClientCommandVector(c, 3,
-                                           shared.script,
-                                           shared.load,
-                                           script);
-            }
-            else
-            {
+            if (server.dirty == initial_server_dirty) {
+                rewriteClientCommandVector(c, 3, shared.script, shared.load, script);
+            } else {
                 rewriteClientCommandArgument(c, 0, shared.eval);
                 rewriteClientCommandArgument(c, 1, script);
             }
@@ -1874,18 +1653,15 @@ void evalGenericCommand(client *c, int evalsha)
     server.in_eval = 0;
 }
 
-void evalCommand(client *c)
-{
+void evalCommand(client *c) {
     if (!(c->flags & CLIENT_LUA_DEBUG))
         evalGenericCommand(c, 0);
     else
         evalGenericCommandWithDebugging(c, 0);
 }
 
-void evalShaCommand(client *c)
-{
-    if (sdslen(c->argv[1]->ptr) != 40)
-    {
+void evalShaCommand(client *c) {
+    if (sdslen(c->argv[1]->ptr) != 40) {
         /* We know that a match is not possible if the provided SHA is
          * not the right length. So we return an error ASAP, this way
          * evalGenericCommand() can be implemented without string length
@@ -1895,52 +1671,39 @@ void evalShaCommand(client *c)
     }
     if (!(c->flags & CLIENT_LUA_DEBUG))
         evalGenericCommand(c, 1);
-    else
-    {
+    else {
         addReplyError(c, "Please use EVAL instead of EVALSHA for debugging");
         return;
     }
 }
 
-void scriptCommand(client *c)
-{
-    if (c->argc == 2 && !strcasecmp(c->argv[1]->ptr, "help"))
-    {
-        const char *help[] = {
-            "DEBUG (YES|SYNC|NO)",
-            "    Set the debug mode for subsequent scripts executed.",
-            "EXISTS <sha1> [<sha1> ...]",
-            "    Return information about the existence of the scripts in the script cache.",
-            "FLUSH [ASYNC|SYNC]",
-            "    Flush the Lua scripts cache. Very dangerous on replicas.",
-            "    When called without the optional mode argument, the behavior is determined by the",
-            "    lazyfree-lazy-user-flush configuration directive. Valid modes are:",
-            "    * ASYNC: Asynchronously flush the scripts cache.",
-            "    * SYNC: Synchronously flush the scripts cache.",
-            "KILL",
-            "    Kill the currently executing Lua script.",
-            "LOAD <script>",
-            "    Load a script into the scripts cache without executing it.",
-            NULL};
+void scriptCommand(client *c) {
+    if (c->argc == 2 && !strcasecmp(c->argv[1]->ptr, "help")) {
+        const char *help[] = {"DEBUG (YES|SYNC|NO)",
+                              "    Set the debug mode for subsequent scripts executed.",
+                              "EXISTS <sha1> [<sha1> ...]",
+                              "    Return information about the existence of the scripts in the script cache.",
+                              "FLUSH [ASYNC|SYNC]",
+                              "    Flush the Lua scripts cache. Very dangerous on replicas.",
+                              "    When called without the optional mode argument, the behavior is determined by the",
+                              "    lazyfree-lazy-user-flush configuration directive. Valid modes are:",
+                              "    * ASYNC: Asynchronously flush the scripts cache.",
+                              "    * SYNC: Synchronously flush the scripts cache.",
+                              "KILL",
+                              "    Kill the currently executing Lua script.",
+                              "LOAD <script>",
+                              "    Load a script into the scripts cache without executing it.",
+                              NULL};
         addReplyHelp(c, help);
-    }
-    else if (c->argc >= 2 && !strcasecmp(c->argv[1]->ptr, "flush"))
-    {
+    } else if (c->argc >= 2 && !strcasecmp(c->argv[1]->ptr, "flush")) {
         int async = 0;
-        if (c->argc == 3 && !strcasecmp(c->argv[2]->ptr, "sync"))
-        {
+        if (c->argc == 3 && !strcasecmp(c->argv[2]->ptr, "sync")) {
             async = 0;
-        }
-        else if (c->argc == 3 && !strcasecmp(c->argv[2]->ptr, "async"))
-        {
+        } else if (c->argc == 3 && !strcasecmp(c->argv[2]->ptr, "async")) {
             async = 1;
-        }
-        else if (c->argc == 2)
-        {
+        } else if (c->argc == 2) {
             async = server.lazyfree_lazy_user_flush ? 1 : 0;
-        }
-        else
-        {
+        } else {
             addReplyError(c, "SCRIPT FLUSH only support SYNC|ASYNC option");
             return;
         }
@@ -1948,79 +1711,57 @@ void scriptCommand(client *c)
         addReply(c, shared.ok);
         replicationScriptCacheFlush();
         server.dirty++; /* Propagating this command is a good idea. */
-    }
-    else if (c->argc >= 2 && !strcasecmp(c->argv[1]->ptr, "exists"))
-    {
+    } else if (c->argc >= 2 && !strcasecmp(c->argv[1]->ptr, "exists")) {
         int j;
 
         addReplyArrayLen(c, c->argc - 2);
-        for (j = 2; j < c->argc; j++)
-        {
+        for (j = 2; j < c->argc; j++) {
             if (dictFind(server.lua_scripts, c->argv[j]->ptr))
                 addReply(c, shared.cone);
             else
                 addReply(c, shared.czero);
         }
-    }
-    else if (c->argc == 3 && !strcasecmp(c->argv[1]->ptr, "load"))
-    {
+    } else if (c->argc == 3 && !strcasecmp(c->argv[1]->ptr, "load")) {
         sds sha = luaCreateFunction(c, server.lua, c->argv[2]);
         if (sha == NULL)
             return; /* The error was sent by luaCreateFunction(). */
         addReplyBulkCBuffer(c, sha, 40);
         forceCommandPropagation(c, PROPAGATE_REPL | PROPAGATE_AOF);
-    }
-    else if (c->argc == 2 && !strcasecmp(c->argv[1]->ptr, "kill"))
-    {
-        if (server.lua_caller == NULL)
-        {
+    } else if (c->argc == 2 && !strcasecmp(c->argv[1]->ptr, "kill")) {
+        if (server.lua_caller == NULL) {
             addReplyError(c, "-NOTBUSY No scripts in execution right now.");
-        }
-        else if (server.lua_caller->flags & CLIENT_MASTER)
-        {
-            addReplyError(c, "-UNKILLABLE The busy script was sent by a master instance in the context of replication and cannot be killed.");
-        }
-        else if (server.lua_write_dirty)
-        {
-            addReplyError(c, "-UNKILLABLE Sorry the script already executed write commands against the dataset. You can either wait the script termination or kill the server in a hard way using the SHUTDOWN NOSAVE command.");
-        }
-        else
-        {
+        } else if (server.lua_caller->flags & CLIENT_MASTER) {
+            addReplyError(c, "-UNKILLABLE The busy script was sent by a master instance in the context of replication "
+                             "and cannot be killed.");
+        } else if (server.lua_write_dirty) {
+            addReplyError(
+                    c,
+                    "-UNKILLABLE Sorry the script already executed write commands against the dataset. You can either "
+                    "wait the script termination or kill the server in a hard way using the SHUTDOWN NOSAVE command.");
+        } else {
             server.lua_kill = 1;
             addReply(c, shared.ok);
         }
-    }
-    else if (c->argc == 3 && !strcasecmp(c->argv[1]->ptr, "debug"))
-    {
-        if (clientHasPendingReplies(c))
-        {
+    } else if (c->argc == 3 && !strcasecmp(c->argv[1]->ptr, "debug")) {
+        if (clientHasPendingReplies(c)) {
             addReplyError(c, "SCRIPT DEBUG must be called outside a pipeline");
             return;
         }
-        if (!strcasecmp(c->argv[2]->ptr, "no"))
-        {
+        if (!strcasecmp(c->argv[2]->ptr, "no")) {
             ldbDisable(c);
             addReply(c, shared.ok);
-        }
-        else if (!strcasecmp(c->argv[2]->ptr, "yes"))
-        {
+        } else if (!strcasecmp(c->argv[2]->ptr, "yes")) {
             ldbEnable(c);
             addReply(c, shared.ok);
-        }
-        else if (!strcasecmp(c->argv[2]->ptr, "sync"))
-        {
+        } else if (!strcasecmp(c->argv[2]->ptr, "sync")) {
             ldbEnable(c);
             addReply(c, shared.ok);
             c->flags |= CLIENT_LUA_DEBUG_SYNC;
-        }
-        else
-        {
+        } else {
             addReplyError(c, "Use SCRIPT DEBUG YES/SYNC/NO");
             return;
         }
-    }
-    else
-    {
+    } else {
         addReplySubcommandSyntaxError(c);
     }
 }
@@ -2031,12 +1772,11 @@ void scriptCommand(client *c)
 
 /* Initialize Lua debugger data structures. */
 // 初始化Lua调试器数据结构。
-void ldbInit(void)
-{
+void ldbInit(void) {
     ldb.conn = NULL;
     ldb.active = 0;
     ldb.logs = listCreate();
-    listSetFreeMethod(ldb.logs, (void (*)(void *))sdsfree);
+    listSetFreeMethod(ldb.logs, (void (*)(void *)) sdsfree);
     ldb.children = listCreate();
     ldb.src = NULL;
     ldb.lines = 0;
@@ -2044,8 +1784,7 @@ void ldbInit(void)
 }
 
 /* Remove all the pending messages in the specified list. */
-void ldbFlushLog(list *log)
-{
+void ldbFlushLog(list *log) {
     listNode *ln;
 
     while ((ln = listFirst(log)) != NULL)
@@ -2053,8 +1792,7 @@ void ldbFlushLog(list *log)
 }
 
 /* Enable debug mode of Lua scripts for this client. */
-void ldbEnable(client *c)
-{
+void ldbEnable(client *c) {
     c->flags |= CLIENT_LUA_DEBUG;
     ldbFlushLog(ldb.logs);
     ldb.conn = c->conn;
@@ -2070,48 +1808,36 @@ void ldbEnable(client *c)
 /* Exit debugging mode from the POV of client. This function is not enough
  * to properly shut down a client debugging session, see ldbEndSession()
  * for more information. */
-void ldbDisable(client *c)
-{
-    c->flags &= ~(CLIENT_LUA_DEBUG | CLIENT_LUA_DEBUG_SYNC);
-}
+void ldbDisable(client *c) { c->flags &= ~(CLIENT_LUA_DEBUG | CLIENT_LUA_DEBUG_SYNC); }
 
 /* Append a log entry to the specified LDB log. */
-void ldbLog(sds entry)
-{
-    listAddNodeTail(ldb.logs, entry);
-}
+void ldbLog(sds entry) { listAddNodeTail(ldb.logs, entry); }
 
 /* A version of ldbLog() which prevents producing logs greater than
  * ldb.maxlen. The first time the limit is reached a hint is generated
  * to inform the user that reply trimming can be disabled using the
  * debugger "maxlen" command. */
-void ldbLogWithMaxLen(sds entry)
-{
+void ldbLogWithMaxLen(sds entry) {
     int trimmed = 0;
-    if (ldb.maxlen && sdslen(entry) > ldb.maxlen)
-    {
+    if (ldb.maxlen && sdslen(entry) > ldb.maxlen) {
         sdsrange(entry, 0, ldb.maxlen - 1);
         entry = sdscatlen(entry, " ...", 4);
         trimmed = 1;
     }
     ldbLog(entry);
-    if (trimmed && ldb.maxlen_hint_sent == 0)
-    {
+    if (trimmed && ldb.maxlen_hint_sent == 0) {
         ldb.maxlen_hint_sent = 1;
-        ldbLog(sdsnew(
-            "<hint> The above reply was trimmed. Use 'maxlen 0' to disable trimming."));
+        ldbLog(sdsnew("<hint> The above reply was trimmed. Use 'maxlen 0' to disable trimming."));
     }
 }
 
 /* Send ldb.logs to the debugging client as a multi-bulk reply
  * consisting of simple strings. Log entries which include newlines have them
  * replaced with spaces. The entries sent are also consumed. */
-void ldbSendLogs(void)
-{
+void ldbSendLogs(void) {
     sds proto = sdsempty();
-    proto = sdscatfmt(proto, "*%i\r\n", (int)listLength(ldb.logs));
-    while (listLength(ldb.logs))
-    {
+    proto = sdscatfmt(proto, "*%i\r\n", (int) listLength(ldb.logs));
+    while (listLength(ldb.logs)) {
         listNode *ln = listFirst(ldb.logs);
         proto = sdscatlen(proto, "+", 1);
         sdsmapchars(ln->value, "\r\n", "  ", 2);
@@ -2119,8 +1845,7 @@ void ldbSendLogs(void)
         proto = sdscatlen(proto, "\r\n", 2);
         listDelNode(ldb.logs, ln);
     }
-    if (connWrite(ldb.conn, proto, sdslen(proto)) == -1)
-    {
+    if (connWrite(ldb.conn, proto, sdslen(proto)) == -1) {
         /* Avoid warning. We don't check the return value of write()
          * since the next read() will catch the I/O error and will
          * close the debugging session. */
@@ -2140,19 +1865,14 @@ void ldbSendLogs(void)
  *
  * The caller should call ldbEndSession() only if ldbStartSession()
  * returned 1. */
-int ldbStartSession(client *c)
-{
+int ldbStartSession(client *c) {
     ldb.forked = (c->flags & CLIENT_LUA_DEBUG_SYNC) == 0;
-    if (ldb.forked)
-    {
+    if (ldb.forked) {
         pid_t cp = redisFork(CHILD_TYPE_LDB);
-        if (cp == -1)
-        {
+        if (cp == -1) {
             addReplyError(c, "Fork() failed: can't run EVAL in debugging mode.");
             return 0;
-        }
-        else if (cp == 0)
-        {
+        } else if (cp == 0) {
             /* Child. Let's ignore important signals handled by the parent. */
             struct sigaction act;
             sigemptyset(&act.sa_mask);
@@ -2165,19 +1885,14 @@ int ldbStartSession(client *c)
              * socket to make sure if the parent crashes a reset is sent
              * to the clients. */
             serverLog(LL_WARNING, "Redis forked for debugging eval");
-        }
-        else
-        {
+        } else {
             /* Parent */
-            listAddNodeTail(ldb.children, (void *)(unsigned long)cp);
+            listAddNodeTail(ldb.children, (void *) (unsigned long) cp);
             freeClientAsync(c); /* Close the client in the parent side. */
             return 0;
         }
-    }
-    else
-    {
-        serverLog(LL_WARNING,
-                  "Redis synchronous debugging eval session started");
+    } else {
+        serverLog(LL_WARNING, "Redis synchronous debugging eval session started");
     }
 
     /* Setup our debugging session. */
@@ -2189,9 +1904,7 @@ int ldbStartSession(client *c)
      * lines since this is the way the debugger accesses the source code. */
     sds srcstring = sdsdup(c->argv[1]->ptr);
     size_t srclen = sdslen(srcstring);
-    while (srclen && (srcstring[srclen - 1] == '\n' ||
-                      srcstring[srclen - 1] == '\r'))
-    {
+    while (srclen && (srcstring[srclen - 1] == '\n' || srcstring[srclen - 1] == '\r')) {
         srcstring[--srclen] = '\0';
     }
     sdssetlen(srcstring, srclen);
@@ -2202,23 +1915,18 @@ int ldbStartSession(client *c)
 
 /* End a debugging session after the EVAL call with debugging enabled
  * returned. */
-void ldbEndSession(client *c)
-{
+void ldbEndSession(client *c) {
     /* Emit the remaining logs and an <endsession> mark. */
     ldbLog(sdsnew("<endsession>"));
     ldbSendLogs();
 
     /* If it's a fork()ed session, we just exit. */
-    if (ldb.forked)
-    {
+    if (ldb.forked) {
         writeToClient(c, 0);
         serverLog(LL_WARNING, "Lua debugging session child exiting");
         exitFromChild(0);
-    }
-    else
-    {
-        serverLog(LL_WARNING,
-                  "Redis synchronous debugging eval session ended");
+    } else {
+        serverLog(LL_WARNING, "Redis synchronous debugging eval session ended");
     }
 
     /* Otherwise let's restore client's state. */
@@ -2238,11 +1946,9 @@ void ldbEndSession(client *c)
 /* If the specified pid is among the list of children spawned for
  * forked debugging sessions, it is removed from the children list.
  * If the pid was found non-zero is returned. */
-int ldbRemoveChild(pid_t pid)
-{
-    listNode *ln = listSearchKey(ldb.children, (void *)(unsigned long)pid);
-    if (ln)
-    {
+int ldbRemoveChild(pid_t pid) {
+    listNode *ln = listSearchKey(ldb.children, (void *) (unsigned long) pid);
+    if (ln) {
         listDelNode(ldb.children, ln);
         return 1;
     }
@@ -2251,22 +1957,17 @@ int ldbRemoveChild(pid_t pid)
 
 /* Return the number of children we still did not receive termination
  * acknowledge via wait() in the parent process. */
-int ldbPendingChildren(void)
-{
-    return listLength(ldb.children);
-}
+int ldbPendingChildren(void) { return listLength(ldb.children); }
 
 /* Kill all the forked sessions. */
-void ldbKillForkedSessions(void)
-{
+void ldbKillForkedSessions(void) {
     listIter li;
     listNode *ln;
 
     listRewind(ldb.children, &li);
-    while ((ln = listNext(&li)))
-    {
-        pid_t pid = (unsigned long)ln->value;
-        serverLog(LL_WARNING, "Killing debugging session %ld", (long)pid);
+    while ((ln = listNext(&li))) {
+        pid_t pid = (unsigned long) ln->value;
+        serverLog(LL_WARNING, "Killing debugging session %ld", (long) pid);
         kill(pid, SIGKILL);
     }
     listRelease(ldb.children);
@@ -2275,23 +1976,18 @@ void ldbKillForkedSessions(void)
 
 /* Wrapper for EVAL / EVALSHA that enables debugging, and makes sure
  * that when EVAL returns, whatever happened, the session is ended. */
-void evalGenericCommandWithDebugging(client *c, int evalsha)
-{
-    if (ldbStartSession(c))
-    {
+void evalGenericCommandWithDebugging(client *c, int evalsha) {
+    if (ldbStartSession(c)) {
         evalGenericCommand(c, evalsha);
         ldbEndSession(c);
-    }
-    else
-    {
+    } else {
         ldbDisable(c);
     }
 }
 
 /* Return a pointer to ldb.src source code line, considering line to be
  * one-based, and returning a special string for out of range lines. */
-char *ldbGetSourceLine(int line)
-{
+char *ldbGetSourceLine(int line) {
     int idx = line - 1;
     if (idx < 0 || idx >= ldb.lines)
         return "<out of range source code line>";
@@ -2299,8 +1995,7 @@ char *ldbGetSourceLine(int line)
 }
 
 /* Return true if there is a breakpoint in the specified line. */
-int ldbIsBreakpoint(int line)
-{
+int ldbIsBreakpoint(int line) {
     int j;
 
     for (j = 0; j < ldb.bpcount; j++)
@@ -2312,12 +2007,10 @@ int ldbIsBreakpoint(int line)
 /* Add the specified breakpoint. Ignore it if we already reached the max.
  * Returns 1 if the breakpoint was added (or was already set). 0 if there is
  * no space for the breakpoint or if the line is invalid. */
-int ldbAddBreakpoint(int line)
-{
+int ldbAddBreakpoint(int line) {
     if (line <= 0 || line > ldb.lines)
         return 0;
-    if (!ldbIsBreakpoint(line) && ldb.bpcount != LDB_BREAKPOINTS_MAX)
-    {
+    if (!ldbIsBreakpoint(line) && ldb.bpcount != LDB_BREAKPOINTS_MAX) {
         ldb.bp[ldb.bpcount++] = line;
         return 1;
     }
@@ -2326,14 +2019,11 @@ int ldbAddBreakpoint(int line)
 
 /* Remove the specified breakpoint, returning 1 if the operation was
  * performed or 0 if there was no such breakpoint. */
-int ldbDelBreakpoint(int line)
-{
+int ldbDelBreakpoint(int line) {
     int j;
 
-    for (j = 0; j < ldb.bpcount; j++)
-    {
-        if (ldb.bp[j] == line)
-        {
+    for (j = 0; j < ldb.bpcount; j++) {
+        if (ldb.bp[j] == line) {
             ldb.bpcount--;
             memmove(ldb.bp + j, ldb.bp + j + 1, ldb.bpcount - j);
             return 1;
@@ -2345,8 +2035,7 @@ int ldbDelBreakpoint(int line)
 /* Expect a valid multi-bulk command in the debugging client query buffer.
  * On success the command is parsed and returned as an array of SDS strings,
  * otherwise NULL is returned and there is to read more buffer. */
-sds *ldbReplParseCommand(int *argcp)
-{
+sds *ldbReplParseCommand(int *argcp) {
     sds *argv = NULL;
     int argc = 0;
     if (sdslen(ldb.cbuf) == 0)
@@ -2378,8 +2067,7 @@ sds *ldbReplParseCommand(int *argcp)
     /* Parse each argument. */
     argv = zmalloc(sizeof(sds) * (*argcp));
     argc = 0;
-    while (argc < *argcp)
-    {
+    while (argc < *argcp) {
         if (*p != '$')
             goto protoerr;
         plen = p + 1; /* Bulk string len pointer. */
@@ -2407,8 +2095,7 @@ protoerr:
 }
 
 /* Log the specified line in the Lua debugger output. */
-void ldbLogSourceLine(int lnum)
-{
+void ldbLogSourceLine(int lnum) {
     char *line = ldbGetSourceLine(lnum);
     char *prefix;
     int bp = ldbIsBreakpoint(lnum);
@@ -2431,12 +2118,10 @@ void ldbLogSourceLine(int lnum)
  * around the specified line is shown. When a line number is specified
  * the amount of context (lines before/after) is specified via the
  * 'context' argument. */
-void ldbList(int around, int context)
-{
+void ldbList(int around, int context) {
     int j;
 
-    for (j = 1; j <= ldb.lines; j++)
-    {
+    for (j = 1; j <= ldb.lines; j++) {
         if (around != 0 && abs(around - j) > context)
             continue;
         ldbLogSourceLine(j);
@@ -2451,111 +2136,96 @@ void ldbList(int around, int context)
  * The element is not automatically removed from the stack, nor it is
  * converted to a different type. */
 #define LDB_MAX_VALUES_DEPTH (LUA_MINSTACK / 2)
-sds ldbCatStackValueRec(sds s, lua_State *lua, int idx, int level)
-{
+sds ldbCatStackValueRec(sds s, lua_State *lua, int idx, int level) {
     int t = lua_type(lua, idx);
 
     if (level++ == LDB_MAX_VALUES_DEPTH)
         return sdscat(s, "<max recursion level reached! Nested table?>");
 
-    switch (t)
-    {
-    case LUA_TSTRING:
-    {
-        size_t strl;
-        char *strp = (char *)lua_tolstring(lua, idx, &strl);
-        s = sdscatrepr(s, strp, strl);
-    }
-    break;
-    case LUA_TBOOLEAN:
-        s = sdscat(s, lua_toboolean(lua, idx) ? "true" : "false");
-        break;
-    case LUA_TNUMBER:
-        s = sdscatprintf(s, "%g", (double)lua_tonumber(lua, idx));
-        break;
-    case LUA_TNIL:
-        s = sdscatlen(s, "nil", 3);
-        break;
-    case LUA_TTABLE:
-    {
-        int expected_index = 1; /* First index we expect in an array. */
-        int is_array = 1;       /* Will be set to null if check fails. */
-        /* Note: we create two representations at the same time, one
-         * assuming the table is an array, one assuming it is not. At the
-         * end we know what is true and select the right one. */
-        sds repr1 = sdsempty();
-        sds repr2 = sdsempty();
-        lua_pushnil(lua); /* The first key to start the iteration is nil. */
-        while (lua_next(lua, idx - 1))
-        {
-            /* Test if so far the table looks like an array. */
-            if (is_array &&
-                (lua_type(lua, -2) != LUA_TNUMBER ||
-                 lua_tonumber(lua, -2) != expected_index))
-                is_array = 0;
-            /* Stack now: table, key, value */
-            /* Array repr. */
-            repr1 = ldbCatStackValueRec(repr1, lua, -1, level);
-            repr1 = sdscatlen(repr1, "; ", 2);
-            /* Full repr. */
-            repr2 = sdscatlen(repr2, "[", 1);
-            repr2 = ldbCatStackValueRec(repr2, lua, -2, level);
-            repr2 = sdscatlen(repr2, "]=", 2);
-            repr2 = ldbCatStackValueRec(repr2, lua, -1, level);
-            repr2 = sdscatlen(repr2, "; ", 2);
-            lua_pop(lua, 1); /* Stack: table, key. Ready for next iteration. */
-            expected_index++;
-        }
-        /* Strip the last " ;" from both the representations. */
-        if (sdslen(repr1))
-            sdsrange(repr1, 0, -3);
-        if (sdslen(repr2))
-            sdsrange(repr2, 0, -3);
-        /* Select the right one and discard the other. */
-        s = sdscatlen(s, "{", 1);
-        s = sdscatsds(s, is_array ? repr1 : repr2);
-        s = sdscatlen(s, "}", 1);
-        sdsfree(repr1);
-        sdsfree(repr2);
-    }
-    break;
-    case LUA_TFUNCTION:
-    case LUA_TUSERDATA:
-    case LUA_TTHREAD:
-    case LUA_TLIGHTUSERDATA:
-    {
-        const void *p = lua_topointer(lua, idx);
-        char *typename = "unknown";
-        if (t == LUA_TFUNCTION)
-            typename = "function";
-        else if (t == LUA_TUSERDATA)
-            typename = "userdata";
-        else if (t == LUA_TTHREAD)
-            typename = "thread";
-        else if (t == LUA_TLIGHTUSERDATA)
-            typename = "light-userdata";
-        s = sdscatprintf(s, "\"%s@%p\"", typename, p);
-    }
-    break;
-    default:
-        s = sdscat(s, "\"<unknown-lua-type>\"");
-        break;
+    switch (t) {
+        case LUA_TSTRING: {
+            size_t strl;
+            char *strp = (char *) lua_tolstring(lua, idx, &strl);
+            s = sdscatrepr(s, strp, strl);
+        } break;
+        case LUA_TBOOLEAN:
+            s = sdscat(s, lua_toboolean(lua, idx) ? "true" : "false");
+            break;
+        case LUA_TNUMBER:
+            s = sdscatprintf(s, "%g", (double) lua_tonumber(lua, idx));
+            break;
+        case LUA_TNIL:
+            s = sdscatlen(s, "nil", 3);
+            break;
+        case LUA_TTABLE: {
+            int expected_index = 1; /* First index we expect in an array. */
+            int is_array = 1; /* Will be set to null if check fails. */
+            /* Note: we create two representations at the same time, one
+             * assuming the table is an array, one assuming it is not. At the
+             * end we know what is true and select the right one. */
+            sds repr1 = sdsempty();
+            sds repr2 = sdsempty();
+            lua_pushnil(lua); /* The first key to start the iteration is nil. */
+            while (lua_next(lua, idx - 1)) {
+                /* Test if so far the table looks like an array. */
+                if (is_array && (lua_type(lua, -2) != LUA_TNUMBER || lua_tonumber(lua, -2) != expected_index))
+                    is_array = 0;
+                /* Stack now: table, key, value */
+                /* Array repr. */
+                repr1 = ldbCatStackValueRec(repr1, lua, -1, level);
+                repr1 = sdscatlen(repr1, "; ", 2);
+                /* Full repr. */
+                repr2 = sdscatlen(repr2, "[", 1);
+                repr2 = ldbCatStackValueRec(repr2, lua, -2, level);
+                repr2 = sdscatlen(repr2, "]=", 2);
+                repr2 = ldbCatStackValueRec(repr2, lua, -1, level);
+                repr2 = sdscatlen(repr2, "; ", 2);
+                lua_pop(lua, 1); /* Stack: table, key. Ready for next iteration. */
+                expected_index++;
+            }
+            /* Strip the last " ;" from both the representations. */
+            if (sdslen(repr1))
+                sdsrange(repr1, 0, -3);
+            if (sdslen(repr2))
+                sdsrange(repr2, 0, -3);
+            /* Select the right one and discard the other. */
+            s = sdscatlen(s, "{", 1);
+            s = sdscatsds(s, is_array ? repr1 : repr2);
+            s = sdscatlen(s, "}", 1);
+            sdsfree(repr1);
+            sdsfree(repr2);
+        } break;
+        case LUA_TFUNCTION:
+        case LUA_TUSERDATA:
+        case LUA_TTHREAD:
+        case LUA_TLIGHTUSERDATA: {
+            const void *p = lua_topointer(lua, idx);
+            char *typename = "unknown";
+            if (t == LUA_TFUNCTION)
+                typename = "function";
+            else if (t == LUA_TUSERDATA)
+                typename = "userdata";
+            else if (t == LUA_TTHREAD)
+                typename = "thread";
+            else if (t == LUA_TLIGHTUSERDATA)
+                typename = "light-userdata";
+            s = sdscatprintf(s, "\"%s@%p\"", typename, p);
+        } break;
+        default:
+            s = sdscat(s, "\"<unknown-lua-type>\"");
+            break;
     }
     return s;
 }
 
 /* Higher level wrapper for ldbCatStackValueRec() that just uses an initial
  * recursion level of '0'. */
-sds ldbCatStackValue(sds s, lua_State *lua, int idx)
-{
-    return ldbCatStackValueRec(s, lua, idx, 0);
-}
+sds ldbCatStackValue(sds s, lua_State *lua, int idx) { return ldbCatStackValueRec(s, lua, idx, 0); }
 
 /* Produce a debugger log entry representing the value of the Lua object
  * currently on the top of the stack. The element is ot popped nor modified.
  * Check ldbCatStackValue() for the actual implementation. */
-void ldbLogStackValue(lua_State *lua, char *prefix)
-{
+void ldbLogStackValue(lua_State *lua, char *prefix) {
     sds s = sdsnew(prefix);
     s = ldbCatStackValue(s, lua, -1);
     ldbLogWithMaxLen(s);
@@ -2576,41 +2246,39 @@ char *ldbRedisProtocolToHuman_Double(sds *o, char *reply);
  *
  * Note that the SDS string is passed by reference (pointer of pointer to
  * char*) so that we can return a modified pointer, as for SDS semantics. */
-char *ldbRedisProtocolToHuman(sds *o, char *reply)
-{
+char *ldbRedisProtocolToHuman(sds *o, char *reply) {
     char *p = reply;
-    switch (*p)
-    {
-    case ':':
-        p = ldbRedisProtocolToHuman_Int(o, reply);
-        break;
-    case '$':
-        p = ldbRedisProtocolToHuman_Bulk(o, reply);
-        break;
-    case '+':
-        p = ldbRedisProtocolToHuman_Status(o, reply);
-        break;
-    case '-':
-        p = ldbRedisProtocolToHuman_Status(o, reply);
-        break;
-    case '*':
-        p = ldbRedisProtocolToHuman_MultiBulk(o, reply);
-        break;
-    case '~':
-        p = ldbRedisProtocolToHuman_Set(o, reply);
-        break;
-    case '%':
-        p = ldbRedisProtocolToHuman_Map(o, reply);
-        break;
-    case '_':
-        p = ldbRedisProtocolToHuman_Null(o, reply);
-        break;
-    case '#':
-        p = ldbRedisProtocolToHuman_Bool(o, reply);
-        break;
-    case ',':
-        p = ldbRedisProtocolToHuman_Double(o, reply);
-        break;
+    switch (*p) {
+        case ':':
+            p = ldbRedisProtocolToHuman_Int(o, reply);
+            break;
+        case '$':
+            p = ldbRedisProtocolToHuman_Bulk(o, reply);
+            break;
+        case '+':
+            p = ldbRedisProtocolToHuman_Status(o, reply);
+            break;
+        case '-':
+            p = ldbRedisProtocolToHuman_Status(o, reply);
+            break;
+        case '*':
+            p = ldbRedisProtocolToHuman_MultiBulk(o, reply);
+            break;
+        case '~':
+            p = ldbRedisProtocolToHuman_Set(o, reply);
+            break;
+        case '%':
+            p = ldbRedisProtocolToHuman_Map(o, reply);
+            break;
+        case '_':
+            p = ldbRedisProtocolToHuman_Null(o, reply);
+            break;
+        case '#':
+            p = ldbRedisProtocolToHuman_Bool(o, reply);
+            break;
+        case ',':
+            p = ldbRedisProtocolToHuman_Double(o, reply);
+            break;
     }
     return p;
 }
@@ -2618,55 +2286,46 @@ char *ldbRedisProtocolToHuman(sds *o, char *reply)
 /* The following functions are helpers for ldbRedisProtocolToHuman(), each
  * take care of a given Redis return type. */
 
-char *ldbRedisProtocolToHuman_Int(sds *o, char *reply)
-{
+char *ldbRedisProtocolToHuman_Int(sds *o, char *reply) {
     char *p = strchr(reply + 1, '\r');
     *o = sdscatlen(*o, reply + 1, p - reply - 1);
     return p + 2;
 }
 
-char *ldbRedisProtocolToHuman_Bulk(sds *o, char *reply)
-{
+char *ldbRedisProtocolToHuman_Bulk(sds *o, char *reply) {
     char *p = strchr(reply + 1, '\r');
     long long bulklen;
 
     string2ll(reply + 1, p - reply - 1, &bulklen);
-    if (bulklen == -1)
-    {
+    if (bulklen == -1) {
         *o = sdscatlen(*o, "NULL", 4);
         return p + 2;
-    }
-    else
-    {
+    } else {
         *o = sdscatrepr(*o, p + 2, bulklen);
         return p + 2 + bulklen + 2;
     }
 }
 
-char *ldbRedisProtocolToHuman_Status(sds *o, char *reply)
-{
+char *ldbRedisProtocolToHuman_Status(sds *o, char *reply) {
     char *p = strchr(reply + 1, '\r');
 
     *o = sdscatrepr(*o, reply, p - reply);
     return p + 2;
 }
 
-char *ldbRedisProtocolToHuman_MultiBulk(sds *o, char *reply)
-{
+char *ldbRedisProtocolToHuman_MultiBulk(sds *o, char *reply) {
     char *p = strchr(reply + 1, '\r');
     long long mbulklen;
     int j = 0;
 
     string2ll(reply + 1, p - reply - 1, &mbulklen);
     p += 2;
-    if (mbulklen == -1)
-    {
+    if (mbulklen == -1) {
         *o = sdscatlen(*o, "NULL", 4);
         return p;
     }
     *o = sdscatlen(*o, "[", 1);
-    for (j = 0; j < mbulklen; j++)
-    {
+    for (j = 0; j < mbulklen; j++) {
         p = ldbRedisProtocolToHuman(o, p);
         if (j != mbulklen - 1)
             *o = sdscatlen(*o, ",", 1);
@@ -2675,8 +2334,7 @@ char *ldbRedisProtocolToHuman_MultiBulk(sds *o, char *reply)
     return p;
 }
 
-char *ldbRedisProtocolToHuman_Set(sds *o, char *reply)
-{
+char *ldbRedisProtocolToHuman_Set(sds *o, char *reply) {
     char *p = strchr(reply + 1, '\r');
     long long mbulklen;
     int j = 0;
@@ -2684,8 +2342,7 @@ char *ldbRedisProtocolToHuman_Set(sds *o, char *reply)
     string2ll(reply + 1, p - reply - 1, &mbulklen);
     p += 2;
     *o = sdscatlen(*o, "~(", 2);
-    for (j = 0; j < mbulklen; j++)
-    {
+    for (j = 0; j < mbulklen; j++) {
         p = ldbRedisProtocolToHuman(o, p);
         if (j != mbulklen - 1)
             *o = sdscatlen(*o, ",", 1);
@@ -2694,8 +2351,7 @@ char *ldbRedisProtocolToHuman_Set(sds *o, char *reply)
     return p;
 }
 
-char *ldbRedisProtocolToHuman_Map(sds *o, char *reply)
-{
+char *ldbRedisProtocolToHuman_Map(sds *o, char *reply) {
     char *p = strchr(reply + 1, '\r');
     long long mbulklen;
     int j = 0;
@@ -2703,8 +2359,7 @@ char *ldbRedisProtocolToHuman_Map(sds *o, char *reply)
     string2ll(reply + 1, p - reply - 1, &mbulklen);
     p += 2;
     *o = sdscatlen(*o, "{", 1);
-    for (j = 0; j < mbulklen; j++)
-    {
+    for (j = 0; j < mbulklen; j++) {
         p = ldbRedisProtocolToHuman(o, p);
         *o = sdscatlen(*o, " => ", 4);
         p = ldbRedisProtocolToHuman(o, p);
@@ -2715,15 +2370,13 @@ char *ldbRedisProtocolToHuman_Map(sds *o, char *reply)
     return p;
 }
 
-char *ldbRedisProtocolToHuman_Null(sds *o, char *reply)
-{
+char *ldbRedisProtocolToHuman_Null(sds *o, char *reply) {
     char *p = strchr(reply + 1, '\r');
     *o = sdscatlen(*o, "(null)", 6);
     return p + 2;
 }
 
-char *ldbRedisProtocolToHuman_Bool(sds *o, char *reply)
-{
+char *ldbRedisProtocolToHuman_Bool(sds *o, char *reply) {
     char *p = strchr(reply + 1, '\r');
     if (reply[1] == 't')
         *o = sdscatlen(*o, "#true", 5);
@@ -2732,8 +2385,7 @@ char *ldbRedisProtocolToHuman_Bool(sds *o, char *reply)
     return p + 2;
 }
 
-char *ldbRedisProtocolToHuman_Double(sds *o, char *reply)
-{
+char *ldbRedisProtocolToHuman_Double(sds *o, char *reply) {
     char *p = strchr(reply + 1, '\r');
     *o = sdscatlen(*o, "(double) ", 9);
     *o = sdscatlen(*o, reply + 1, p - reply - 1);
@@ -2743,8 +2395,7 @@ char *ldbRedisProtocolToHuman_Double(sds *o, char *reply)
 /* Log a Redis reply as debugger output, in a human readable format.
  * If the resulting string is longer than 'len' plus a few more chars
  * used as prefix, it gets truncated. */
-void ldbLogRedisReply(char *reply)
-{
+void ldbLogRedisReply(char *reply) {
     sds log = sdsnew("<reply> ");
     ldbRedisProtocolToHuman(&log, reply);
     ldbLogWithMaxLen(log);
@@ -2753,61 +2404,48 @@ void ldbLogRedisReply(char *reply)
 /* Implements the "print <var>" command of the Lua debugger. It scans for Lua
  * var "varname" starting from the current stack frame up to the top stack
  * frame. The first matching variable is printed. */
-void ldbPrint(lua_State *lua, char *varname)
-{
+void ldbPrint(lua_State *lua, char *varname) {
     lua_Debug ar;
 
     int l = 0; /* Stack level. */
-    while (lua_getstack(lua, l, &ar) != 0)
-    {
+    while (lua_getstack(lua, l, &ar) != 0) {
         l++;
         const char *name;
         int i = 1; /* Variable index. */
-        while ((name = lua_getlocal(lua, &ar, i)) != NULL)
-        {
+        while ((name = lua_getlocal(lua, &ar, i)) != NULL) {
             i++;
-            if (strcmp(varname, name) == 0)
-            {
+            if (strcmp(varname, name) == 0) {
                 ldbLogStackValue(lua, "<value> ");
                 lua_pop(lua, 1);
                 return;
-            }
-            else
-            {
+            } else {
                 lua_pop(lua, 1); /* Discard the var name on the stack. */
             }
         }
     }
 
     /* Let's try with global vars in two selected cases */
-    if (!strcmp(varname, "ARGV") || !strcmp(varname, "KEYS"))
-    {
+    if (!strcmp(varname, "ARGV") || !strcmp(varname, "KEYS")) {
         lua_getglobal(lua, varname);
         ldbLogStackValue(lua, "<value> ");
         lua_pop(lua, 1);
-    }
-    else
-    {
+    } else {
         ldbLog(sdsnew("No such variable."));
     }
 }
 
 /* Implements the "print" command (without arguments) of the Lua debugger.
  * Prints all the variables in the current stack frame. */
-void ldbPrintAll(lua_State *lua)
-{
+void ldbPrintAll(lua_State *lua) {
     lua_Debug ar;
     int vars = 0;
 
-    if (lua_getstack(lua, 0, &ar) != 0)
-    {
+    if (lua_getstack(lua, 0, &ar) != 0) {
         const char *name;
         int i = 1; /* Variable index. */
-        while ((name = lua_getlocal(lua, &ar, i)) != NULL)
-        {
+        while ((name = lua_getlocal(lua, &ar, i)) != NULL) {
             i++;
-            if (!strstr(name, "(*temporary)"))
-            {
+            if (!strstr(name, "(*temporary)")) {
                 sds prefix = sdscatprintf(sdsempty(), "<value> %s = ", name);
                 ldbLogStackValue(lua, prefix);
                 sdsfree(prefix);
@@ -2817,65 +2455,43 @@ void ldbPrintAll(lua_State *lua)
         }
     }
 
-    if (vars == 0)
-    {
+    if (vars == 0) {
         ldbLog(sdsnew("No local variables in the current context."));
     }
 }
 
 /* Implements the break command to list, add and remove breakpoints. */
-void ldbBreak(sds *argv, int argc)
-{
-    if (argc == 1)
-    {
-        if (ldb.bpcount == 0)
-        {
+void ldbBreak(sds *argv, int argc) {
+    if (argc == 1) {
+        if (ldb.bpcount == 0) {
             ldbLog(sdsnew("No breakpoints set. Use 'b <line>' to add one."));
             return;
-        }
-        else
-        {
+        } else {
             ldbLog(sdscatfmt(sdsempty(), "%i breakpoints set:", ldb.bpcount));
             int j;
             for (j = 0; j < ldb.bpcount; j++)
                 ldbLogSourceLine(ldb.bp[j]);
         }
-    }
-    else
-    {
+    } else {
         int j;
-        for (j = 1; j < argc; j++)
-        {
+        for (j = 1; j < argc; j++) {
             char *arg = argv[j];
             long line;
-            if (!string2l(arg, sdslen(arg), &line))
-            {
+            if (!string2l(arg, sdslen(arg), &line)) {
                 ldbLog(sdscatfmt(sdsempty(), "Invalid argument:'%s'", arg));
-            }
-            else
-            {
-                if (line == 0)
-                {
+            } else {
+                if (line == 0) {
                     ldb.bpcount = 0;
                     ldbLog(sdsnew("All breakpoints removed."));
-                }
-                else if (line > 0)
-                {
-                    if (ldb.bpcount == LDB_BREAKPOINTS_MAX)
-                    {
+                } else if (line > 0) {
+                    if (ldb.bpcount == LDB_BREAKPOINTS_MAX) {
                         ldbLog(sdsnew("Too many breakpoints set."));
-                    }
-                    else if (ldbAddBreakpoint(line))
-                    {
+                    } else if (ldbAddBreakpoint(line)) {
                         ldbList(line, 1);
-                    }
-                    else
-                    {
+                    } else {
                         ldbLog(sdsnew("Wrong line number."));
                     }
-                }
-                else if (line < 0)
-                {
+                } else if (line < 0) {
                     if (ldbDelBreakpoint(-line))
                         ldbLog(sdsnew("Breakpoint removed."));
                     else
@@ -2889,19 +2505,16 @@ void ldbBreak(sds *argv, int argc)
 /* Implements the Lua debugger "eval" command. It just compiles the user
  * passed fragment of code and executes it, showing the result left on
  * the stack. */
-void ldbEval(lua_State *lua, sds *argv, int argc)
-{
+void ldbEval(lua_State *lua, sds *argv, int argc) {
     /* Glue the script together if it is composed of multiple arguments. */
     sds code = sdsjoinsds(argv + 1, argc - 1, " ", 1);
     sds expr = sdscatsds(sdsnew("return "), code);
 
     /* Try to compile it as an expression, prepending "return ". */
-    if (luaL_loadbuffer(lua, expr, sdslen(expr), "@ldb_eval"))
-    {
+    if (luaL_loadbuffer(lua, expr, sdslen(expr), "@ldb_eval")) {
         lua_pop(lua, 1);
         /* Failed? Try as a statement. */
-        if (luaL_loadbuffer(lua, code, sdslen(code), "@ldb_eval"))
-        {
+        if (luaL_loadbuffer(lua, code, sdslen(code), "@ldb_eval")) {
             ldbLog(sdscatfmt(sdsempty(), "<error> %s", lua_tostring(lua, -1)));
             lua_pop(lua, 1);
             sdsfree(code);
@@ -2913,8 +2526,7 @@ void ldbEval(lua_State *lua, sds *argv, int argc)
     /* Call it. */
     sdsfree(code);
     sdsfree(expr);
-    if (lua_pcall(lua, 0, 1, 0))
-    {
+    if (lua_pcall(lua, 0, 1, 0)) {
         ldbLog(sdscatfmt(sdsempty(), "<error> %s", lua_tostring(lua, -1)));
         lua_pop(lua, 1);
         return;
@@ -2927,8 +2539,7 @@ void ldbEval(lua_State *lua, sds *argv, int argc)
  * the implementation very simple: we just call the Lua redis.call() command
  * implementation, with ldb.step enabled, so as a side effect the Redis command
  * and its reply are logged. */
-void ldbRedis(lua_State *lua, sds *argv, int argc)
-{
+void ldbRedis(lua_State *lua, sds *argv, int argc) {
     int j, saved_rc = server.lua_replicate_commands;
 
     lua_getglobal(lua, "redis");
@@ -2939,54 +2550,43 @@ void ldbRedis(lua_State *lua, sds *argv, int argc)
     ldb.step = 1; /* Force redis.call() to log. */
     server.lua_replicate_commands = 1;
     lua_pcall(lua, argc - 1, 1, 0); /* Stack: redis, result */
-    ldb.step = 0;                   /* Disable logging. */
+    ldb.step = 0; /* Disable logging. */
     server.lua_replicate_commands = saved_rc;
     lua_pop(lua, 2); /* Discard the result and clean the stack. */
 }
 
 /* Implements "trace" command of the Lua debugger. It just prints a backtrace
  * querying Lua starting from the current callframe back to the outer one. */
-void ldbTrace(lua_State *lua)
-{
+void ldbTrace(lua_State *lua) {
     lua_Debug ar;
     int level = 0;
 
-    while (lua_getstack(lua, level, &ar))
-    {
+    while (lua_getstack(lua, level, &ar)) {
         lua_getinfo(lua, "Snl", &ar);
-        if (strstr(ar.short_src, "user_script") != NULL)
-        {
-            ldbLog(sdscatprintf(sdsempty(), "%s %s:",
-                                (level == 0) ? "In" : "From",
-                                ar.name ? ar.name : "top level"));
+        if (strstr(ar.short_src, "user_script") != NULL) {
+            ldbLog(sdscatprintf(sdsempty(), "%s %s:", (level == 0) ? "In" : "From", ar.name ? ar.name : "top level"));
             ldbLogSourceLine(ar.currentline);
         }
         level++;
     }
-    if (level == 0)
-    {
+    if (level == 0) {
         ldbLog(sdsnew("<error> Can't retrieve Lua stack."));
     }
 }
 
 /* Implements the debugger "maxlen" command. It just queries or sets the
  * ldb.maxlen variable. */
-void ldbMaxlen(sds *argv, int argc)
-{
-    if (argc == 2)
-    {
+void ldbMaxlen(sds *argv, int argc) {
+    if (argc == 2) {
         int newval = atoi(argv[1]);
         ldb.maxlen_hint_sent = 1; /* User knows about this command. */
         if (newval != 0 && newval <= 60)
             newval = 60;
         ldb.maxlen = newval;
     }
-    if (ldb.maxlen)
-    {
-        ldbLog(sdscatprintf(sdsempty(), "<value> replies are truncated at %d bytes.", (int)ldb.maxlen));
-    }
-    else
-    {
+    if (ldb.maxlen) {
+        ldbLog(sdscatprintf(sdsempty(), "<value> replies are truncated at %d bytes.", (int) ldb.maxlen));
+    } else {
         ldbLog(sdscatprintf(sdsempty(), "<value> replies are unlimited."));
     }
 }
@@ -2994,21 +2594,17 @@ void ldbMaxlen(sds *argv, int argc)
 /* Read debugging commands from client.
  * Return C_OK if the debugging session is continuing, otherwise
  * C_ERR if the client closed the connection or is timing out. */
-int ldbRepl(lua_State *lua)
-{
+int ldbRepl(lua_State *lua) {
     sds *argv;
     int argc;
 
     /* We continue processing commands until a command that should return
      * to the Lua interpreter is found. */
-    while (1)
-    {
-        while ((argv = ldbReplParseCommand(&argc)) == NULL)
-        {
+    while (1) {
+        while ((argv = ldbReplParseCommand(&argc)) == NULL) {
             char buf[1024];
             int nread = connRead(ldb.conn, buf, sizeof(buf));
-            if (nread <= 0)
-            {
+            if (nread <= 0) {
                 /* Make sure the script runs without user input since the
                  * client is no longer connected. */
                 ldb.step = 0;
@@ -3023,8 +2619,7 @@ int ldbRepl(lua_State *lua)
         ldb.cbuf = sdsempty();
 
         /* Execute the command. */
-        if (!strcasecmp(argv[0], "h") || !strcasecmp(argv[0], "help"))
-        {
+        if (!strcasecmp(argv[0], "h") || !strcasecmp(argv[0], "help")) {
             ldbLog(sdsnew("Redis Lua debugger help:"));
             ldbLog(sdsnew("[h]elp               Show this help."));
             ldbLog(sdsnew("[s]tep               Run current line and stop again."));
@@ -3056,61 +2651,39 @@ int ldbRepl(lua_State *lua)
             ldbLog(sdsnew("redis.breakpoint()   Stop execution like if there was a breakpoint in the"));
             ldbLog(sdsnew("                     next line of code."));
             ldbSendLogs();
-        }
-        else if (!strcasecmp(argv[0], "s") || !strcasecmp(argv[0], "step") ||
-                 !strcasecmp(argv[0], "n") || !strcasecmp(argv[0], "next"))
-        {
+        } else if (!strcasecmp(argv[0], "s") || !strcasecmp(argv[0], "step") || !strcasecmp(argv[0], "n") ||
+                   !strcasecmp(argv[0], "next")) {
             ldb.step = 1;
             break;
-        }
-        else if (!strcasecmp(argv[0], "c") || !strcasecmp(argv[0], "continue"))
-        {
+        } else if (!strcasecmp(argv[0], "c") || !strcasecmp(argv[0], "continue")) {
             break;
-        }
-        else if (!strcasecmp(argv[0], "t") || !strcasecmp(argv[0], "trace"))
-        {
+        } else if (!strcasecmp(argv[0], "t") || !strcasecmp(argv[0], "trace")) {
             ldbTrace(lua);
             ldbSendLogs();
-        }
-        else if (!strcasecmp(argv[0], "m") || !strcasecmp(argv[0], "maxlen"))
-        {
+        } else if (!strcasecmp(argv[0], "m") || !strcasecmp(argv[0], "maxlen")) {
             ldbMaxlen(argv, argc);
             ldbSendLogs();
-        }
-        else if (!strcasecmp(argv[0], "b") || !strcasecmp(argv[0], "break"))
-        {
+        } else if (!strcasecmp(argv[0], "b") || !strcasecmp(argv[0], "break")) {
             ldbBreak(argv, argc);
             ldbSendLogs();
-        }
-        else if (!strcasecmp(argv[0], "e") || !strcasecmp(argv[0], "eval"))
-        {
+        } else if (!strcasecmp(argv[0], "e") || !strcasecmp(argv[0], "eval")) {
             ldbEval(lua, argv, argc);
             ldbSendLogs();
-        }
-        else if (!strcasecmp(argv[0], "a") || !strcasecmp(argv[0], "abort"))
-        {
+        } else if (!strcasecmp(argv[0], "a") || !strcasecmp(argv[0], "abort")) {
             lua_pushstring(lua, "script aborted for user request");
             lua_error(lua);
-        }
-        else if (argc > 1 &&
-                 (!strcasecmp(argv[0], "r") || !strcasecmp(argv[0], "redis")))
-        {
+        } else if (argc > 1 && (!strcasecmp(argv[0], "r") || !strcasecmp(argv[0], "redis"))) {
             ldbRedis(lua, argv, argc);
             ldbSendLogs();
-        }
-        else if ((!strcasecmp(argv[0], "p") || !strcasecmp(argv[0], "print")))
-        {
+        } else if ((!strcasecmp(argv[0], "p") || !strcasecmp(argv[0], "print"))) {
             if (argc == 2)
                 ldbPrint(lua, argv[1]);
             else
                 ldbPrintAll(lua);
             ldbSendLogs();
-        }
-        else if (!strcasecmp(argv[0], "l") || !strcasecmp(argv[0], "list"))
-        {
+        } else if (!strcasecmp(argv[0], "l") || !strcasecmp(argv[0], "list")) {
             int around = ldb.currentline, ctx = 5;
-            if (argc > 1)
-            {
+            if (argc > 1) {
                 int num = atoi(argv[1]);
                 if (num > 0)
                     around = num;
@@ -3119,14 +2692,10 @@ int ldbRepl(lua_State *lua)
                 ctx = atoi(argv[2]);
             ldbList(around, ctx);
             ldbSendLogs();
-        }
-        else if (!strcasecmp(argv[0], "w") || !strcasecmp(argv[0], "whole"))
-        {
+        } else if (!strcasecmp(argv[0], "w") || !strcasecmp(argv[0], "whole")) {
             ldbList(1, 1000000);
             ldbSendLogs();
-        }
-        else
-        {
+        } else {
             ldbLog(sdsnew("<error> Unknown Redis Lua debugger command or "
                           "wrong number of arguments."));
             ldbSendLogs();
@@ -3143,8 +2712,7 @@ int ldbRepl(lua_State *lua)
 
 /* This is the core of our Lua debugger, called each time Lua is about
  * to start executing a new line. */
-void luaLdbLineHook(lua_State *lua, lua_Debug *ar)
-{
+void luaLdbLineHook(lua_State *lua, lua_Debug *ar) {
     lua_getstack(lua, 0, ar);
     lua_getinfo(lua, "Sl", ar);
     ldb.currentline = ar->currentline;
@@ -3157,23 +2725,18 @@ void luaLdbLineHook(lua_State *lua, lua_Debug *ar)
         return;
 
     /* Check if a timeout occurred. */
-    if (ar->event == LUA_HOOKCOUNT && ldb.step == 0 && bp == 0)
-    {
+    if (ar->event == LUA_HOOKCOUNT && ldb.step == 0 && bp == 0) {
         mstime_t elapsed = mstime() - server.lua_time_start;
         mstime_t timelimit = server.lua_time_limit ? server.lua_time_limit : 5000;
-        if (elapsed >= timelimit)
-        {
+        if (elapsed >= timelimit) {
             timeout = 1;
             ldb.step = 1;
-        }
-        else
-        {
+        } else {
             return; /* No timeout, ignore the COUNT event. */
         }
     }
 
-    if (ldb.step || bp)
-    {
+    if (ldb.step || bp) {
         char *reason = "step over";
         if (bp)
             reason = ldb.luabp ? "redis.breakpoint() called" : "break point";
@@ -3181,13 +2744,10 @@ void luaLdbLineHook(lua_State *lua, lua_Debug *ar)
             reason = "timeout reached, infinite loop?";
         ldb.step = 0;
         ldb.luabp = 0;
-        ldbLog(sdscatprintf(sdsempty(),
-                            "* Stopped at %d, stop reason = %s",
-                            ldb.currentline, reason));
+        ldbLog(sdscatprintf(sdsempty(), "* Stopped at %d, stop reason = %s", ldb.currentline, reason));
         ldbLogSourceLine(ldb.currentline);
         ldbSendLogs();
-        if (ldbRepl(lua) == C_ERR && timeout)
-        {
+        if (ldbRepl(lua) == C_ERR && timeout) {
             /* If the client closed the connection and we have a timeout
              * connection, let's kill the script otherwise the process
              * will remain blocked indefinitely. */

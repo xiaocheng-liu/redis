@@ -1,18 +1,17 @@
 #define REDISMODULE_EXPERIMENTAL_API
 
-#include "redismodule.h"
-#include <strings.h>
 #include <assert.h>
-#include <unistd.h>
 #include <errno.h>
+#include <strings.h>
+#include <unistd.h>
+#include "redismodule.h"
 
 #define UNUSED(V) ((void) V)
 
 /* A sample movable keys command that returns a list of all
  * arguments that follow a KEY argument, i.e.
  */
-int getkeys_command(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
-{
+int getkeys_command(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     int i;
     int count = 0;
 
@@ -36,7 +35,7 @@ int getkeys_command(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
         const char *str = RedisModule_StringPtrLen(argv[i], &len);
 
         if (len == 3 && !strncasecmp(str, "key", 3) && i + 1 < argc) {
-            RedisModule_ReplyWithString(ctx, argv[i+1]);
+            RedisModule_ReplyWithString(ctx, argv[i + 1]);
             count++;
         }
     }
@@ -45,8 +44,7 @@ int getkeys_command(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
     return REDISMODULE_OK;
 }
 
-int getkeys_fixed(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
-{
+int getkeys_fixed(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     int i;
 
     RedisModule_ReplyWithArray(ctx, argc - 1);
@@ -59,8 +57,7 @@ int getkeys_fixed(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 /* Introspect a command using RM_GetCommandKeys() and returns the list
  * of keys. Essentially this is COMMAND GETKEYS implemented in a module.
  */
-int getkeys_introspect(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
-{
+int getkeys_introspect(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     UNUSED(argv);
     UNUSED(argc);
 
@@ -106,16 +103,16 @@ int getkeys_introspect(RedisModuleCtx *ctx, RedisModuleString **argv, int argc)
 int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     UNUSED(argv);
     UNUSED(argc);
-    if (RedisModule_Init(ctx,"getkeys",1,REDISMODULE_APIVER_1)== REDISMODULE_ERR)
+    if (RedisModule_Init(ctx, "getkeys", 1, REDISMODULE_APIVER_1) == REDISMODULE_ERR)
         return REDISMODULE_ERR;
 
-    if (RedisModule_CreateCommand(ctx,"getkeys.command", getkeys_command,"getkeys-api",0,0,0) == REDISMODULE_ERR)
+    if (RedisModule_CreateCommand(ctx, "getkeys.command", getkeys_command, "getkeys-api", 0, 0, 0) == REDISMODULE_ERR)
         return REDISMODULE_ERR;
 
-    if (RedisModule_CreateCommand(ctx,"getkeys.fixed", getkeys_fixed,"",2,4,1) == REDISMODULE_ERR)
+    if (RedisModule_CreateCommand(ctx, "getkeys.fixed", getkeys_fixed, "", 2, 4, 1) == REDISMODULE_ERR)
         return REDISMODULE_ERR;
 
-    if (RedisModule_CreateCommand(ctx,"getkeys.introspect", getkeys_introspect,"",0,0,0) == REDISMODULE_ERR)
+    if (RedisModule_CreateCommand(ctx, "getkeys.introspect", getkeys_introspect, "", 0, 0, 0) == REDISMODULE_ERR)
         return REDISMODULE_ERR;
 
     return REDISMODULE_OK;

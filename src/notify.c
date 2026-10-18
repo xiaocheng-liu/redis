@@ -10,56 +10,53 @@
  *
  * The function returns -1 if the input contains characters not mapping to
  * any class. */
-int keyspaceEventsStringToFlags(char *classes)
-{
+int keyspaceEventsStringToFlags(char *classes) {
     char *p = classes;
     int c, flags = 0;
 
-    while ((c = *p++) != '\0')
-    {
-        switch (c)
-        {
-        case 'A':
-            flags |= NOTIFY_ALL;
-            break;
-        case 'g':
-            flags |= NOTIFY_GENERIC;
-            break;
-        case '$':
-            flags |= NOTIFY_STRING;
-            break;
-        case 'l':
-            flags |= NOTIFY_LIST;
-            break;
-        case 's':
-            flags |= NOTIFY_SET;
-            break;
-        case 'h':
-            flags |= NOTIFY_HASH;
-            break;
-        case 'z':
-            flags |= NOTIFY_ZSET;
-            break;
-        case 'x':
-            flags |= NOTIFY_EXPIRED;
-            break;
-        case 'e':
-            flags |= NOTIFY_EVICTED;
-            break;
-        case 'K':
-            flags |= NOTIFY_KEYSPACE;
-            break;
-        case 'E':
-            flags |= NOTIFY_KEYEVENT;
-            break;
-        case 't':
-            flags |= NOTIFY_STREAM;
-            break;
-        case 'm':
-            flags |= NOTIFY_KEY_MISS;
-            break;
-        default:
-            return -1;
+    while ((c = *p++) != '\0') {
+        switch (c) {
+            case 'A':
+                flags |= NOTIFY_ALL;
+                break;
+            case 'g':
+                flags |= NOTIFY_GENERIC;
+                break;
+            case '$':
+                flags |= NOTIFY_STRING;
+                break;
+            case 'l':
+                flags |= NOTIFY_LIST;
+                break;
+            case 's':
+                flags |= NOTIFY_SET;
+                break;
+            case 'h':
+                flags |= NOTIFY_HASH;
+                break;
+            case 'z':
+                flags |= NOTIFY_ZSET;
+                break;
+            case 'x':
+                flags |= NOTIFY_EXPIRED;
+                break;
+            case 'e':
+                flags |= NOTIFY_EVICTED;
+                break;
+            case 'K':
+                flags |= NOTIFY_KEYSPACE;
+                break;
+            case 'E':
+                flags |= NOTIFY_KEYEVENT;
+                break;
+            case 't':
+                flags |= NOTIFY_STREAM;
+                break;
+            case 'm':
+                flags |= NOTIFY_KEY_MISS;
+                break;
+            default:
+                return -1;
         }
     }
     return flags;
@@ -69,17 +66,13 @@ int keyspaceEventsStringToFlags(char *classes)
  * as input an integer with the xored flags and returns a string representing
  * the selected classes. The string returned is an sds string that needs to
  * be released with sdsfree(). */
-sds keyspaceEventsFlagsToString(int flags)
-{
+sds keyspaceEventsFlagsToString(int flags) {
     sds res;
 
     res = sdsempty();
-    if ((flags & NOTIFY_ALL) == NOTIFY_ALL)
-    {
+    if ((flags & NOTIFY_ALL) == NOTIFY_ALL) {
         res = sdscatlen(res, "A", 1);
-    }
-    else
-    {
+    } else {
         if (flags & NOTIFY_GENERIC)
             res = sdscatlen(res, "g", 1);
         if (flags & NOTIFY_STRING)
@@ -115,8 +108,7 @@ sds keyspaceEventsFlagsToString(int flags)
  * 'event' is a C string representing the event name.
  * 'key' is a Redis object representing the key name.
  * 'dbid' is the database ID where the key lives.  */
-void notifyKeyspaceEvent(int type, char *event, robj *key, int dbid)
-{
+void notifyKeyspaceEvent(int type, char *event, robj *key, int dbid) {
     sds chan;
     robj *chanobj, *eventobj;
     int len = -1;
@@ -135,8 +127,7 @@ void notifyKeyspaceEvent(int type, char *event, robj *key, int dbid)
     eventobj = createStringObject(event, strlen(event));
 
     /* __keyspace@<db>__:<key> <event> notifications. */
-    if (server.notify_keyspace_events & NOTIFY_KEYSPACE)
-    {
+    if (server.notify_keyspace_events & NOTIFY_KEYSPACE) {
         chan = sdsnewlen("__keyspace@", 11);
         len = ll2string(buf, sizeof(buf), dbid);
         chan = sdscatlen(chan, buf, len);
@@ -148,8 +139,7 @@ void notifyKeyspaceEvent(int type, char *event, robj *key, int dbid)
     }
 
     /* __keyevent@<db>__:<event> <key> notifications. */
-    if (server.notify_keyspace_events & NOTIFY_KEYEVENT)
-    {
+    if (server.notify_keyspace_events & NOTIFY_KEYEVENT) {
         chan = sdsnewlen("__keyevent@", 11);
         if (len == -1)
             len = ll2string(buf, sizeof(buf), dbid);

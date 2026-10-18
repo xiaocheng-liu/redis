@@ -1,10 +1,10 @@
 /*
  * Synchronous socket and file I/O operations useful across the core.
  */
-#include <sys/errno.h>
-#include "server.h"
 #include "syncio.h"
+#include <sys/errno.h>
 #include "ae.h"
+#include "server.h"
 
 /* ----------------- Blocking sockets I/O with timeouts --------------------- */
 

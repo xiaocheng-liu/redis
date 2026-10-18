@@ -3,70 +3,58 @@
  */
 #include <errno.h>
 #include <hiredis.h>
+#include <sds.h> /* use sds.h from hiredis, so that only one set of sds functions will be present in the binary */
 #include <sdscompat.h> /* Use hiredis' sds compat header that maps sds calls to their hi_ variants */
-#include <sds.h>       /* use sds.h from hiredis, so that only one set of sds functions will be present in the binary */
 #ifdef USE_OPENSSL
-#include <openssl/ssl.h>
-#include <openssl/err.h>
 #include <hiredis_ssl.h>
+#include <openssl/err.h>
+#include <openssl/ssl.h>
 #endif
 #include "cli_common.h"
 
 /* Wrapper around redisSecureConnection to avoid hiredis_ssl dependencies if
  * not building with TLS support.
  */
-int cliSecureConnection(redisContext *c, cliSSLconfig config, const char **err)
-{
+int cliSecureConnection(redisContext *c, cliSSLconfig config, const char **err) {
 #ifdef USE_OPENSSL
     static SSL_CTX *ssl_ctx = NULL;
 
-    if (!ssl_ctx)
-    {
+    if (!ssl_ctx) {
         ssl_ctx = SSL_CTX_new(SSLv23_client_method());
-        if (!ssl_ctx)
-        {
+        if (!ssl_ctx) {
             *err = "Failed to create SSL_CTX";
             goto error;
         }
         SSL_CTX_set_options(ssl_ctx, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
         SSL_CTX_set_verify(ssl_ctx, config.skip_cert_verify ? SSL_VERIFY_NONE : SSL_VERIFY_PEER, NULL);
 
-        if (config.cacert || config.cacertdir)
-        {
-            if (!SSL_CTX_load_verify_locations(ssl_ctx, config.cacert, config.cacertdir))
-            {
+        if (config.cacert || config.cacertdir) {
+            if (!SSL_CTX_load_verify_locations(ssl_ctx, config.cacert, config.cacertdir)) {
                 *err = "Invalid CA Certificate File/Directory";
                 goto error;
             }
-        }
-        else
-        {
-            if (!SSL_CTX_set_default_verify_paths(ssl_ctx))
-            {
+        } else {
+            if (!SSL_CTX_set_default_verify_paths(ssl_ctx)) {
                 *err = "Failed to use default CA paths";
                 goto error;
             }
         }
 
-        if (config.cert && !SSL_CTX_use_certificate_chain_file(ssl_ctx, config.cert))
-        {
+        if (config.cert && !SSL_CTX_use_certificate_chain_file(ssl_ctx, config.cert)) {
             *err = "Invalid client certificate";
             goto error;
         }
 
-        if (config.key && !SSL_CTX_use_PrivateKey_file(ssl_ctx, config.key, SSL_FILETYPE_PEM))
-        {
+        if (config.key && !SSL_CTX_use_PrivateKey_file(ssl_ctx, config.key, SSL_FILETYPE_PEM)) {
             *err = "Invalid private key";
             goto error;
         }
-        if (config.ciphers && !SSL_CTX_set_cipher_list(ssl_ctx, config.ciphers))
-        {
+        if (config.ciphers && !SSL_CTX_set_cipher_list(ssl_ctx, config.ciphers)) {
             *err = "Error while configuring ciphers";
             goto error;
         }
 #ifdef TLS1_3_VERSION
-        if (config.ciphersuites && !SSL_CTX_set_ciphersuites(ssl_ctx, config.ciphersuites))
-        {
+        if (config.ciphersuites && !SSL_CTX_set_ciphersuites(ssl_ctx, config.ciphersuites)) {
             *err = "Error while setting cypher suites";
             goto error;
         }
@@ -74,14 +62,12 @@ int cliSecureConnection(redisContext *c, cliSSLconfig config, const char **err)
     }
 
     SSL *ssl = SSL_new(ssl_ctx);
-    if (!ssl)
-    {
+    if (!ssl) {
         *err = "Failed to create SSL object";
         return REDIS_ERR;
     }
 
-    if (config.sni && !SSL_set_tlsext_host_name(ssl, config.sni))
-    {
+    if (config.sni && !SSL_set_tlsext_host_name(ssl, config.sni)) {
         *err = "Failed to configure SNI";
         SSL_free(ssl);
         return REDIS_ERR;
@@ -94,9 +80,9 @@ error:
     ssl_ctx = NULL;
     return REDIS_ERR;
 #else
-    (void)config;
-    (void)c;
-    (void)err;
+    (void) config;
+    (void) c;
+    (void) err;
     return REDIS_OK;
 #endif
 }
@@ -115,16 +101,14 @@ error:
  * in the buffer (leftovers from hiredis operations) it will be written
  * as well.
  */
-ssize_t cliWriteConn(redisContext *c, const char *buf, size_t buf_len)
-{
+ssize_t cliWriteConn(redisContext *c, const char *buf, size_t buf_len) {
     int done = 0;
 
     /* Append data to buffer which is *usually* expected to be empty
      * but we don't assume that, and write.
      */
     c->obuf = sdscatlen(c->obuf, buf, buf_len);
-    if (redisBufferWrite(c, &done) == REDIS_ERR)
-    {
+    if (redisBufferWrite(c, &done) == REDIS_ERR) {
         if (!(c->flags & REDIS_BLOCK))
             errno = EAGAIN;
 
@@ -143,8 +127,7 @@ ssize_t cliWriteConn(redisContext *c, const char *buf, size_t buf_len)
      * buf_len (if c->obuf was not initially empty) but we don't have to
      * tell.
      */
-    if (done)
-    {
+    if (done) {
         sdsclear(c->obuf);
         return buf_len;
     }
@@ -156,8 +139,7 @@ ssize_t cliWriteConn(redisContext *c, const char *buf, size_t buf_len)
      * restore buffer to it's original state and report no new data was
      * writen.
      */
-    if (sdslen(c->obuf) > buf_len)
-    {
+    if (sdslen(c->obuf) > buf_len) {
         sdsrange(c->obuf, 0, -(buf_len + 1));
         return 0;
     }
@@ -172,8 +154,7 @@ ssize_t cliWriteConn(redisContext *c, const char *buf, size_t buf_len)
 
 /* Wrapper around OpenSSL (libssl and libcrypto) initialisation
  */
-int cliSecureInit(void)
-{
+int cliSecureInit(void) {
 #ifdef USE_OPENSSL
     ERR_load_crypto_strings();
     SSL_load_error_strings();

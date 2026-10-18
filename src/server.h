@@ -101,6 +101,7 @@ struct RedisModuleDigest;
 struct RedisModuleCtx;
 struct redisObject;
 struct RedisModuleDefragCtx;
+typedef struct streamID streamID;
 
 /* Each module type implementation should export a set of methods in order
  * to serialize and deserialize the value in the RDB file, rewrite the AOF

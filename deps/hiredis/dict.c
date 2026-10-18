@@ -33,12 +33,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "fmacros.h"
-#include "alloc.h"
-#include <stdlib.h>
+#include "dict.h"
 #include <assert.h>
 #include <limits.h>
-#include "dict.h"
+#include <stdlib.h>
+#include "alloc.h"
+#include "fmacros.h"
 
 /* -------------------------- private prototypes ---------------------------- */
 
@@ -76,7 +76,7 @@ static dict *dictCreate(dictType *type, void *privDataPtr) {
     if (ht == NULL)
         return NULL;
 
-    _dictInit(ht,type,privDataPtr);
+    _dictInit(ht, type, privDataPtr);
     return ht;
 }
 
@@ -100,8 +100,8 @@ static int dictExpand(dict *ht, unsigned long size) {
 
     _dictInit(&n, ht->type, ht->privdata);
     n.size = realsize;
-    n.sizemask = realsize-1;
-    n.table = hi_calloc(realsize,sizeof(dictEntry*));
+    n.sizemask = realsize - 1;
+    n.table = hi_calloc(realsize, sizeof(dictEntry *));
     if (n.table == NULL)
         return DICT_ERR;
 
@@ -112,11 +112,12 @@ static int dictExpand(dict *ht, unsigned long size) {
     for (i = 0; i < ht->size && ht->used > 0; i++) {
         dictEntry *he, *nextHe;
 
-        if (ht->table[i] == NULL) continue;
+        if (ht->table[i] == NULL)
+            continue;
 
         /* For each hash entry on this slot... */
         he = ht->table[i];
-        while(he) {
+        while (he) {
             unsigned int h;
 
             nextHe = he->next;
@@ -201,16 +202,16 @@ static int dictDelete(dict *ht, const void *key) {
     de = ht->table[h];
 
     prevde = NULL;
-    while(de) {
-        if (dictCompareHashKeys(ht,key,de->key)) {
+    while (de) {
+        if (dictCompareHashKeys(ht, key, de->key)) {
             /* Unlink the element from the list */
             if (prevde)
                 prevde->next = de->next;
             else
                 ht->table[h] = de->next;
 
-            dictFreeEntryKey(ht,de);
-            dictFreeEntryVal(ht,de);
+            dictFreeEntryKey(ht, de);
+            dictFreeEntryVal(ht, de);
             hi_free(de);
             ht->used--;
             return DICT_OK;
@@ -229,8 +230,9 @@ static int _dictClear(dict *ht) {
     for (i = 0; i < ht->size && ht->used > 0; i++) {
         dictEntry *he, *nextHe;
 
-        if ((he = ht->table[i]) == NULL) continue;
-        while(he) {
+        if ((he = ht->table[i]) == NULL)
+            continue;
+        while (he) {
             nextHe = he->next;
             dictFreeEntryKey(ht, he);
             dictFreeEntryVal(ht, he);
@@ -256,10 +258,11 @@ static dictEntry *dictFind(dict *ht, const void *key) {
     dictEntry *he;
     unsigned int h;
 
-    if (ht->size == 0) return NULL;
+    if (ht->size == 0)
+        return NULL;
     h = dictHashKey(ht, key) & ht->sizemask;
     he = ht->table[h];
-    while(he) {
+    while (he) {
         if (dictCompareHashKeys(ht, key, he->key))
             return he;
         he = he->next;
@@ -278,8 +281,8 @@ static dictEntry *dictNext(dictIterator *iter) {
     while (1) {
         if (iter->entry == NULL) {
             iter->index++;
-            if (iter->index >=
-                    (signed)iter->ht->size) break;
+            if (iter->index >= (signed) iter->ht->size)
+                break;
             iter->entry = iter->ht->table[iter->index];
         } else {
             iter->entry = iter->nextEntry;
@@ -303,7 +306,7 @@ static int _dictExpandIfNeeded(dict *ht) {
     if (ht->size == 0)
         return dictExpand(ht, DICT_HT_INITIAL_SIZE);
     if (ht->used == ht->size)
-        return dictExpand(ht, ht->size*2);
+        return dictExpand(ht, ht->size * 2);
     return DICT_OK;
 }
 
@@ -311,8 +314,9 @@ static int _dictExpandIfNeeded(dict *ht) {
 static unsigned long _dictNextPower(unsigned long size) {
     unsigned long i = DICT_HT_INITIAL_SIZE;
 
-    if (size >= LONG_MAX) return LONG_MAX;
-    while(1) {
+    if (size >= LONG_MAX)
+        return LONG_MAX;
+    while (1) {
         if (i >= size)
             return i;
         i *= 2;
@@ -333,11 +337,10 @@ static int _dictKeyIndex(dict *ht, const void *key) {
     h = dictHashKey(ht, key) & ht->sizemask;
     /* Search if this slot does not already contain the given key */
     he = ht->table[h];
-    while(he) {
+    while (he) {
         if (dictCompareHashKeys(ht, key, he->key))
             return -1;
         he = he->next;
     }
     return h;
 }
-
