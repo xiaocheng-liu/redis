@@ -36,10 +36,10 @@ static void createGlobalStrings(RedisModuleCtx *ctx, int count) {
 
 static int defragGlobalStrings(RedisModuleDefragCtx *ctx) {
     for (int i = 0; i < global_strings_len; i++) {
-        RedisModuleString *new = RedisModule_DefragRedisModuleString(ctx, global_strings[i]);
+        RedisModuleString *defragged = RedisModule_DefragRedisModuleString(ctx, global_strings[i]);
         global_attempts++;
-        if (new != NULL) {
-            global_strings[i] = new;
+        if (defragged != NULL) {
+            global_strings[i] = defragged;
             global_defragged++;
         }
     }
@@ -171,9 +171,9 @@ int FragDefrag(RedisModuleDefragCtx *ctx, RedisModuleString *key, void **value) 
     /* Deep defrag now */
     for (; i < o->len; i++) {
         datatype_attempts++;
-        void *new = RedisModule_DefragAlloc(ctx, o->values[i]);
-        if (new) {
-            o->values[i] = new;
+        void *defragged = RedisModule_DefragAlloc(ctx, o->values[i]);
+        if (defragged) {
+            o->values[i] = defragged;
             datatype_defragged++;
         }
 

@@ -691,7 +691,7 @@ void hsetCommand(client *c) {
 void hincrbyCommand(client *c) {
     long long value, incr, oldvalue;
     robj *o;
-    sds new;
+    sds new_val;
     unsigned char *vstr;
     unsigned int vlen;
 
@@ -717,8 +717,8 @@ void hincrbyCommand(client *c) {
         return;
     }
     value += incr;
-    new = sdsfromlonglong(value);
-    hashTypeSet(o, c->argv[2]->ptr, new, HASH_SET_TAKE_VALUE);
+    new_val = sdsfromlonglong(value);
+    hashTypeSet(o, c->argv[2]->ptr, new_val, HASH_SET_TAKE_VALUE);
     addReplyLongLong(c, value);
     signalModifiedKey(c, c->db, c->argv[1]);
     notifyKeyspaceEvent(NOTIFY_HASH, "hincrby", c->argv[1], c->db->id);
@@ -729,7 +729,7 @@ void hincrbyfloatCommand(client *c) {
     long double value, incr;
     long long ll;
     robj *o;
-    sds new;
+    sds new_val;
     unsigned char *vstr;
     unsigned int vlen;
 
@@ -758,8 +758,8 @@ void hincrbyfloatCommand(client *c) {
 
     char buf[MAX_LONG_DOUBLE_CHARS];
     int len = ld2string(buf, sizeof(buf), value, LD_STR_HUMAN);
-    new = sdsnewlen(buf, len);
-    hashTypeSet(o, c->argv[2]->ptr, new, HASH_SET_TAKE_VALUE);
+    new_val = sdsnewlen(buf, len);
+    hashTypeSet(o, c->argv[2]->ptr, new_val, HASH_SET_TAKE_VALUE);
     addReplyBulkCBuffer(c, buf, len);
     signalModifiedKey(c, c->db, c->argv[1]);
     notifyKeyspaceEvent(NOTIFY_HASH, "hincrbyfloat", c->argv[1], c->db->id);

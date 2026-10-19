@@ -2200,16 +2200,16 @@ sds ldbCatStackValueRec(sds s, lua_State *lua, int idx, int level) {
         case LUA_TTHREAD:
         case LUA_TLIGHTUSERDATA: {
             const void *p = lua_topointer(lua, idx);
-            char *typename = "unknown";
+            char *type_name = "unknown";
             if (t == LUA_TFUNCTION)
-                typename = "function";
+                type_name = "function";
             else if (t == LUA_TUSERDATA)
-                typename = "userdata";
+                type_name = "userdata";
             else if (t == LUA_TTHREAD)
-                typename = "thread";
+                type_name = "thread";
             else if (t == LUA_TLIGHTUSERDATA)
-                typename = "light-userdata";
-            s = sdscatprintf(s, "\"%s@%p\"", typename, p);
+                type_name = "light-userdata";
+            s = sdscatprintf(s, "\"%s@%p\"", type_name, p);
         } break;
         default:
             s = sdscat(s, "\"<unknown-lua-type>\"");

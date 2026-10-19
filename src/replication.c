@@ -2067,13 +2067,13 @@ int slaveTryPartialResynchronization(connection *conn, int read_reply) {
         while (end[0] != '\r' && end[0] != '\n' && end[0] != '\0')
             end++;
         if (end - start == CONFIG_RUN_ID_SIZE) {
-            char new[CONFIG_RUN_ID_SIZE + 1];
-            memcpy(new, start, CONFIG_RUN_ID_SIZE);
-            new[CONFIG_RUN_ID_SIZE] = '\0';
+            char new_replid[CONFIG_RUN_ID_SIZE + 1];
+            memcpy(new_replid, start, CONFIG_RUN_ID_SIZE);
+            new_replid[CONFIG_RUN_ID_SIZE] = '\0';
 
-            if (strcmp(new, server.cached_master->replid)) {
+            if (strcmp(new_replid, server.cached_master->replid)) {
                 /* Master ID changed. */
-                serverLog(LL_WARNING, "Master replication ID changed to %s", new);
+                serverLog(LL_WARNING, "Master replication ID changed to %s", new_replid);
 
                 /* Set the old ID as our ID2, up to the current offset+1. */
                 memcpy(server.replid2, server.cached_master->replid, sizeof(server.replid2));
@@ -2081,8 +2081,8 @@ int slaveTryPartialResynchronization(connection *conn, int read_reply) {
 
                 /* Update the cached master ID and our own primary ID to the
                  * new one. */
-                memcpy(server.replid, new, sizeof(server.replid));
-                memcpy(server.cached_master->replid, new, sizeof(server.replid));
+                memcpy(server.replid, new_replid, sizeof(server.replid));
+                memcpy(server.cached_master->replid, new_replid, sizeof(server.replid));
 
                 /* Disconnect all the sub-slaves: they need to be notified. */
                 disconnectSlaves();

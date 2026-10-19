@@ -1554,10 +1554,10 @@ sds ACLLoadFromFile(const char *filename) {
         /* The default user pointer is referenced in different places: instead
          * of replacing such occurrences it is much simpler to copy the new
          * default user configuration in the old one. */
-        user *new = ACLGetUserByName("default", 7);
-        serverAssert(new != NULL);
-        ACLCopyUser(DefaultUser, new);
-        ACLFreeUser(new);
+        user *new_user = ACLGetUserByName("default", 7);
+        serverAssert(new_user != NULL);
+        ACLCopyUser(DefaultUser, new_user);
+        ACLFreeUser(new_user);
         raxInsert(Users, (unsigned char *) "default", 7, DefaultUser, NULL);
         raxRemove(old_users, (unsigned char *) "default", 7, NULL);
         ACLFreeUsersSet(old_users);

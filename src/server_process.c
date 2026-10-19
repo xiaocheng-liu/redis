@@ -4,8 +4,8 @@
 
 #include "cluster.h"
 #include "latency.h"
-#include "server.h"
 #include "sentinel.h"
+#include "server.h"
 
 extern char **environ;
 
@@ -66,9 +66,7 @@ int iAmMaster(void) {
 }
 
 /* 判断是否存在正在运行的后台子进程。 */
-int hasActiveChildProcess(void) {
-    return server.child_pid != -1;
-}
+int hasActiveChildProcess(void) { return server.child_pid != -1; }
 
 
 // 创建Pid文件
@@ -311,7 +309,6 @@ void checkMaxmemory(void) {
 }
 
 
-
 void checkChildrenDone(void) {
     int statloc;
     pid_t pid;
@@ -431,7 +428,6 @@ int restartServer(int flags, mstime_t delay) {
 }
 
 
-
 static sds redisProcTitleGetVariable(const sds varname, void *arg) {
     if (!strcmp(varname, "title")) {
         return sdsnew(arg);
@@ -462,16 +458,16 @@ static sds redisProcTitleGetVariable(const sds varname, void *arg) {
 
 /* Expand the specified proc-title-template string and return a newly
  * allocated sds, or NULL. */
-static sds expandProcTitleTemplate(const char *template, const char *title) {
-    sds res = sdstemplate(template, redisProcTitleGetVariable, (void *) title);
+static sds expandProcTitleTemplate(const char *tmpl, const char *title) {
+    sds res = sdstemplate(tmpl, redisProcTitleGetVariable, (void *) title);
     if (!res)
         return NULL;
     return sdstrim(res, " ");
 }
 /* Validate the specified template, returns 1 if valid or 0 otherwise. */
-int validateProcTitleTemplate(const char *template) {
+int validateProcTitleTemplate(const char *t) {
     int ok = 1;
-    sds res = expandProcTitleTemplate(template, "");
+    sds res = expandProcTitleTemplate(t, "");
     if (!res)
         return 0;
     if (sdslen(res) == 0)
@@ -587,4 +583,3 @@ void init_setproctitle_replacement(int argc, char **argv) {
     spt_init(argc, argv);
 #endif
 }
-

@@ -540,11 +540,11 @@ void loadServerConfigFromString(char *config) {
             zfree(server.cluster_configfile);
             server.cluster_configfile = zstrdup(argv[1]);
         } else if (!strcasecmp(argv[0], "client-output-buffer-limit") && argc == 5) {
-            int class = getClientTypeByName(argv[1]);
+            int class_id = getClientTypeByName(argv[1]);
             unsigned long long hard, soft;
             int soft_seconds;
 
-            if (class == -1 || class == CLIENT_TYPE_MASTER) {
+            if (class_id == -1 || class_id == CLIENT_TYPE_MASTER) {
                 err = "Unrecognized client limit class: the user specified "
                       "an invalid one, or 'master' which has no buffer limits.";
                 goto loaderr;
@@ -556,9 +556,9 @@ void loadServerConfigFromString(char *config) {
                 err = "Negative number of seconds in soft limit is invalid";
                 goto loaderr;
             }
-            server.client_obuf_limits[class].hard_limit_bytes = hard;
-            server.client_obuf_limits[class].soft_limit_bytes = soft;
-            server.client_obuf_limits[class].soft_limit_seconds = soft_seconds;
+            server.client_obuf_limits[class_id].hard_limit_bytes = hard;
+            server.client_obuf_limits[class_id].soft_limit_bytes = soft;
+            server.client_obuf_limits[class_id].soft_limit_seconds = soft_seconds;
         } else if (!strcasecmp(argv[0], "oom-score-adj-values") && argc == 1 + CONFIG_OOM_COUNT) {
             if (updateOOMScoreAdjValues(&argv[1], &err, 0) == C_ERR)
                 goto loaderr;
@@ -806,8 +806,8 @@ void configSetCommand(client *c) {
                 long val;
 
                 if ((j % 4) == 0) {
-                    int class = getClientTypeByName(v[j]);
-                    if (class == -1 || class == CLIENT_TYPE_MASTER) {
+                    int class_id = getClientTypeByName(v[j]);
+                    if (class_id == -1 || class_id == CLIENT_TYPE_MASTER) {
                         sdsfreesplitres(v, vlen);
                         goto badfmt;
                     }
@@ -821,18 +821,18 @@ void configSetCommand(client *c) {
             }
             /* Finally set the new config */
             for (j = 0; j < vlen; j += 4) {
-                int class;
+                int class_id;
                 unsigned long long hard, soft;
                 int soft_seconds;
 
-                class = getClientTypeByName(v[j]);
+                class_id = getClientTypeByName(v[j]);
                 hard = memtoll(v[j + 1], NULL);
                 soft = memtoll(v[j + 2], NULL);
                 soft_seconds = strtoll(v[j + 3], NULL, 10);
 
-                server.client_obuf_limits[class].hard_limit_bytes = hard;
-                server.client_obuf_limits[class].soft_limit_bytes = soft;
-                server.client_obuf_limits[class].soft_limit_seconds = soft_seconds;
+                server.client_obuf_limits[class_id].hard_limit_bytes = hard;
+                server.client_obuf_limits[class_id].soft_limit_bytes = soft;
+                server.client_obuf_limits[class_id].soft_limit_seconds = soft_seconds;
             }
             sdsfreesplitres(v, vlen);
         }
@@ -1497,10 +1497,10 @@ void configSetCommand(client *c) {
             rewriteConfigFormatMemory(hard, sizeof(hard), server.client_obuf_limits[j].hard_limit_bytes);
             rewriteConfigFormatMemory(soft, sizeof(soft), server.client_obuf_limits[j].soft_limit_bytes);
 
-            char *typename = getClientTypeName(j);
-            if (!strcmp(typename, "slave"))
-                typename = "replica";
-            line = sdscatprintf(sdsempty(), "%s %s %s %s %ld", option, typename, hard, soft,
+            char *type_name = getClientTypeName(j);
+            if (!strcmp(type_name, "slave"))
+                type_name = "replica";
+            line = sdscatprintf(sdsempty(), "%s %s %s %s %ld", option, type_name, hard, soft,
                                 (long) server.client_obuf_limits[j].soft_limit_seconds);
             rewriteConfigRewriteLine(state, option, line, force);
         }

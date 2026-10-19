@@ -138,7 +138,7 @@ int stream_range(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
         RedisModuleString *id_str = RedisModule_CreateStringFromStreamID(ctx, &id);
         RedisModule_ReplyWithString(ctx, id_str);
         RedisModule_ReplyWithArray(ctx, numfields * 2);
-        int delete = 0;
+        int deleted = 0;
         RedisModuleString *field, *value;
         for (long i = 0; i < numfields; i++) {
             assert(RedisModule_StreamIteratorNextField(key, &field, &value) == REDISMODULE_OK);
@@ -148,9 +148,9 @@ int stream_range(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
             size_t field_len;
             const char *field_str = RedisModule_StringPtrLen(field, &field_len);
             if (!strncmp(field_str, "selfdestruct", field_len))
-                delete = 1;
+                deleted = 1;
         }
-        if (delete) {
+        if (deleted) {
             assert(RedisModule_StreamIteratorDelete(key) == REDISMODULE_OK);
         }
         /* check error handling: no more fields to fetch */

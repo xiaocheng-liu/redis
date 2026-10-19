@@ -562,7 +562,7 @@ void msetnxCommand(client *c) { msetGenericCommand(c, 1); }
 
 void incrDecrCommand(client *c, long long incr) {
     long long value, oldvalue;
-    robj *o, *new;
+    robj *o, *new_obj;
 
     o = lookupKeyWrite(c->db, c->argv[1]);
     if (checkType(c, o, OBJ_STRING))
@@ -580,21 +580,21 @@ void incrDecrCommand(client *c, long long incr) {
 
     if (o && o->refcount == 1 && o->encoding == OBJ_ENCODING_INT && (value < 0 || value >= OBJ_SHARED_INTEGERS) &&
         value >= LONG_MIN && value <= LONG_MAX) {
-        new = o;
+        new_obj = o;
         o->ptr = (void *) ((long) value);
     } else {
-        new = createStringObjectFromLongLongForValue(value);
+        new_obj = createStringObjectFromLongLongForValue(value);
         if (o) {
-            dbOverwrite(c->db, c->argv[1], new);
+            dbOverwrite(c->db, c->argv[1], new_obj);
         } else {
-            dbAdd(c->db, c->argv[1], new);
+            dbAdd(c->db, c->argv[1], new_obj);
         }
     }
     signalModifiedKey(c, c->db, c->argv[1]);
     notifyKeyspaceEvent(NOTIFY_STRING, "incrby", c->argv[1], c->db->id);
     server.dirty++;
     addReply(c, shared.colon);
-    addReply(c, new);
+    addReply(c, new_obj);
     addReply(c, shared.crlf);
 }
 
@@ -620,7 +620,7 @@ void decrbyCommand(client *c) {
 
 void incrbyfloatCommand(client *c) {
     long double incr, value;
-    robj *o, *new;
+    robj *o, *new_obj;
 
     o = lookupKeyWrite(c->db, c->argv[1]);
     if (checkType(c, o, OBJ_STRING))
@@ -634,21 +634,21 @@ void incrbyfloatCommand(client *c) {
         addReplyError(c, "increment would produce NaN or Infinity");
         return;
     }
-    new = createStringObjectFromLongDouble(value, 1);
+    new_obj = createStringObjectFromLongDouble(value, 1);
     if (o)
-        dbOverwrite(c->db, c->argv[1], new);
+        dbOverwrite(c->db, c->argv[1], new_obj);
     else
-        dbAdd(c->db, c->argv[1], new);
+        dbAdd(c->db, c->argv[1], new_obj);
     signalModifiedKey(c, c->db, c->argv[1]);
     notifyKeyspaceEvent(NOTIFY_STRING, "incrbyfloat", c->argv[1], c->db->id);
     server.dirty++;
-    addReplyBulk(c, new);
+    addReplyBulk(c, new_obj);
 
     /* Always replicate INCRBYFLOAT as a SET command with the final value
      * in order to make sure that differences in float precision or formatting
      * will not create differences in replicas or after an AOF restart. */
     rewriteClientCommandArgument(c, 0, shared.set);
-    rewriteClientCommandArgument(c, 2, new);
+    rewriteClientCommandArgument(c, 2, new_obj);
     rewriteClientCommandArgument(c, 3, shared.keepttl);
 }
 

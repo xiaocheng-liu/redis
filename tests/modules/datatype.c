@@ -51,23 +51,23 @@ static void *datatype_copy(RedisModuleString *fromkey, RedisModuleString *tokey,
     if (old->intval == 42)
         return NULL;
 
-    DataType *new = (DataType *) RedisModule_Alloc(sizeof(DataType));
+    DataType *new_type = (DataType *) RedisModule_Alloc(sizeof(DataType));
 
-    new->intval = old->intval;
-    new->strval = RedisModule_CreateStringFromString(NULL, old->strval);
+    new_type->intval = old->intval;
+    new_type->strval = RedisModule_CreateStringFromString(NULL, old->strval);
 
     /* Breaking the rules here! We return a copy that also includes traces
      * of fromkey/tokey to confirm we get what we expect.
      */
     size_t len;
     const char *str = RedisModule_StringPtrLen(fromkey, &len);
-    RedisModule_StringAppendBuffer(NULL, new->strval, "/", 1);
-    RedisModule_StringAppendBuffer(NULL, new->strval, str, len);
-    RedisModule_StringAppendBuffer(NULL, new->strval, "/", 1);
+    RedisModule_StringAppendBuffer(NULL, new_type->strval, "/", 1);
+    RedisModule_StringAppendBuffer(NULL, new_type->strval, str, len);
+    RedisModule_StringAppendBuffer(NULL, new_type->strval, "/", 1);
     str = RedisModule_StringPtrLen(tokey, &len);
-    RedisModule_StringAppendBuffer(NULL, new->strval, str, len);
+    RedisModule_StringAppendBuffer(NULL, new_type->strval, str, len);
 
-    return new;
+    return new_type;
 }
 
 static int datatype_set(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {

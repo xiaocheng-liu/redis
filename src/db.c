@@ -818,7 +818,7 @@ void scanGenericCommand(client *c, robj *o, unsigned long cursor) {
     listNode *node, *nextnode;
     long count = 10;
     sds pat = NULL;
-    sds typename = NULL;
+    sds type_name = NULL;
     int patlen = 0, use_pattern = 0;
     dict *ht;
 
@@ -854,7 +854,7 @@ void scanGenericCommand(client *c, robj *o, unsigned long cursor) {
             i += 2;
         } else if (!strcasecmp(c->argv[i]->ptr, "type") && o == NULL && j >= 2) {
             /* SCAN for a particular type only applies to the db dict */
-            typename = c->argv[i + 1]->ptr;
+            type_name = c->argv[i + 1]->ptr;
             i += 2;
         } else {
             addReplyErrorObject(c, shared.syntaxerr);
@@ -949,10 +949,10 @@ void scanGenericCommand(client *c, robj *o, unsigned long cursor) {
         }
 
         /* 过滤掉我们不想要的类型. */
-        if (!filter && o == NULL && typename) {
+        if (!filter && o == NULL && type_name) {
             robj *typecheck = lookupKeyReadWithFlags(c->db, kobj, LOOKUP_NOTOUCH);
             char *type = getObjectTypeName(typecheck);
-            if (strcasecmp((char *) typename, type))
+            if (strcasecmp((char *) type_name, type))
                 filter = 1;
         }
 
@@ -1189,7 +1189,7 @@ void copyCommand(client *c) {
     redisDb *src, *dst;
     int srcid, dbid;
     long long expire;
-    int j, replace = 0, delete = 0;
+    int j, replace = 0, deleted = 0;
 
     /* Obtain source and target DB pointers
      * Default target DB is the same as the source DB
@@ -1246,7 +1246,7 @@ void copyCommand(client *c) {
      * If REPLACE option is selected, delete newkey from targetDB. */
     if (lookupKeyWrite(dst, newkey) != NULL) {
         if (replace) {
-            delete = 1;
+            deleted = 1;
         } else {
             addReply(c, shared.czero);
             return;
@@ -1284,7 +1284,7 @@ void copyCommand(client *c) {
             return;
     }
 
-    if (delete) {
+    if (deleted) {
         dbDelete(dst, newkey);
     }
 

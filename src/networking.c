@@ -3324,8 +3324,8 @@ int getClientTypeByName(char *name) {
         return -1;
 }
 
-char *getClientTypeName(int class) {
-    switch (class) {
+char *getClientTypeName(int class_id) {
+    switch (class_id) {
         case CLIENT_TYPE_NORMAL:
             return "normal";
         case CLIENT_TYPE_SLAVE:
@@ -3346,20 +3346,20 @@ char *getClientTypeName(int class) {
  * Return value: non-zero if the client reached the soft or the hard limit.
  *               Otherwise zero is returned. */
 int checkClientOutputBufferLimits(client *c) {
-    int soft = 0, hard = 0, class;
+    int soft = 0, hard = 0, class_id;
     unsigned long used_mem = getClientOutputBufferMemoryUsage(c);
 
-    class = getClientType(c);
+    class_id = getClientType(c);
     /* For the purpose of output buffer limiting, masters are handled
      * like normal clients. */
-    if (class == CLIENT_TYPE_MASTER)
-        class = CLIENT_TYPE_NORMAL;
+    if (class_id == CLIENT_TYPE_MASTER)
+        class_id = CLIENT_TYPE_NORMAL;
 
-    if (server.client_obuf_limits[class].hard_limit_bytes &&
-        used_mem >= server.client_obuf_limits[class].hard_limit_bytes)
+    if (server.client_obuf_limits[class_id].hard_limit_bytes &&
+        used_mem >= server.client_obuf_limits[class_id].hard_limit_bytes)
         hard = 1;
-    if (server.client_obuf_limits[class].soft_limit_bytes &&
-        used_mem >= server.client_obuf_limits[class].soft_limit_bytes)
+    if (server.client_obuf_limits[class_id].soft_limit_bytes &&
+        used_mem >= server.client_obuf_limits[class_id].soft_limit_bytes)
         soft = 1;
 
     /* We need to check if the soft limit is reached continuously for the
@@ -3371,7 +3371,7 @@ int checkClientOutputBufferLimits(client *c) {
         } else {
             time_t elapsed = server.unixtime - c->obuf_soft_limit_reached_time;
 
-            if (elapsed <= server.client_obuf_limits[class].soft_limit_seconds) {
+            if (elapsed <= server.client_obuf_limits[class_id].soft_limit_seconds) {
                 soft = 0; /* The client still did not reached the max number of
                              seconds for the soft limit to be considered
                              reached. */

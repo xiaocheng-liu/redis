@@ -1293,9 +1293,11 @@ void sds_free(void *ptr) { s_free(ptr); }
  * An opening bracket can be quoted by repeating it twice.
  */
 // 用于解析模板字符串,替换其中的变量。
-sds sdstemplate(const char *template, sdstemplate_callback_t cb_func, void *cb_arg) {
+// 注:形参名不能用 template(class/typename/this/new/delete 等 C++ 关键字同理),
+// 否则头文件一旦被 C++ 侧的模块代码包含就会编译失败,故改为 tmpl。
+sds sdstemplate(const char *tmpl, sdstemplate_callback_t cb_func, void *cb_arg) {
     sds res = sdsempty();
-    const char *p = template;
+    const char *p = tmpl;
 
     while (*p) {
         /* Find next variable, copy everything until there */

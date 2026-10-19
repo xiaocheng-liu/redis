@@ -1047,8 +1047,8 @@ int raxRemove(rax *rax, unsigned char *s, size_t len, void **old) {
         }
         if (child) {
             debugf("Unlinking child %p from parent %p\n", (void *) child, (void *) h);
-            raxNode *new = raxRemoveChild(h, child);
-            if (new != h) {
+            raxNode *new_node = raxRemoveChild(h, child);
+            if (new_node != h) {
                 raxNode *parent = raxStackPeek(&ts);
                 raxNode **parentlink;
                 if (parent == NULL) {
@@ -1056,14 +1056,14 @@ int raxRemove(rax *rax, unsigned char *s, size_t len, void **old) {
                 } else {
                     parentlink = raxFindParentLink(parent, h);
                 }
-                memcpy(parentlink, &new, sizeof(new));
+                memcpy(parentlink, &new_node, sizeof(new_node));
             }
 
             /* If after the removal the node has just a single child
              * and is not a key, we need to try to compress it. */
-            if (new->size == 1 && new->iskey == 0) {
+            if (new_node->size == 1 && new_node->iskey == 0) {
                 trycompress = 1;
-                h = new;
+                h = new_node;
             }
         }
     } else if (h->size == 1) {
@@ -1156,17 +1156,17 @@ int raxRemove(rax *rax, unsigned char *s, size_t len, void **old) {
         if (nodes > 1) {
             /* If we can compress, create the new node and populate it. */
             size_t nodesize = sizeof(raxNode) + comprsize + raxPadding(comprsize) + sizeof(raxNode *);
-            raxNode *new = rax_malloc(nodesize);
+            raxNode *new_node = rax_malloc(nodesize);
             /* An out of memory here just means we cannot optimize this
              * node, but the tree is left in a consistent state. */
-            if (new == NULL) {
+            if (new_node == NULL) {
                 raxStackFree(&ts);
                 return 1;
             }
-            new->iskey = 0;
-            new->isnull = 0;
-            new->iscompr = 1;
-            new->size = comprsize;
+            new_node->iskey = 0;
+            new_node->isnull = 0;
+            new_node->iscompr = 1;
+            new_node->size = comprsize;
             rax->numnodes++;
 
             /* Scan again, this time to populate the new node content and
@@ -1175,7 +1175,7 @@ int raxRemove(rax *rax, unsigned char *s, size_t len, void **old) {
             comprsize = 0;
             h = start;
             while (h->size != 0) {
-                memcpy(new->data + comprsize, h->data, h->size);
+                memcpy(new_node->data + comprsize, h->data, h->size);
                 comprsize += h->size;
                 raxNode **cp = raxNodeLastChildPtr(h);
                 raxNode *tofree = h;
@@ -1185,19 +1185,19 @@ int raxRemove(rax *rax, unsigned char *s, size_t len, void **old) {
                 if (h->iskey || (!h->iscompr && h->size != 1))
                     break;
             }
-            debugnode("New node", new);
+            debugnode("New node", new_node);
 
             /* Now 'h' points to the first node that we still need to use,
              * so our new node child pointer will point to it. */
-            raxNode **cp = raxNodeLastChildPtr(new);
+            raxNode **cp = raxNodeLastChildPtr(new_node);
             memcpy(cp, &h, sizeof(h));
 
             /* Fix parent link. */
             if (parent) {
                 raxNode **parentlink = raxFindParentLink(parent, start);
-                memcpy(parentlink, &new, sizeof(new));
+                memcpy(parentlink, &new_node, sizeof(new_node));
             } else {
-                rax->head = new;
+                rax->head = new_node;
             }
 
             debugf("Compressed %d nodes, %d total bytes\n", nodes, (int) comprsize);

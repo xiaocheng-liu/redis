@@ -547,17 +547,17 @@ static void cliIntegrateHelp(void) {
 
         helpEntriesLen++;
         helpEntries = zrealloc(helpEntries, sizeof(helpEntry) * helpEntriesLen);
-        helpEntry *new = helpEntries + (helpEntriesLen - 1);
+        helpEntry *new_entry = helpEntries + (helpEntriesLen - 1);
 
-        new->argc = 1;
-        new->argv = zmalloc(sizeof(sds));
-        new->argv[0] = sdsnew(cmdname);
-        new->full = new->argv[0];
-        new->type = CLI_HELP_COMMAND;
-        sdstoupper(new->argv[0]);
+        new_entry->argc = 1;
+        new_entry->argv = zmalloc(sizeof(sds));
+        new_entry->argv[0] = sdsnew(cmdname);
+        new_entry->full = new_entry->argv[0];
+        new_entry->type = CLI_HELP_COMMAND;
+        sdstoupper(new_entry->argv[0]);
 
         struct commandHelp *ch = zmalloc(sizeof(*ch));
-        ch->name = new->argv[0];
+        ch->name = new_entry->argv[0];
         ch->params = sdsempty();
         int args = llabs(entry->element[1]->integer);
         args--; /* Remove the command name itself. */
@@ -572,7 +572,7 @@ static void cliIntegrateHelp(void) {
         ch->summary = "Help not available";
         ch->group = 0;
         ch->since = "not known";
-        new->org = ch;
+        new_entry->org = ch;
     }
     freeReplyObject(reply);
 }
@@ -4165,29 +4165,29 @@ static int clusterManagerLoadInfoFromNode(clusterManagerNode *node, int opts) {
     if (node->friends != NULL) {
         listRewind(node->friends, &li);
         while ((ln = listNext(&li)) != NULL) {
-            clusterManagerNode *friend = ln->value;
-            if (!friend->ip || !friend->port)
+            clusterManagerNode *friend_node = ln->value;
+            if (!friend_node->ip || !friend_node->port)
                 goto invalid_friend;
-            if (!friend->context && !clusterManagerNodeConnect(friend))
+            if (!friend_node->context && !clusterManagerNodeConnect(friend_node))
                 goto invalid_friend;
             e = NULL;
-            if (clusterManagerNodeLoadInfo(friend, 0, &e)) {
-                if (friend->flags &
+            if (clusterManagerNodeLoadInfo(friend_node, 0, &e)) {
+                if (friend_node->flags &
                     (CLUSTER_MANAGER_FLAG_NOADDR | CLUSTER_MANAGER_FLAG_DISCONNECT | CLUSTER_MANAGER_FLAG_FAIL)) {
                     goto invalid_friend;
                 }
-                listAddNodeTail(cluster_manager.nodes, friend);
+                listAddNodeTail(cluster_manager.nodes, friend_node);
             } else {
                 clusterManagerLogErr("[ERR] Unable to load info for "
                                      "node %s:%d\n",
-                                     friend->ip, friend->port);
+                                     friend_node->ip, friend_node->port);
                 goto invalid_friend;
             }
             continue;
         invalid_friend:
-            if (!(friend->flags & CLUSTER_MANAGER_FLAG_SLAVE))
+            if (!(friend_node->flags & CLUSTER_MANAGER_FLAG_SLAVE))
                 cluster_manager.unreachable_masters++;
-            freeClusterManagerNode(friend);
+            freeClusterManagerNode(friend_node);
         }
         listRelease(node->friends);
         node->friends = NULL;

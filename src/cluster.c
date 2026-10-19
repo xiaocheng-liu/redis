@@ -2482,15 +2482,15 @@ void clusterSendPing(clusterLink *link, int type) {
     int maxiterations = wanted * 3;
     while (freshnodes > 0 && gossipcount < wanted && maxiterations--) {
         dictEntry *de = dictGetRandomKey(server.cluster->nodes);
-        clusterNode *this = dictGetVal(de);
+        clusterNode *this_node = dictGetVal(de);
 
         /* Don't include this node: the whole packet header is about us
          * already, so we just gossip about other nodes. */
-        if (this == myself)
+        if (this_node == myself)
             continue;
 
         /* PFAIL nodes will be added later. */
-        if (this->flags & CLUSTER_NODE_PFAIL)
+        if (this_node->flags & CLUSTER_NODE_PFAIL)
             continue;
 
         /* In the gossip section don't include:
@@ -2498,18 +2498,18 @@ void clusterSendPing(clusterLink *link, int type) {
          * 3) Nodes with the NOADDR flag set.
          * 4) Disconnected nodes if they don't have configured slots.
          */
-        if (this->flags & (CLUSTER_NODE_HANDSHAKE | CLUSTER_NODE_NOADDR) ||
-            (this->link == NULL && this->numslots == 0)) {
+        if (this_node->flags & (CLUSTER_NODE_HANDSHAKE | CLUSTER_NODE_NOADDR) ||
+            (this_node->link == NULL && this_node->numslots == 0)) {
             freshnodes--; /* Technically not correct, but saves CPU. */
             continue;
         }
 
         /* Do not add a node we already have. */
-        if (clusterNodeIsInGossipSection(hdr, gossipcount, this))
+        if (clusterNodeIsInGossipSection(hdr, gossipcount, this_node))
             continue;
 
         /* Add it */
-        clusterSetGossipEntry(hdr, gossipcount, this);
+        clusterSetGossipEntry(hdr, gossipcount, this_node);
         freshnodes--;
         gossipcount++;
     }
@@ -3476,16 +3476,16 @@ void clusterCron(void) {
          * pong_received time. */
         for (j = 0; j < 5; j++) {
             de = dictGetRandomKey(server.cluster->nodes);
-            clusterNode *this = dictGetVal(de);
+            clusterNode *this_node = dictGetVal(de);
 
             /* Don't ping nodes disconnected or with a ping currently active. */
-            if (this->link == NULL || this->ping_sent != 0)
+            if (this_node->link == NULL || this_node->ping_sent != 0)
                 continue;
-            if (this->flags & (CLUSTER_NODE_MYSELF | CLUSTER_NODE_HANDSHAKE))
+            if (this_node->flags & (CLUSTER_NODE_MYSELF | CLUSTER_NODE_HANDSHAKE))
                 continue;
-            if (min_pong_node == NULL || min_pong > this->pong_received) {
-                min_pong_node = this;
-                min_pong = this->pong_received;
+            if (min_pong_node == NULL || min_pong > this_node->pong_received) {
+                min_pong_node = this_node;
+                min_pong = this_node->pong_received;
             }
         }
         if (min_pong_node) {
