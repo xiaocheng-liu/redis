@@ -7,9 +7,15 @@ start_server {tags {"obuf-limits"}} {
         set reply [$rd1 read]
         assert {$reply eq "subscribe foo 1"}
 
+        # On some systems (macOS for instance) the loopback socket buffers can
+        # absorb tens of megabytes, so publishing tiny messages would need
+        # millions of iterations before omem starts to grow and the test never
+        # converges. Use a big payload instead: a few dozens of publishes are
+        # enough to cross the 100k hard limit.
+        set payload [string repeat "x" 10000]
         set omem 0
-        while 1 {
-            r publish foo bar
+        for {set i 0} {$i < 1000} {incr i} {
+            r publish foo $payload
             set clients [split [r client list] "\r\n"]
             set c [split [lindex $clients 1] " "]
             if {![regexp {omem=([0-9]+)} $c - omem]} break
@@ -27,19 +33,27 @@ start_server {tags {"obuf-limits"}} {
         set reply [$rd1 read]
         assert {$reply eq "subscribe foo 1"}
 
+        # Push omem above the soft limit with a big payload first, otherwise
+        # tiny messages may never fill the socket buffers on some systems.
+        set payload [string repeat "x" 10000]
         set omem 0
-        set start_time 0
+        for {set i 0} {$i < 1000 && $omem <= 100000} {incr i} {
+            r publish foo $payload
+            set clients [split [r client list] "\r\n"]
+            set c [split [lindex $clients 1] " "]
+            if {![regexp {omem=([0-9]+)} $c - omem]} break
+        }
+        # The soft limit is only evaluated while new replies are produced, so
+        # keep publishing (small messages) while measuring the elapsed time.
+        set start_time [clock seconds]
         set time_elapsed 0
         while 1 {
             r publish foo bar
             set clients [split [r client list] "\r\n"]
             set c [split [lindex $clients 1] " "]
             if {![regexp {omem=([0-9]+)} $c - omem]} break
-            if {$omem > 100000} {
-                if {$start_time == 0} {set start_time [clock seconds]}
-                set time_elapsed [expr {[clock seconds]-$start_time}]
-                if {$time_elapsed >= 5} break
-            }
+            set time_elapsed [expr {[clock seconds]-$start_time}]
+            if {$time_elapsed >= 5} break
         }
         assert {$omem >= 100000 && $time_elapsed >= 5 && $time_elapsed <= 10}
         $rd1 close
@@ -53,19 +67,26 @@ start_server {tags {"obuf-limits"}} {
         set reply [$rd1 read]
         assert {$reply eq "subscribe foo 1"}
 
+        # Same as above: cross the soft limit quickly with a big payload.
+        set payload [string repeat "x" 10000]
         set omem 0
-        set start_time 0
+        for {set i 0} {$i < 1000 && $omem <= 100000} {incr i} {
+            r publish foo $payload
+            set clients [split [r client list] "\r\n"]
+            set c [split [lindex $clients 1] " "]
+            if {![regexp {omem=([0-9]+)} $c - omem]} break
+        }
+        # Keep publishing until the soft limit time (3 seconds) is overreached
+        # and the server closes the client.
+        set start_time [clock seconds]
         set time_elapsed 0
         while 1 {
             r publish foo bar
             set clients [split [r client list] "\r\n"]
             set c [split [lindex $clients 1] " "]
             if {![regexp {omem=([0-9]+)} $c - omem]} break
-            if {$omem > 100000} {
-                if {$start_time == 0} {set start_time [clock seconds]}
-                set time_elapsed [expr {[clock seconds]-$start_time}]
-                if {$time_elapsed >= 10} break
-            }
+            set time_elapsed [expr {[clock seconds]-$start_time}]
+            if {$time_elapsed >= 10} break
         }
         assert {$omem >= 100000 && $time_elapsed < 6}
         $rd1 close
