@@ -1,9 +1,12 @@
 #ifndef GEO_H
 #define GEO_H
 
-#include "server.h"
+#include <stddef.h> /* 仅依赖 size_t */
 
-typedef client client;
+#if defined(__cplusplus)
+extern "C"
+{
+#endif
 
 /* Structures used inside geo.c in order to represent points and array of
  * points on the earth. */
@@ -23,5 +26,9 @@ typedef struct geoArray
     size_t buckets;
     size_t used;
 } geoArray;
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif // GEO_H

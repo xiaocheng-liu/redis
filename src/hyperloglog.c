@@ -1,6 +1,10 @@
 /*
  * hyperloglog.c - Redis HyperLogLog probabilistic cardinality approximation.
  * This file implements the algorithm and the exported Redis commands.
+ *
+ * 本文件实现 Redis 的 HyperLogLog（HLL）概率基数统计算法及其对外命令
+ * （PFADD / PFCOUNT / PFMERGE）。HLL 只做近似去重计数：无论元素规模多大，
+ * 每个 key 固定占用约 12KB，标准误差约 0.81%，常用于统计 UV 等场景。
  */
 #include <math.h>
 #include <stdint.h>
@@ -160,23 +164,38 @@ struct hllhdr {
     uint8_t registers[]; /* Data bytes. */
 };
 
+/* hllhdr 头部说明（dense 与 sparse 两种编码共用）：
+ * - 前 4 字节固定为魔数 "HYLL"，用于校验对象合法性；
+ * - encoding 标记当前是 HLL_DENSE 还是 HLL_SPARSE；
+ * - notused 为保留字段，必须为零；
+ * - card 缓存最近一次计算出的基数（小端 64 位），避免每次 PFCOUNT 都重算；
+ * - registers 为变长数据区，dense 存 6-bit 寄存器，sparse 存 RLE 指令流。
+ * 整个 HLL 直接复用 Redis 的 string 对象承载（o->ptr 指向 hllhdr）。 */
+
 /* The cached cardinality MSB is used to signal validity of the cached value. */
+/* card[7] 的最高位作为"缓存是否有效"的标志位：置位表示数据已被修改、
+ * 缓存失效需重算；为零表示可复用缓存值。 */
 #define HLL_INVALIDATE_CACHE(hdr) (hdr)->card[7] |= (1 << 7)
 #define HLL_VALID_CACHE(hdr) (((hdr)->card[7] & (1 << 7)) == 0)
 
 #define HLL_P 14 /* The greater is P, the smaller the error. */
+/* P 决定寄存器数量，P 越大误差越小。标准误差约为 1.04/sqrt(m)。 */
 #define HLL_Q                                                                                                          \
     (64 - HLL_P) /* The number of bits of the hash value used for                                                      \
                     determining the number of leading zeros. */
+/* 64 位 hash 中，低 P 位用于定位寄存器索引，剩余 Q 位用于统计前导零个数。 */
 #define HLL_REGISTERS (1 << HLL_P) /* With P=14, 16384 registers. */
 #define HLL_P_MASK (HLL_REGISTERS - 1) /* Mask to index register. */
 #define HLL_BITS 6 /* Enough to count up to 63 leading zeroes. */
+/* 每个寄存器 6 bit，最多可记录 63 个前导零，足够覆盖 Q=50 的情况。 */
 #define HLL_REGISTER_MAX ((1 << HLL_BITS) - 1)
 #define HLL_HDR_SIZE sizeof(struct hllhdr)
 #define HLL_DENSE_SIZE (HLL_HDR_SIZE + ((HLL_REGISTERS * HLL_BITS + 7) / 8))
 #define HLL_DENSE 0 /* Dense encoding. */
 #define HLL_SPARSE 1 /* Sparse encoding. */
 #define HLL_RAW 255 /* Only used internally, never exposed. */
+/* HLL_RAW 是内部专用编码：registers 直接指向一个 uint8_t[HLL_REGISTERS]
+ * 数组（每个寄存器 1 字节），用于多 key PFCOUNT 合并时免去 6-bit 解包开销。 */
 #define HLL_MAX_ENCODING 1
 
 static char *invalid_hll_err = "-INVALIDOBJ Corrupted HLL object detected";
@@ -337,7 +356,13 @@ static char *invalid_hll_err = "-INVALIDOBJ Corrupted HLL object detected";
     } while (0)
 
 /* Macros to access the sparse representation.
- * The macros parameter is expected to be an uint8_t pointer. */
+ * The macros parameter is expected to be an uint8_t pointer.
+ *
+ * sparse 编码用三类 opcode（RLE 游程压缩）描述寄存器：
+ * - ZERO：1 字节，00xxxxxx，表示 1~64 个连续为 0 的寄存器；
+ * - XZERO：2 字节，01xxxxxx yyyyyyyy，表示最多 16384 个连续为 0；
+ * - VAL：1 字节，1vvvvvxx，值为 vvvvv+1、连续个数为 xx+1（1~4）。
+ * 下面这组宏负责判定 opcode 类型并提取其长度/数值。 */
 #define HLL_SPARSE_XZERO_BIT 0x40 /* 01xxxxxx */
 #define HLL_SPARSE_VAL_BIT 0x80 /* 1vvvvvxx */
 #define HLL_SPARSE_IS_ZERO(p) (((*(p)) & 0xc0) == 0) /* 00xxxxxx */
@@ -371,7 +396,10 @@ static char *invalid_hll_err = "-INVALIDOBJ Corrupted HLL object detected";
 
 /* Our hash function is MurmurHash2, 64 bit version.
  * It was modified for Redis in order to provide the same result in
- * big and little endian archs (endian neutral). */
+ * big and little endian archs (endian neutral).
+ *
+ * HLL 哈希函数：64 位 MurmurHash2。Redis 做了端序无关改造（大端机器下逐字节
+ * 拼装 uint64_t），保证跨平台哈希一致，从而让 AOF / 主从复制的 HLL 数据可移植。 */
 uint64_t MurmurHash64A(const void *key, int len, unsigned int seed) {
     const uint64_t m = 0xc6a4a7935bd1e995;
     const int r = 47;
@@ -433,7 +461,11 @@ uint64_t MurmurHash64A(const void *key, int len, unsigned int seed) {
 
 /* Given a string element to add to the HyperLogLog, returns the length
  * of the pattern 000..1 of the element hash. As a side effect 'regp' is
- * set to the register index this element hashes to. */
+ * set to the register index this element hashes to.
+ *
+ * 计算元素 hash 的"前导零个数 + 1"（即 000..1 模式的长度），这是 HLL 的核心：
+ * 每个元素按 hash 低 P 位落入某个寄存器，并把该寄存器更新为"最长前导零+1"。
+ * 统计所有寄存器的调和平均即可估计基数。regp 返回该元素所属的寄存器索引。 */
 int hllPatLen(unsigned char *ele, size_t elesize, long *regp) {
     uint64_t hash, bit, index;
     int count;
@@ -475,7 +507,12 @@ int hllPatLen(unsigned char *ele, size_t elesize, long *regp) {
  *
  * The function always succeed, however if as a result of the operation
  * the approximated cardinality changed, 1 is returned. Otherwise 0
- * is returned. */
+ * is returned.
+ *
+ * dense 写寄存器底层函数：仅在旧值更小（即本次出现更长的前导零）时才更新，
+ * 否则丢弃。因为寄存器只增不减，只有真正改变数据时基数才可能变化，据此返回
+ * 1/0 供上层判断是否需要使缓存失效、传播命令。sds 字符串自带隐含结尾 '\0'，
+ * 所以访问寄存器时越界读一个字节也是安全的（无需额外边界判断）。 */
 int hllDenseSet(uint8_t *registers, long index, uint8_t count) {
     uint8_t oldcount;
 
@@ -493,7 +530,10 @@ int hllDenseSet(uint8_t *registers, long index, uint8_t count) {
  * the element belongs to is incremented if needed.
  *
  * This is just a wrapper to hllDenseSet(), performing the hashing of the
- * element in order to retrieve the index and zero-run count. */
+ * element in order to retrieve the index and zero-run count.
+ *
+ * dense 添加元素：HLL 并不真正保存元素，仅先算 hash 得到寄存器索引与
+ * 前导零长度，再交给 hllDenseSet() 更新对应寄存器（取最大值）。 */
 int hllDenseAdd(uint8_t *registers, unsigned char *ele, size_t elesize) {
     long index;
     uint8_t count = hllPatLen(ele, elesize, &index);
@@ -501,7 +541,11 @@ int hllDenseAdd(uint8_t *registers, unsigned char *ele, size_t elesize) {
     return hllDenseSet(registers, index, count);
 }
 
-/* Compute the register histogram in the dense representation. */
+/* Compute the register histogram in the dense representation.
+ *
+ * 统计寄存器直方图：reghisto[k] 表示"值为 k 的寄存器个数"。这是 hllCount()
+ * 估计基数前的必要步骤。在默认 16384×6bit 的场景下，用展开循环（每次处理
+ * 16 个寄存器）走快速路径以提升性能；其他参数配置走通用路径。 */
 void hllDenseRegHisto(uint8_t *registers, int *reghisto) {
     int j;
 
@@ -565,7 +609,12 @@ void hllDenseRegHisto(uint8_t *registers, int *reghisto) {
  * the input representation is freed as a side effect.
  *
  * The function returns C_OK if the sparse representation was valid,
- * otherwise C_ERR is returned if the representation was corrupted. */
+ * otherwise C_ERR is returned if the representation was corrupted.
+ *
+ * sparse → dense 转换：分配一个全 0 的 dense SDS 字符串，拷贝 magic 与缓存基数，
+ * 然后按 sparse 指令流逐段把非零寄存器写进 dense 数据区。转换完成后释放旧的
+ * sparse 字符串并替换为 dense。若 sparse 流非法（寄存器总数 != 16384）返回 C_ERR。
+ * 该转换是单向的（dense 不会再转回 sparse），且会被传播到从节点 / AOF。 */
 int hllSparseToDense(robj *o) {
     sds sparse = o->ptr, dense;
     struct hllhdr *hdr, *oldhdr = (struct hllhdr *) sparse;
@@ -637,7 +686,16 @@ int hllSparseToDense(robj *o) {
  * As a side effect the function may promote the HLL representation from
  * sparse to dense: this happens when a register requires to be set to a value
  * not representable with the sparse representation, or when the resulting
- * size would be greater than server.hll_sparse_max_bytes. */
+ * size would be greater than server.hll_sparse_max_bytes.
+ *
+ * sparse 写寄存器底层函数（最复杂的路径）：就地修改 RLE 指令流。
+ * 1) 先定位 index 落在哪个 opcode 上；
+ * 2) 若新值 <= 当前值则无需更新（返回 0）；否则按 VAL/ZERO/XZERO 不同情形
+ *    把单一 opcode 拆分为多个（最坏 XZERO→XZERO-VAL-XZERO，最多多 3 字节）；
+ * 3) 替换指令流并尽量合并相邻同值 VAL；
+ * 4) 若新值超过 sparse 可表示范围（>32），或写入后长度超过
+ *    server.hll_sparse_max_bytes，则升级为 dense 编码。
+ * 返回 1 表示基数变化，0 表示无变化，-1 表示 HLL 损坏。 */
 int hllSparseSet(robj *o, long index, uint8_t count) {
     struct hllhdr *hdr;
     uint8_t oldcount, *sparse, *end, *p, *prev, *next;
@@ -893,7 +951,9 @@ promote: /* Promote to dense representation. */
  * the element belongs to is incremented if needed.
  *
  * This function is actually a wrapper for hllSparseSet(), it only performs
- * the hashshing of the element to obtain the index and zeros run length. */
+ * the hashshing of the element to obtain the index and zeros run length.
+ *
+ * sparse 添加元素：与 hllDenseAdd 同构，仅先算 hash 再交给 hllSparseSet() 更新。 */
 int hllSparseAdd(robj *o, unsigned char *ele, size_t elesize) {
     long index;
     uint8_t count = hllPatLen(ele, elesize, &index);
@@ -901,7 +961,11 @@ int hllSparseAdd(robj *o, unsigned char *ele, size_t elesize) {
     return hllSparseSet(o, index, count);
 }
 
-/* Compute the register histogram in the sparse representation. */
+/* Compute the register histogram in the sparse representation.
+ *
+ * 统计 sparse 编码的寄存器直方图：遍历指令流，把每段 opcode 覆盖的寄存器
+ * 累加到 reghisto 对应桶中（ZERO/XZERO 累加到 reghisto[0]，VAL 累加到对应值）。
+ * 若遍历结束寄存器总数不等于 16384，则通过 invalid 标记该 HLL 已损坏。 */
 void hllSparseRegHisto(uint8_t *sparse, int sparselen, int *invalid, int *reghisto) {
     int idx = 0, runlen, regval;
     uint8_t *end = sparse + sparselen, *p = sparse;
@@ -936,7 +1000,11 @@ void hllSparseRegHisto(uint8_t *sparse, int sparselen, int *invalid, int *reghis
  * computation, which is representation-specific, while all the rest is common. */
 
 /* Implements the register histogram calculation for uint8_t data type
- * which is only used internally as speedup for PFCOUNT with multiple keys. */
+ * which is only used internally as speedup for PFCOUNT with multiple keys.
+ *
+ * 对应 HLL_RAW 编码的直方图统计：每个寄存器直接占 1 字节，按 8 个一组（uint64_t）
+ * 批量判断——若整组为 0 则 reghisto[0]+=8，否则逐字节累加。仅用于多 key 合并
+ * PFCOUNT 的内部加速路径。 */
 void hllRawRegHisto(uint8_t *registers, int *reghisto) {
     uint64_t *word = (uint64_t *) registers;
     uint8_t *bytes;
@@ -1006,7 +1074,13 @@ double hllTau(double x) {
  * hllCount() supports a special internal-only encoding of HLL_RAW, that
  * is, hdr->registers will point to an uint8_t array of HLL_REGISTERS element.
  * This is useful in order to speedup PFCOUNT when called against multiple
- * keys (no need to work with 6-bit integers encoding). */
+ * keys (no need to work with 6-bit integers encoding).
+ *
+ * 基数估计核心（HLL 算法的心脏）：先按编码算出寄存器直方图，再用 Otmar Ertl
+ * 2017 论文《New cardinality estimation algorithms for HyperLogLog sketches》
+ * 的公式，结合 sigma / tau 两个辅助函数计算调和平均，最终得到近似基数
+ * E = round(alpha_inf * m^2 / z)。dense / sparse / raw 三种编码都汇聚于此，
+ * 共享同一套估计逻辑，仅直方图计算方式不同。 */
 uint64_t hllCount(struct hllhdr *hdr, int *invalid) {
     double m = HLL_REGISTERS;
     double E;
@@ -1043,7 +1117,10 @@ uint64_t hllCount(struct hllhdr *hdr, int *invalid) {
     return (uint64_t) E;
 }
 
-/* Call hllDenseAdd() or hllSparseAdd() according to the HLL encoding. */
+/* Call hllDenseAdd() or hllSparseAdd() according to the HLL encoding.
+ *
+ * HLL 添加元素的统一入口：按当前编码分派到 dense / sparse 具体实现；
+ * 编码非法时返回 -1（由上层命令返回 CORRUPTED HLL 错误）。 */
 int hllAdd(robj *o, unsigned char *ele, size_t elesize) {
     struct hllhdr *hdr = o->ptr;
     switch (hdr->encoding) {
@@ -1063,7 +1140,12 @@ int hllAdd(robj *o, unsigned char *ele, size_t elesize) {
  * or in some other way.
  *
  * If the HyperLogLog is sparse and is found to be invalid, C_ERR
- * is returned, otherwise the function always succeeds. */
+ * is returned, otherwise the function always succeeds.
+ *
+ * 合并 HLL：把 hll 的每个寄存器与 max[i] 取最大值写入 max[i]。HLL 的并运算
+ * 在寄存器层面就是逐位取 max（因为同一元素的 hash 落到同一寄存器，并集的
+ * 最长前导零 = 各集合最长前导零的最大值）。dense 直接遍历，sparse 则展开
+ * RLE 指令流。供 PFCOUNT（多 key）与 PFMERGE 复用。 */
 int hllMerge(uint8_t *max, robj *hll) {
     struct hllhdr *hdr = hll->ptr;
     int i;
@@ -1113,7 +1195,11 @@ int hllMerge(uint8_t *max, robj *hll) {
 /* ========================== HyperLogLog commands ========================== */
 
 /* Create an HLL object. We always create the HLL using sparse encoding.
- * This will be upgraded to the dense representation as needed. */
+ * This will be upgraded to the dense representation as needed.
+ *
+ * 创建 HLL 对象：初始一律用 sparse 编码（空 HLL 仅由一个 XZERO:16384 表示），
+ * 随元素增多在写入时按需升级为 dense。HLL 复用 string 对象承载，写入 magic
+ * "HYLL" 与编码标记后返回。 */
 robj *createHLLObject(void) {
     robj *o;
     struct hllhdr *hdr;
@@ -1147,7 +1233,11 @@ robj *createHLLObject(void) {
 
 /* Check if the object is a String with a valid HLL representation.
  * Return C_OK if this is true, otherwise reply to the client
- * with an error and return C_ERR. */
+ * with an error and return C_ERR.
+ *
+ * HLL 合法性校验（各 HLL 命令的入口守卫）：检查对象类型必须为 string、长度
+ * 不小于头部、magic 为 "HYLL"、encoding 在合法范围（dense 还要求字符串长度
+ * 精确匹配）。任何一项不符都向客户端回复错误并返回 C_ERR。 */
 int isHLLObjectOrReply(client *c, robj *o) {
     struct hllhdr *hdr;
 
@@ -1181,7 +1271,11 @@ invalid:
     return C_ERR;
 }
 
-/* PFADD var ele ele ele ... ele => :0 or :1 */
+/* PFADD var ele ele ele ... ele => :0 or :1
+ *
+ * 命令：PFADD key ele [ele ...]。对每个元素调用 hllAdd()，只要有任一寄存器被
+ * 更新（基数可能变化）就返回 1，否则返回 0。key 不存在时先创建 HLL 对象。
+ * 发生写入时会使缓存失效、通知 keyspace 事件并增加 server.dirty（保证传播）。 */
 void pfaddCommand(client *c) {
     robj *o = lookupKeyWrite(c->db, c->argv[1]);
     struct hllhdr *hdr;
@@ -1221,7 +1315,13 @@ void pfaddCommand(client *c) {
     addReply(c, updated ? shared.cone : shared.czero);
 }
 
-/* PFCOUNT var -> approximated cardinality of set. */
+/* PFCOUNT var -> approximated cardinality of set.
+ *
+ * 命令：PFCOUNT key [key ...]。
+ * - 单 key：优先返回缓存基数（HLL_VALID_CACHE 时直接读 card 字段），否则调
+ *   hllCount() 重算并写回缓存。注意即使只更新缓存也视为写操作（需传播）。
+ * - 多 key：把各 HLL 用 hllMerge() 合并成一个临时的 HLL_RAW 结构，再 hllCount()
+ *   求并集的近似基数；不修改任何 key。 */
 void pfcountCommand(client *c) {
     robj *o;
     struct hllhdr *hdr;
@@ -1314,7 +1414,12 @@ void pfcountCommand(client *c) {
     }
 }
 
-/* PFMERGE dest src1 src2 src3 ... srcN => OK */
+/* PFMERGE dest src1 src2 src3 ... srcN => OK
+ *
+ * 命令：PFMERGE dest key [key ...]。先用 hllMerge() 把所有源 HLL 按位取 max
+ * 合并到 max[] 数组；若任一源为 dense 编码，则把目标直接建成 dense 以省去转换。
+ * 最后把 max[] 写回目标 key（dense 用 hllDenseSet，sparse 用 hllSparseSet），
+ * 使缓存失效并传播。语义上等价于一次大批量 PFADD，故触发 "pfadd" keyspace 事件。 */
 void pfmergeCommand(client *c) {
     uint8_t max[HLL_REGISTERS];
     struct hllhdr *hdr;
@@ -1400,7 +1505,12 @@ void pfmergeCommand(client *c) {
 
 /* PFSELFTEST
  * This command performs a self-test of the HLL registers implementation.
- * Something that is not easy to test from within the outside. */
+ * Something that is not easy to test from within the outside.
+ *
+ * 内部自测命令（调试用）：
+ * 测试1 校验 dense 寄存器读写（与 uint8_t 数组对照，确认不串位）；
+ * 测试2 大量插入唯一元素，验证估计误差在预期标准误之内，并确认 dense 与
+ * sparse 两种编码在任意时刻给出的基数一致。任一断言失败返回 TESTFAILED。 */
 #define HLL_TEST_CYCLES 1000
 void pfselftestCommand(client *c) {
     unsigned int j, i;
@@ -1505,7 +1615,13 @@ cleanup:
 }
 
 /* PFDEBUG <subcommand> <key> ... args ...
- * Different debugging related operations about the HLL implementation. */
+ * Different debugging related operations about the HLL implementation.
+ *
+ * 调试命令 PFDEBUG，支持子命令：
+ * - GETREG <key>：返回全部 16384 个寄存器值（sparse 先转 dense）；
+ * - DECODE <key>：把 sparse 指令流解码成 z:/Z:/v: 可读串；
+ * - ENCODING <key>：返回当前编码（dense/sparse）；
+ * - TODENSE <key>：强制把 sparse 升级为 dense。 */
 void pfdebugCommand(client *c) {
     char *cmd = c->argv[1]->ptr;
     struct hllhdr *hdr;

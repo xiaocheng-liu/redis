@@ -1,4 +1,4 @@
-#include "server.h"
+#include <stdint.h> /* 仅依赖 uint16_t 等固定宽度整数类型 */
 
 /* CRC16 implementation according to CCITT standards.
  *

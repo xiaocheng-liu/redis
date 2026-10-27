@@ -16,7 +16,6 @@
  * 当然迁移过程并不是一次性完成,而是渐进式完成。主要是键值对过多时,该过程对机器性能影响太大。
  *
  */
-#include "fmacros.h"
 
 #include <limits.h>
 #include <stdarg.h>
@@ -630,8 +629,7 @@ dictEntry *dictNext(dictIterator *iter) {
                     iter->fingerprint = dictFingerprint(iter->d);
             }
             iter->index++; // 更新迭代索引
-            if (iter->index >=
-                (long) ht->size) { // 如果溢出,检测,是否当前哈希表涉及到 rehash 判断后,切换表,和重置索引
+            if (iter->index >= (long) ht->size) { // 如果溢出,检测,是否当前哈希表涉及到 rehash 判断后,切换表,和重置索引
                 if (dictIsRehashing(iter->d) && iter->table == 0) {
                     iter->table++; // 切换哈希表,和重置索引
                     iter->index = 0;

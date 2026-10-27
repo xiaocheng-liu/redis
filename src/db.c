@@ -1,5 +1,4 @@
 #include <ctype.h>
-#include <signal.h>
 #include <sys/errno.h>
 
 #include "atomicvar.h"

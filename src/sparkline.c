@@ -8,7 +8,8 @@
 #include "sparkline.h"
 
 #include <math.h>
-#include "server.h"
+#include <string.h> /* memset / strlen */
+#include "zmalloc.h" /* 仅依赖 zmalloc/zfree/zrealloc/zstrdup，无需引入 server.h */
 
 /* This is the charset used to display the graphs, but multiple rows are used
  * to increase the resolution. */
